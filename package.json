@@ -1,0 +1,22 @@
+{
+	"name": "component-analysis-lsp-server",
+	"description": "LSP Server for Component Analysis",
+	"version": "0.0.1",
+	"author": "Pavel Odvody",
+	"license": "MIT",
+	"engines": {
+		"node": "*"
+	},
+	"dependencies": {
+		"vscode-languageserver": "^2.2.0",
+		"stream-json": "0.4.2",
+		"request": "^2.79.0"
+	},
+	"devDependencies": {
+		"typescript": "^2.1.4"
+	},
+        "scripts": {
+                "build": "node node_modules/typescript/bin/tsc -p ."
+        }
+}
+
