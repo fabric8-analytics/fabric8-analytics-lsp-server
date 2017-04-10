@@ -122,16 +122,20 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 {
     constructor(public context: IDependency, config: any){
         super(config);
-        this.binding = {path: ['analyses', 'security_issues', 'summary']};
+        this.binding = {path: ['result', 'recommendation', 'component-analyses', 'cve']};
     }
 
     produce(): Diagnostic[] {
         if (this.item.length > 0) {
-            let cves = this.item.join('\n-');
+            let cveList = []
+            for (let cve of this.item) {
+                cveList.push(cve['id'])
+            }
+            let cves = cveList.join('\n-');
             return [{
                 severity: DiagnosticSeverity.Error,
                 range: get_range(this.context.version),
-                message: `Package ${this.context.name.value}-${this.context.version.value} is vulnerable:\n-${cves}`,
+                message: `Package ${this.context.name.value}-${this.context.version.value} is vulnerable:\n- ${cves}`,
                 source: 'Component Analysis'
             }]
         } else {

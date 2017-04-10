@@ -15,7 +15,7 @@ import { DependencyCollector, IDependencyCollector, IDependency } from './collec
 import { EmptyResultEngine, CryptoEngine, LicenseEngine, SecurityEngine, DiagnosticsPipeline } from './consumers';
 
 const url = require('url');
-const http = require('http');
+const https = require('https');
 const request = require('request');
 
 /*
@@ -165,7 +165,7 @@ class AnalysisConfig
     home_dir:           string;
 
     constructor() {
-        this.server_url = 'http://ose-vm1.lab.eng.blr.redhat.com:32000/api/v1';
+        this.server_url = 'https://recommender.api.prod-preview.openshift.io/api/v1';
         this.forbidden_licenses = [];
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
@@ -250,9 +250,9 @@ let get_stack_metadata = (file_uri, context) => {
 
 let get_metadata = (ecosystem, name, version, cb) => {
     let part = [ecosystem, name, version].join('/');
-    let query = `${config.server_url}/analyses/${part}/`;
+    let query = `${config.server_url}/component-analyses/${part}/`;
 
-    http.get(query, function(res){
+    https.get(query, function(res){
         let body = '';
         res.on('data', function(chunk) { body += chunk; });
         res.on('end', function(){
