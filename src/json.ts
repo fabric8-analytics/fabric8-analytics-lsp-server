@@ -3,7 +3,6 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
-import * as fs from 'fs';
 import { Stream } from 'stream';
 /* Since the following modules are written in regular JS we can't use TS's import statement
    so we need to `require` those the JS way */

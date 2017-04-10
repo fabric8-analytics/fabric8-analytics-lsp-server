@@ -7,12 +7,12 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
-	InitializeParams, InitializeResult, CodeLens, CodeLensRequest, CodeLensParams
+	TextDocuments, Diagnostic,
+	InitializeResult, CodeLens
 } from 'vscode-languageserver';
-import { stream_from_string, get_range } from './utils';
-import { DependencyCollector, IDependencyCollector, IDependency } from './collector';
-import { EmptyResultEngine, CryptoEngine, LicenseEngine, SecurityEngine, DiagnosticsPipeline } from './consumers';
+import { stream_from_string } from './utils';
+import { DependencyCollector, IDependency } from './collector';
+import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline } from './consumers';
 
 const url = require('url');
 const https = require('https');
@@ -175,78 +175,15 @@ class AnalysisConfig
 let config: AnalysisConfig = new AnalysisConfig();
 let files: IAnalysisFiles = new AnalysisFiles();
 let server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
-let stack_analysis_requests: Map<String, String> = new Map<String, String>();
-let stack_analysis_responses: Map<String, String> = new Map<String, String>();
-
 let rc_file = path.join(config.home_dir, '.analysis_rc');
 if (fs.existsSync(rc_file)) {
     let rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
     if ('server' in rc) {
         config.server_url = `${rc.server}/api/v1`;
     }
-    if ('forbidden_licenses' in rc) {
-        config.forbidden_licenses = config.forbidden_licenses.concat(rc.forbidden_licenses);
-    }
-    if ('no_crypto' in rc) {
-        config.no_crypto = rc.no_crypto;
-    }
 }
 
-let DiagnosticsEngines = [LicenseEngine, SecurityEngine, EmptyResultEngine];
-if (config.no_crypto) {
-    DiagnosticsEngines.push(CryptoEngine);
-}
-
-let stack_collector = (file_uri: String, id: String) => {
-    let query = `${config.server_url}/stack-analyses/${id}`;
-
-    request.get(query, (err, httpResponse, body) => {
-        let data = JSON.parse(body);
-        if (data.status == 'success') {
-            stack_analysis_responses.set(file_uri, data);
-        } else {
-            // TODO: Give Stack Analysis API a little bit more sanity
-            // right now it returns (202, '{"error": ...}') when Analysis
-            // is in progress 
-            if (httpResponse.statusCode == 202) {
-                setTimeout(() => { stack_collector(file_uri, id) }, 10000)
-            }
-        }
-    });
-}
-
-let get_stack_metadata = (file_uri, context) => {
-    /* request had already been sent */
-    if (file_uri in stack_analysis_requests) {
-        return;
-    }
-
-    let query = `${config.server_url}/stack-analyses/`;
-
-    let form_data = {
-        'manifest[]': [{
-            value: context.manifest, 
-            options: {
-                filename: 'package.json', 
-                contentType: 'application/json'
-            }
-        }],
-        origin: context.origin || 'lsp'
-    };
-
-    request.post({url: query, formData: form_data}, (err, httpResponse, body) => {
-        if (!err) {
-            let resp = JSON.parse(body);
-            if (resp.error === undefined && resp.status == 'success') {
-                stack_analysis_requests[file_uri] = resp.id;
-                setTimeout(() => { stack_collector(file_uri, resp.id) }, 10000);
-            }
-        } else {
-            // abort, retry, ignore, fail?
-            //_LOG(`err: ${err}`)
-        }
-    });
-};
+let DiagnosticsEngines = [SecurityEngine, EmptyResultEngine];
 
 let get_metadata = (ecosystem, name, version, cb) => {
     let part = [ecosystem, name, version].join('/');
@@ -270,8 +207,6 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
     /* Convert from readable stream into string */
     let stream = stream_from_string(contents);
     let collector = new DependencyCollector();
-    /* Go through all the dependencies */
-    get_stack_metadata(uri, {manifest: contents});
 
     collector.collect(stream).then((deps) => {
         let diagnostics = [];
