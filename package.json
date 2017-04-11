@@ -10,7 +10,8 @@
 	"dependencies": {
 		"vscode-languageserver": "^2.2.0",
 		"stream-json": "0.4.2",
-		"request": "^2.79.0"
+		"request": "^2.79.0",
+		"xml2object": "0.1.2"
 	},
 	"devDependencies": {
 		"typescript": "^2.1.4"

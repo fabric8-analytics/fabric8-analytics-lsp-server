@@ -11,7 +11,7 @@ import {
 	InitializeResult, CodeLens
 } from 'vscode-languageserver';
 import { stream_from_string } from './utils';
-import { DependencyCollector, IDependency } from './collector';
+import { DependencyCollector, IDependency, PomXmlDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline } from './consumers';
 
 const url = require('url');
@@ -216,6 +216,29 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
         });
         for (let dependency of deps) {
             get_metadata('npm', dependency.name.value, dependency.version.value, (response) => {
+                if (response != null) {
+                    let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
+                    pipeline.run(response);
+                }
+                aggregator.aggregate(dependency);
+            });
+        }
+    });
+});
+
+files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
+    /* Convert from readable stream into string */
+    let stream = stream_from_string(contents);
+    let collector = new PomXmlDependencyCollector();
+
+    collector.collect(stream).then((deps) => {
+        let diagnostics = [];
+        /* Aggregate asynchronous requests and send the diagnostics at once */
+        let aggregator = new Aggregator(deps, () => {
+            connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
+        });
+        for (let dependency of deps) {
+            get_metadata('maven', dependency.name.value, dependency.version.value, (response) => {
                 if (response != null) {
                     let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
                     pipeline.run(response);

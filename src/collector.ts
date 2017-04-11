@@ -3,7 +3,8 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
-import { StreamingParser, IJsonParserScope, IPosition, IKeyValueEntry } from './json';
+import { StreamingParser, IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './json';
+import * as Xml2Object from 'xml2object';
 import { Stream } from 'stream';
 
 /* By default the collector is going to process these dependency keys */
@@ -68,4 +69,64 @@ class DependencyCollector implements IDependencyCollector {
     }
 }
 
-export { IDependencyCollector, DependencyCollector, IPositionedString, IDependency };
+class NaivePomXmlSaxParser {
+    constructor(stream: Stream) {
+        this.stream = stream;
+        this.parser = this.createParser()
+    }
+
+    stream: Stream;
+    parser: Xml2Object;
+    dependencies: Array<IDependency> = [];
+    isDependency: boolean = false;
+    versionStartLine: number = 0;
+    versionStartColumn: number = 0;
+
+    createParser(): Xml2Object {
+        let parser = new Xml2Object([ "dependency" ], {strict: true, trackPosition: true});
+        let deps = this.dependencies;
+        parser.on("object", function (name, obj) {
+            if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version")) {
+                let ga = `${obj["groupId"]}:${obj["artifactId"]}`;
+                let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
+                entry.value = new Variant(ValueType.String, obj["version"]);
+                entry.value_position = {line: this.versionStartLine, column: this.versionStartColumn};
+                let dep: IDependency = new Dependency(entry);
+                deps.push(dep)
+            }
+        });
+        parser.saxStream.on("opentag", function (node) {
+            if (node.name == "dependency") {
+                this.isDependency = true;
+            }
+            if (this.isDependency && node.name == "version") {
+                this.versionStartLine = parser.saxStream._parser.line;
+                this.versionStartColumn = parser.saxStream._parser.column;
+            }
+        });
+        parser.saxStream.on("closetag", function (nodeName) {
+            // TODO: nested deps!
+            if (nodeName == "dependency") {
+                this.isDependency = false;
+            }
+        });
+        return parser
+    }
+
+    parse(): Array<IDependency> {
+        this.stream.pipe(this.parser.saxStream);
+        return this.dependencies
+    }
+}
+
+class PomXmlDependencyCollector {
+    constructor(public classes: Array<string> = ["dependencies"]) {}
+
+    async collect(file: Stream): Promise<Array<IDependency>> {
+        let parser = new NaivePomXmlSaxParser(file);
+        let dependencies: Array<IDependency> = parser.parse();
+        return dependencies;
+    }
+}
+
+export { IDependencyCollector, DependencyCollector, PomXmlDependencyCollector, IPositionedString, IDependency };

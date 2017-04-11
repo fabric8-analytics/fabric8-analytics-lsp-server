@@ -199,4 +199,4 @@ class StreamingParser implements IStreamingParser {
   }
 };
 
-export { StreamingParser, IJsonParserScope, IPosition, IKeyValueEntry };
+export { StreamingParser, IJsonParserScope, IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType };
