@@ -206,7 +206,7 @@ let get_metadata = (ecosystem, name, version, cb) => {
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
     /* Convert from readable stream into string */
     let stream = stream_from_string(contents);
-    let collector = new DependencyCollector();
+    let collector = new DependencyCollector(null);
 
     collector.collect(stream).then((deps) => {
         let diagnostics = [];

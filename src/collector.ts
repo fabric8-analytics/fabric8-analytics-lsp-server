@@ -47,7 +47,9 @@ class Dependency implements IDependency {
 /* Process entries found in the JSON files and collect all dependency
  * related information */
 class DependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = DefaultClasses) {}
+    constructor(public classes) {
+        this.classes = classes || DefaultClasses
+    }
 
     async collect(file: Stream): Promise<Array<IDependency>> {
         let parser = new StreamingParser(file);
