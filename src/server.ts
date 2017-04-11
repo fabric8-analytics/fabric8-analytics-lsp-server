@@ -183,7 +183,7 @@ if (fs.existsSync(rc_file)) {
     }
 }
 
-let DiagnosticsEngines = [SecurityEngine, EmptyResultEngine];
+let DiagnosticsEngines = [SecurityEngine];
 
 let get_metadata = (ecosystem, name, version, cb) => {
     let part = [ecosystem, name, version].join('/');
