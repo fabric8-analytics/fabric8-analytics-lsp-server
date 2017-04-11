@@ -87,12 +87,15 @@ class NaivePomXmlSaxParser {
     createParser(): Xml2Object {
         let parser = new Xml2Object([ "dependency" ], {strict: true, trackPosition: true});
         let deps = this.dependencies;
+        let versionLine = this.versionStartLine;
+        let versionColumn = this.versionStartColumn;
+
         parser.on("object", function (name, obj) {
             if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version")) {
                 let ga = `${obj["groupId"]}:${obj["artifactId"]}`;
                 let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
                 entry.value = new Variant(ValueType.String, obj["version"]);
-                entry.value_position = {line: this.versionStartLine, column: this.versionStartColumn};
+                entry.value_position = {line: versionLine, column: versionColumn};
                 let dep: IDependency = new Dependency(entry);
                 deps.push(dep)
             }
@@ -102,8 +105,8 @@ class NaivePomXmlSaxParser {
                 this.isDependency = true;
             }
             if (this.isDependency && node.name == "version") {
-                this.versionStartLine = parser.saxStream._parser.line;
-                this.versionStartColumn = parser.saxStream._parser.column;
+                versionLine = parser.saxStream._parser.line + 1;
+                versionColumn = parser.saxStream._parser.column +1;
             }
         });
         parser.saxStream.on("closetag", function (nodeName) {
