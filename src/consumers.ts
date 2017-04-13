@@ -82,13 +82,18 @@ class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
 class AnalysisConsumer implements IConsumer
 {
     binding: IBindingDescriptor;
+    changeToBinding: IBindingDescriptor;
     item: any;
+    changeTo: string = null;
     constructor(public config: any){}
     consume(data: any): boolean {
         if (this.binding != null) {
             this.item = bind_object(data, this.binding);
         } else {
             this.item = data;
+        }
+        if (this.changeToBinding != null) {
+            this.changeTo = bind_object(data, this.changeToBinding);
         }
         return this.item != null;
     }
@@ -120,22 +125,28 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
 /* Report CVEs in found dependencies */
 class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 {
-    constructor(public context: IDependency, config: any){
+    constructor(public context: IDependency, config: any) {
         super(config);
         this.binding = {path: ['result', 'recommendation', 'component-analyses', 'cve']};
+        /* recommendation to use a different version */
+        this.changeToBinding = {path: ['result', 'recommendation', 'change_to']};
     }
 
     produce(): Diagnostic[] {
         if (this.item.length > 0) {
-            let cveList = []
+            let cveList = [];
             for (let cve of this.item) {
                 cveList.push(cve['id'])
             }
-            let cves = cveList.join('\n-');
+            let cves = cveList.join(' ');
+            let recommendation = "";
+            if (this.changeTo != null) {
+                recommendation = " Recommendation: use version " + this.changeTo
+            }
             return [{
                 severity: DiagnosticSeverity.Error,
                 range: get_range(this.context.version),
-                message: `Package ${this.context.name.value}-${this.context.version.value} is vulnerable:\n- ${cves}`,
+                message: `Package ${this.context.name.value}-${this.context.version.value} is vulnerable: ${cves}.${recommendation}`,
                 source: 'Component Analysis'
             }]
         } else {
