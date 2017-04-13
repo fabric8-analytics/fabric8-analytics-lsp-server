@@ -163,7 +163,7 @@ class StreamingParser implements IStreamingParser {
   }
 
   async parse(): Promise<IJsonParserScope> {
-    let scope = new Scope(), parser = new Parser(), stream = new Streamer(), emitter = new Emitter(), 
+    let scope = new Scope(), parser = new Parser(), stream = new Streamer(), emitter = new Emitter(),
         packer = new Packer({packKeys: true, packStrings: true, packNumbers: true});
     let root = scope;
     /* In the following code we observe two event streams, one defined by parser
@@ -179,6 +179,9 @@ class StreamingParser implements IStreamingParser {
       if (scope.marker != TokenMarker.Invalid) {
         scope.consume(x);
       }
+    });
+    parser.on("error", function (e) {
+      // the JSON document doesn't have to be well-formed, that's fine
     });
 
     emitter.on("startKey", function(/*e*/) { scope.marker = TokenMarker.Key; });

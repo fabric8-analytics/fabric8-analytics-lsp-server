@@ -115,11 +115,19 @@ class NaivePomXmlSaxParser {
                 this.isDependency = false;
             }
         });
+        parser.on("error", function (e) {
+            // the XML document doesn't have to be well-formed, that's fine
+            parser.error = null;
+        });
         return parser
     }
 
     parse(): Array<IDependency> {
-        this.stream.pipe(this.parser.saxStream);
+        try {
+            this.stream.pipe(this.parser.saxStream);
+        } catch (e) {
+            console.error(e.message)
+        }
         return this.dependencies
     }
 }
