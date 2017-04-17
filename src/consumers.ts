@@ -5,7 +5,7 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { Diagnostic, DiagnosticSeverity } from 'vscode-languageserver'
+import { Diagnostic, DiagnosticSeverity, Command } from 'vscode-languageserver'
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor
@@ -139,20 +139,30 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                 cveList.push(cve['id'])
             }
             let cves = cveList.join(' ');
-            let recommendation = "";
-            if (this.changeTo != null) {
-                recommendation = " Recommendation: use version " + this.changeTo
-            }
-            return [{
+
+            let diagnostic = {
                 severity: DiagnosticSeverity.Error,
                 range: get_range(this.context.version),
-                message: `Package ${this.context.name.value}-${this.context.version.value} is vulnerable: ${cves}.${recommendation}`,
+                message: `Package ${this.context.name.value}-${this.context.version.value} is vulnerable: ${cves}`,
                 source: 'Component Analysis'
-            }]
+            };
+
+            // TODO: this can be done lazily
+            if (this.changeTo != null) {
+                let command = {
+                    title: "Switch to recommended version " + this.changeTo,
+                    command: "lsp.applyTextEdit",
+                    arguments: [{range: diagnostic.range, newText: this.changeTo}]
+                };
+                codeActionsMap[diagnostic.message] = command
+            }
+            return [diagnostic]
         } else {
             return [];
         }
     }
 };
 
-export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine };
+let codeActionsMap = new Map<string, Command>();
+
+export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap };

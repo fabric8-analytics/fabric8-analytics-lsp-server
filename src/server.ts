@@ -7,12 +7,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-	TextDocuments, Diagnostic,
-	InitializeResult, CodeLens
+	TextDocuments, Diagnostic, InitializeResult, CodeLens, Command, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
 import { stream_from_string } from './utils';
 import { DependencyCollector, IDependency, PomXmlDependencyCollector } from './collector';
-import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline } from './consumers';
+import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 
 const url = require('url');
 const https = require('https');
@@ -46,7 +45,8 @@ connection.onInitialize((params): InitializeResult => {
     workspaceRoot = params.rootPath;
     return {
         capabilities: {
-            textDocumentSync: documents.syncKind
+            textDocumentSync: documents.syncKind,
+            codeActionProvider: true
         }
     }
 });
@@ -260,6 +260,17 @@ connection.onDidChangeTextDocument((params) => {
 
 connection.onDidOpenTextDocument((params) => {
     server.handle_file_event(params.textDocument.uri, params.textDocument.text);
+});
+
+connection.onCodeAction((params, token): Command[] => {
+    let commands: Command[] = [];
+    for (let diagnostic of params.context.diagnostics) {
+        let command = codeActionsMap[diagnostic.message];
+        if (command != null) {
+            commands.push(command)
+        }
+    }
+    return commands
 });
 
 connection.listen();
