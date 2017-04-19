@@ -154,6 +154,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                     command: "lsp.applyTextEdit",
                     arguments: [{range: diagnostic.range, newText: this.changeTo}]
                 };
+                diagnostic.message += ". Recommendation: use version " + this.changeTo;
                 codeActionsMap[diagnostic.message] = command
             }
             return [diagnostic]
