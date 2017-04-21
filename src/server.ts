@@ -249,13 +249,19 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
     });
 });
 
+let checkDelay;
 connection.onDidSaveTextDocument((params) => {
+    clearTimeout(checkDelay);
     server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
 });
 
 connection.onDidChangeTextDocument((params) => {
     /* Update internal state for code lenses */
     server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
+    clearTimeout(checkDelay);
+    checkDelay = setTimeout(() => {
+        server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri])
+    }, 500)
 });
 
 connection.onDidOpenTextDocument((params) => {
@@ -263,6 +269,7 @@ connection.onDidOpenTextDocument((params) => {
 });
 
 connection.onCodeAction((params, token): Command[] => {
+    clearTimeout(checkDelay);
     let commands: Command[] = [];
     for (let diagnostic of params.context.diagnostics) {
         let command = codeActionsMap[diagnostic.message];
@@ -271,6 +278,10 @@ connection.onCodeAction((params, token): Command[] => {
         }
     }
     return commands
+});
+
+connection.onDidCloseTextDocument((params) => {
+    clearTimeout(checkDelay);
 });
 
 connection.listen();
