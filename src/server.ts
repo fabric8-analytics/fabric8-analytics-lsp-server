@@ -185,7 +185,16 @@ if (fs.existsSync(rc_file)) {
 
 let DiagnosticsEngines = [SecurityEngine];
 
+// TODO: in-memory caching only, this needs to be more robust
+let metadataCache = new Map();
+
 let get_metadata = (ecosystem, name, version, cb) => {
+    let cacheKey = ecosystem + " " + name + " " + version;
+    let metadata = metadataCache[cacheKey];
+    if (metadata != null) {
+        cb(metadata);
+        return
+    }
     let part = [ecosystem, name, version].join('/');
     let query = `${config.server_url}/component-analyses/${part}/`;
 
@@ -195,6 +204,7 @@ let get_metadata = (ecosystem, name, version, cb) => {
         res.on('end', function(){
             if (this.statusCode == 200 || this.statusCode == 202) {
                 let response = JSON.parse(body);
+                metadataCache[cacheKey] = response;
                 cb(response);
             } else {
                 cb(null);
