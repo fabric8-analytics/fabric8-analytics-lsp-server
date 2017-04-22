@@ -16,6 +16,12 @@ import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap 
 const url = require('url');
 const https = require('https');
 const request = require('request');
+const winston = require('winston');
+
+ winston.level = 'debug';
+ winston.add(winston.transports.File, { filename: 'bayesian.log' });
+ winston.remove(winston.transports.Console);
+ winston.info('Starting Bayesian');
 
 /*
 let log_file = fs.openSync('file_log.log', 'w');
@@ -157,7 +163,7 @@ class Aggregator implements IAggregator
     }
 };
 
-class AnalysisConfig 
+class AnalysisConfig
 {
     server_url:         string;
     forbidden_licenses: Array<string>;
@@ -188,13 +194,15 @@ let DiagnosticsEngines = [SecurityEngine];
 let get_metadata = (ecosystem, name, version, cb) => {
     let part = [ecosystem, name, version].join('/');
     let query = `${config.server_url}/component-analyses/${part}/`;
-
+    winston.info('get ' + query);
     https.get(query, function(res){
         let body = '';
         res.on('data', function(chunk) { body += chunk; });
         res.on('end', function(){
+            winston.info('status ' + this.statusCode);
             if (this.statusCode == 200 || this.statusCode == 202) {
                 let response = JSON.parse(body);
+                winston.debug('response ' + response);
                 cb(response);
             } else {
                 cb(null);
