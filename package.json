@@ -1,7 +1,7 @@
 {
 	"name": "component-analysis-lsp-server",
 	"description": "LSP Server for Component Analysis",
-	"version": "0.0.2",
+	"version": "0.0.1",
 	"author": "Pavel Odvody",
 	"license": "MIT",
 	"engines": {
