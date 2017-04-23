@@ -198,12 +198,13 @@ let get_metadata = (ecosystem, name, version, cb) => {
     let cacheKey = ecosystem + " " + name + " " + version;
     let metadata = metadataCache[cacheKey];
     if (metadata != null) {
+        winston.info('cache hit for ' + cacheKey);
         cb(metadata);
         return
     }
     let part = [ecosystem, name, version].join('/');
     let query = `${config.server_url}/component-analyses/${part}/`;
-    winston.info('get ' + query);
+    winston.debug('get ' + query);
     https.get(query, function(res){
         let body = '';
         res.on('data', function(chunk) { body += chunk; });
