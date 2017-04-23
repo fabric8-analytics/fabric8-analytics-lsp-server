@@ -19,6 +19,6 @@
 	},
 	"scripts": {
 		"build": "node node_modules/typescript/bin/tsc -p .",
-		"dist": "cp -r node_modules/ output/ && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ ."
+		"dist": "cp -r node_modules/ output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ ."
 	}
 }
