@@ -171,7 +171,7 @@ class AnalysisConfig
     home_dir:           string;
 
     constructor() {
-        this.server_url = 'https://recommender.api.prod-preview.openshift.io/api/v1';
+        this.server_url = 'https://recommender.api.openshift.io/api/v1';
         this.forbidden_licenses = [];
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
