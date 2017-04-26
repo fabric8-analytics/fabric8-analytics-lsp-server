@@ -166,12 +166,15 @@ class Aggregator implements IAggregator
 class AnalysisConfig
 {
     server_url:         string;
+    api_token:          string;
     forbidden_licenses: Array<string>;
     no_crypto:          boolean;
     home_dir:           string;
 
     constructor() {
+        // TODO: this needs to be configurable
         this.server_url = 'https://recommender.api.openshift.io/api/v1';
+        this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
         this.forbidden_licenses = [];
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
@@ -203,9 +206,12 @@ let get_metadata = (ecosystem, name, version, cb) => {
         return
     }
     let part = [ecosystem, name, version].join('/');
-    let query = `${config.server_url}/component-analyses/${part}/`;
-    winston.debug('get ' + query);
-    https.get(query, function(res){
+
+    const options = url.parse(config.server_url);
+    options['path'] += `/component-analyses/${part}/`;
+    options['headers'] = {'Authorization': 'Bearer ' + config.api_token};
+    winston.debug('get ' + options['host'] + options['path']);
+    https.get(options, function(res){
         let body = '';
         res.on('data', function(chunk) { body += chunk; });
         res.on('end', function(){
