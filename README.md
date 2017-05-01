@@ -11,4 +11,4 @@ npm run-script build
 
 ## License
 
-MIT
+Apache-2.0
