@@ -173,7 +173,7 @@ class AnalysisConfig
 
     constructor() {
         // TODO: this needs to be configurable
-        this.server_url = 'https://recommender.api.openshift.io/api/v1';
+        this.server_url = process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
         this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
         this.forbidden_licenses = [];
         this.no_crypto = false;
