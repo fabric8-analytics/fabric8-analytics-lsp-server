@@ -308,6 +308,14 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
                 }
                 aggregator.aggregate(dependency);
             });
+
+            sentiment_api_call('maven', dependency.name.value, dependency.version.value, (response) => {
+                if (response != null) {
+                    let pipeline = new DiagnosticsPipelineSenti(DiagnosticsEnginesSenti, dependency, config, diagnostics);
+                    pipeline.run(response);
+                }
+                aggregator.aggregate(dependency);
+            });
         }
     });
 });
