@@ -13,8 +13,11 @@ import { stream_from_string } from './utils';
 import { DependencyCollector, IDependency, PomXmlDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 
+import { EmptyResultEngineSenti, SecurityEngineSenti, DiagnosticsPipelineSenti, codeActionsMapSenti } from './sentiment';
+
 const url = require('url');
 const https = require('https');
+const http = require('http');
 const request = require('request');
 const winston = require('winston');
 
@@ -173,7 +176,7 @@ class AnalysisConfig
 
     constructor() {
         // TODO: this needs to be configurable
-        this.server_url = 'https://recommender.api.openshift.io/api/v1';
+        this.server_url = process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
         this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
         this.forbidden_licenses = [];
         this.no_crypto = false;
@@ -193,6 +196,8 @@ if (fs.existsSync(rc_file)) {
 }
 
 let DiagnosticsEngines = [SecurityEngine];
+
+let DiagnosticsEnginesSenti = [SecurityEngineSenti];
 
 // TODO: in-memory caching only, this needs to be more robust
 let metadataCache = new Map();
@@ -228,6 +233,30 @@ let get_metadata = (ecosystem, name, version, cb) => {
     });
 };
 
+let sentiment_api_call = (ecosystem, name, version, cb) =>{
+
+    http.get("http://sentiment-http-sentiment-score.dev.rdu2c.fabric8.io/api/v1.0/getsentimentanalysis/?package="+name, function(res){
+        let body = '';
+        res.on('data', function(chunk) { 
+            body += chunk;
+        });
+        res.on('end', function(){
+            winston.info('status ' + this.statusCode);
+            if (this.statusCode == 200 || this.statusCode == 202) {
+                let response = JSON.parse(body);
+                winston.debug('response ' + response);
+                //metadataCache[cacheKey] = response;
+                cb(response);
+            } else {
+                cb(null);
+            }
+        });
+    }).on('error', function(e) {
+        winston.info("Got error: " + e.message);
+    });
+}
+
+
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
     /* Convert from readable stream into string */
     let stream = stream_from_string(contents);
@@ -247,6 +276,15 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
                 }
                 aggregator.aggregate(dependency);
             });
+            //TODO :: sentiment analysis
+            sentiment_api_call('npm', dependency.name.value, dependency.version.value, (response) => {
+                if (response != null) {
+                    let pipeline = new DiagnosticsPipelineSenti(DiagnosticsEnginesSenti, dependency, config, diagnostics);
+                    pipeline.run(response);
+                }
+                aggregator.aggregate(dependency);
+            });
+
         }
     });
 });
@@ -283,6 +321,7 @@ connection.onDidSaveTextDocument((params) => {
 connection.onDidChangeTextDocument((params) => {
     /* Update internal state for code lenses */
     server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
+    server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri])
     clearTimeout(checkDelay);
     checkDelay = setTimeout(() => {
         server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri])
