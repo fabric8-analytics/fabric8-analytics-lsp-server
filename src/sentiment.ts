@@ -90,10 +90,10 @@ class AnalysisConsumer implements IConsumer
         // if (this.binding != null) {
         //     this.item = bind_object(data, this.binding);
         // } else {
-            if(data && data.sentiment_details && data.sentiment_details.hasOwnProperty("overall_sentiment_score"))
+            if(data && data.sentiment_details && data.sentiment_details.hasOwnProperty("latest_comment") && data.sentiment_details.latest_comment != '')
             {
             this.item = [];
-            this.item.push(data.sentiment_details.overall_sentiment_score);
+            this.item.push(data.sentiment_details.latest_comment);
             }
         // }
         // if (this.changeToBinding != null) {
@@ -145,9 +145,9 @@ class SecurityEngineSenti extends AnalysisConsumer implements DiagnosticProducer
             let cves = scoreList.join(' ');
 
             let diagnostic = {
-                severity: DiagnosticSeverity.Error,
+                severity: DiagnosticSeverity.Information,
                 range: get_range(this.context.version),
-                message: `Package ${this.context.name.value}-${this.context.version.value} is having sentiment score of: ${cves}`,
+                message: `Package ${this.context.name.value}-${this.context.version.value} is having latest comment as: ${cves}`,
                 source: 'Sentiment Analysis'
             };
 
