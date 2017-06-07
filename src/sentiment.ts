@@ -87,18 +87,26 @@ class AnalysisConsumer implements IConsumer
     changeTo: string = null;
     constructor(public config: any){}
     consume(data: any): boolean {
-        // if (this.binding != null) {
-        //     this.item = bind_object(data, this.binding);
-        // } else {
-            if(data && data.sentiment_details && data.sentiment_details.hasOwnProperty("latest_comment") && data.sentiment_details.latest_comment != '')
+            if(data && data.sentiment_details && data.sentiment_details.hasOwnProperty("latest_comment") && 
+            data.sentiment_details.latest_comment != '' && data.sentiment_details.hasOwnProperty("overall_sentiment_score") &&
+            data.sentiment_details.overall_sentiment_score != 0)
             {
-            this.item = [];
-            this.item.push(data.sentiment_details.latest_comment);
+                let sentiCommentObj = {
+                    "sentiment" : "",
+                    "comment" : ""
+                };
+                if(Number(data.sentiment_details.overall_sentiment_score.trim())>0){
+                    sentiCommentObj.sentiment = "Postive";
+                } else if(Number(data.sentiment_details.overall_sentiment_score.trim())<0){
+                    sentiCommentObj.sentiment = "Negative";
+                } else{
+                    sentiCommentObj.sentiment = "Neutral";
+                }
+                sentiCommentObj['timestamp'] = data.sentiment_details.latest_comment_time;
+                sentiCommentObj.comment = data.sentiment_details.latest_comment;
+                this.item = [];
+                this.item.push(sentiCommentObj);
             }
-        // }
-        // if (this.changeToBinding != null) {
-        //     this.changeTo = bind_object(data, this.changeToBinding);
-        // }
         return this.item != null;
     }
 };
@@ -118,7 +126,7 @@ class EmptyResultEngineSenti extends AnalysisConsumer implements DiagnosticProdu
                 severity: DiagnosticSeverity.Information,
                 range: get_range(this.context.version),
                 message: `Package ${this.context.name.value}-${this.context.version.value} - analysis is pending`,
-                source: 'Component Analysis'
+                source: 'Sentiment Analysis'
             }]
         } else {
             return [];
@@ -131,26 +139,17 @@ class SecurityEngineSenti extends AnalysisConsumer implements DiagnosticProducer
 {
     constructor(public context: IDependency, config: any) {
         super(config);
-        this.binding = {path: ['result', 'recommendation', 'component-analyses', 'cve']};
-        /* recommendation to use a different version */
-        this.changeToBinding = {path: ['result', 'recommendation', 'change_to']};
     }
 
     produce(): Diagnostic[] {
         if (this.item.length > 0) {
-            let scoreList = [];
-            for (let score of this.item) {
-                scoreList.push(score)
-            }
-            let cves = scoreList.join(' ');
-
+            let sentimentData: Array<any> = this.item;
             let diagnostic = {
                 severity: DiagnosticSeverity.Information,
                 range: get_range(this.context.version),
-                message: `Package ${this.context.name.value}-${this.context.version.value} is having latest comment as: ${cves}`,
+                message: `Sentiment : ${sentimentData[0].sentiment} , Last comment as on [${sentimentData[0]['timestamp']}]: ${sentimentData[0].comment}`,
                 source: 'Sentiment Analysis'
             };
-
             return [diagnostic]
         } else {
             return [];

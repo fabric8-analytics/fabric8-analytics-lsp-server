@@ -218,9 +218,12 @@ let get_metadata = (ecosystem, name, version, cb) => {
     winston.debug('get ' + options['host'] + options['path']);
     https.get(options, function(res){
         let body = '';
-        res.on('data', function(chunk) { body += chunk; });
+        res.on('data', function(chunk) { 
+            winston.debug('chunk ' + chunk);
+            body += chunk; 
+        });
         res.on('end', function(){
-            winston.info('status ' + this.statusCode);
+            winston.info('status recommend' + this.statusCode);
             if (this.statusCode == 200 || this.statusCode == 202) {
                 let response = JSON.parse(body);
                 winston.debug('response ' + response);
@@ -230,21 +233,24 @@ let get_metadata = (ecosystem, name, version, cb) => {
                 cb(null);
             }
         });
+    }).on('error', function(e) {
+        winston.info("Got error: " + e.message);
     });
 };
 
 let sentiment_api_call = (ecosystem, name, version, cb) =>{
-
+    winston.debug("get sentiment"+name);
     http.get("http://sentiment-http-sentiment-score.dev.rdu2c.fabric8.io/api/v1.0/getsentimentanalysis/?package="+name, function(res){
         let body = '';
         res.on('data', function(chunk) { 
+            winston.debug('chunk ' + chunk);
             body += chunk;
         });
         res.on('end', function(){
-            winston.info('status ' + this.statusCode);
+            winston.info('status sentiment ' + this.statusCode);
             if (this.statusCode == 200 || this.statusCode == 202) {
                 let response = JSON.parse(body);
-                winston.debug('response ' + response);
+                winston.debug('response sentiment' + response);
                 //metadataCache[cacheKey] = response;
                 cb(response);
             } else {
@@ -252,7 +258,7 @@ let sentiment_api_call = (ecosystem, name, version, cb) =>{
             }
         });
     }).on('error', function(e) {
-        winston.info("Got error: " + e.message);
+        winston.info("Got error sentiment: " + e.message);
     });
 }
 
@@ -309,6 +315,8 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
                 aggregator.aggregate(dependency);
             });
 
+            winston.info('on file ');
+
             sentiment_api_call('maven', dependency.name.value, dependency.version.value, (response) => {
                 if (response != null) {
                     let pipeline = new DiagnosticsPipelineSenti(DiagnosticsEnginesSenti, dependency, config, diagnostics);
@@ -322,11 +330,13 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
 
 let checkDelay;
 connection.onDidSaveTextDocument((params) => {
+    winston.debug('on save ');
     clearTimeout(checkDelay);
     server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
 });
 
 connection.onDidChangeTextDocument((params) => {
+    winston.info('on change ');
     /* Update internal state for code lenses */
     server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
     server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri])
@@ -337,6 +347,7 @@ connection.onDidChangeTextDocument((params) => {
 });
 
 connection.onDidOpenTextDocument((params) => {
+    winston.debug('on file open ');
     server.handle_file_event(params.textDocument.uri, params.textDocument.text);
 });
 
