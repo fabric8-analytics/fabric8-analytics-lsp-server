@@ -19,7 +19,7 @@ const request = require('request');
 const winston = require('winston');
 
  winston.level = 'debug';
- winston.add(winston.transports.File, { filename: 'bayesian.log' });
+ winston.add(winston.transports.File, { filename: '/home/user/che/ls-bayesian/bayesian.log' });
  winston.remove(winston.transports.Console);
  winston.info('Starting Bayesian');
 
