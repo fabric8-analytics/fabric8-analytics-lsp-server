@@ -10,7 +10,7 @@ import {
 	TextDocuments, Diagnostic, InitializeResult, CodeLens, Command, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
 import { stream_from_string } from './utils';
-import { DependencyCollector, IDependency, PomXmlDependencyCollector } from './collector';
+import { DependencyCollector, IDependency, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 
 const url = require('url');
@@ -264,6 +264,28 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
         });
         for (let dependency of deps) {
             get_metadata('maven', dependency.name.value, dependency.version.value, (response) => {
+                if (response != null) {
+                    let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
+                    pipeline.run(response);
+                }
+                aggregator.aggregate(dependency);
+            });
+        }
+    });
+});
+
+files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
+    let collector = new ReqDependencyCollector();
+
+    collector.collect(contents).then((deps) => {
+        let diagnostics = [];
+        /* Aggregate asynchronous requests and send the diagnostics at once */
+        let aggregator = new Aggregator(deps, () => {
+            connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
+        });
+        for (let dependency of deps) {
+            winston.info('python cmp name'+ dependency.name.value);
+            get_metadata('pypi', dependency.name.value, dependency.version.value, (response) => {
                 if (response != null) {
                     let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
                     pipeline.run(response);
