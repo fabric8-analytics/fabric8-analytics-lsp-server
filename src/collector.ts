@@ -78,11 +78,9 @@ class NaivePyParser {
     }
 
     objSam: any;
-    parser: Xml2Object;
+    parser: any;
     dependencies: Array<IDependency> = [];
     isDependency: boolean = false;
-    versionStartLine: number = 0;
-    versionStartColumn: number = 0;
 
     createPyParser(): any {
         let deps = this.dependencies;
