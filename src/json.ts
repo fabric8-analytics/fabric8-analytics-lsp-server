@@ -72,7 +72,7 @@ interface IJsonParserScope {
   marker:     TokenMarker;
 
   add_scope(): IJsonParserScope;
-  consume<T>(token: IToken<T>): void;
+  consume<T>(token: IToken<any>): void;
   leave(): IJsonParserScope;
   print(): void;
 };
@@ -126,7 +126,7 @@ class Scope implements IJsonParserScope {
     return new_scope;
   }
 
-  consume(token: IToken<string>) {
+  consume(token: IToken<any>) {
     switch (this.marker) {
     case TokenMarker.Key:
       this.last = new KeyValueEntry(token.value, {line: token.line, column: token.pos});
