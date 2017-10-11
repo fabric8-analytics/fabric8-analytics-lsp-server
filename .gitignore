@@ -38,5 +38,7 @@ jspm_packages
 
 # Others
 .idea/
-ca-lsp-server.tar
 output/
+
+# generated tarball and publishing scripts
+target/
