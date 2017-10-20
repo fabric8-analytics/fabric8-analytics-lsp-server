@@ -5,10 +5,8 @@ npm install
 npm run-script build
 npm run dist
 
-gzip ca-lsp-server.tar
-
 # rename the tar.gz to the version in the pom so it's easier to deploy it 
-if [[ $1 ]]; then mv ca-lsp-server{,-${1}}.tar.gz; fi
+if [[ $1 ]]; then mv ca-lsp-server{,-${1}}.tar; fi
 
 # move the gz into a target/ folder
 mkdir -p target && mv *lsp-server*.tar* target/
