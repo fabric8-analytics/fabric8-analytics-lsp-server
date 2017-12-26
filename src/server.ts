@@ -15,6 +15,7 @@ import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap 
 
 const url = require('url');
 const https = require('https');
+const http = require('http');
 const request = require('request');
 const winston = require('winston');
 
@@ -218,21 +219,23 @@ let get_metadata = (ecosystem, name, version, cb) => {
     //options['path'] += `/component-analyses/${part}/`;
     options['headers'] = {'Authorization': 'Bearer ' + config.api_token};
     winston.debug('get ' + options['host'] + options['path']);
-    https.get(options, function(res){
-        let body = '';
-        res.on('data', function(chunk) { body += chunk; });
-        res.on('end', function(){
-            winston.info('status ' + this.statusCode);
-            if (this.statusCode == 200 || this.statusCode == 202) {
-                let response = JSON.parse(body);
-                winston.debug('response ' + response);
-                metadataCache[cacheKey] = response;
-                cb(response);
-            } else {
-                cb(null);
-            }
+    if(process.env.RECOMMENDER_API_URL){
+        http.get(options, function(res){
+            let body = '';
+            res.on('data', function(chunk) { body += chunk; });
+            res.on('end', function(){
+                winston.info('status ' + this.statusCode);
+                if (this.statusCode == 200 || this.statusCode == 202) {
+                    let response = JSON.parse(body);
+                    winston.debug('response ' + response);
+                    metadataCache[cacheKey] = response;
+                    cb(response);
+                } else {
+                    cb(null);
+                }
+            });
         });
-    });
+    }
 };
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
