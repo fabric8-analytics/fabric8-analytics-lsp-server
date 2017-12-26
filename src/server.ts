@@ -167,6 +167,7 @@ class AnalysisConfig
 {
     server_url:         string;
     api_token:          string;
+    three_scale_user_token:          string;
     forbidden_licenses: Array<string>;
     no_crypto:          boolean;
     home_dir:           string;
@@ -175,6 +176,7 @@ class AnalysisConfig
         // TODO: this needs to be configurable
         this.server_url = process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
         this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
+        this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || "";
         this.forbidden_licenses = [];
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
@@ -208,7 +210,12 @@ let get_metadata = (ecosystem, name, version, cb) => {
     let part = [ecosystem, name, version].join('/');
 
     const options = url.parse(config.server_url);
-    options['path'] += `/component-analyses/${part}/`;
+    if(config.three_scale_user_token){
+        options['path'] += `/component-analyses/${part}?user_key=${config.three_scale_user_token}`;
+    } else{
+        options['path'] += `/component-analyses/${part}/`;
+    }
+    //options['path'] += `/component-analyses/${part}/`;
     options['headers'] = {'Authorization': 'Bearer ' + config.api_token};
     winston.debug('get ' + options['host'] + options['path']);
     https.get(options, function(res){
