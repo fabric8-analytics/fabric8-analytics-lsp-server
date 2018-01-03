@@ -15,7 +15,6 @@ import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap 
 
 const url = require('url');
 const https = require('https');
-const http = require('http');
 const request = require('request');
 const winston = require('winston');
 
@@ -220,7 +219,7 @@ let get_metadata = (ecosystem, name, version, cb) => {
     options['headers'] = {'Authorization': 'Bearer ' + config.api_token};
     winston.debug('get ' + options['host'] + options['path']);
     if(process.env.RECOMMENDER_API_URL){
-        http.get(options, function(res){
+        https.get(options, function(res){
             let body = '';
             res.on('data', function(chunk) { body += chunk; });
             res.on('end', function(){
