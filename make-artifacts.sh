@@ -5,11 +5,20 @@ npm install
 npm run-script build
 npm run dist
 
-# rename the tar.gz to the version in the pom so it's easier to deploy it 
+# rename the tar to the version in the pom so it's easier to deploy it 
 if [[ $1 ]]; then mv ca-lsp-server{,-${1}}.tar; fi
 
-# move the gz into a target/ folder
+# move the tar into a target/ folder
 mkdir -p target && mv *lsp-server*.tar* target/
+
+# create a zip because downstream eclipse plugin build breaks when reading the tar
+pushd output >/dev/null
+if [[ ${1} ]]; then 
+  zip -9r ../target/ca-lsp-server-${1}.zip *
+else
+  zip -9r ../target/ca-lsp-server.zip *
+fi
+popd >/dev/null
 
 # to publish the generated tarball, pass in params:
 # eg., $0 0.0.6-SNAPSHOT USER@SERVER:BASE/PATH 99
