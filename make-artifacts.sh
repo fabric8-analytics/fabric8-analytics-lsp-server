@@ -31,7 +31,7 @@ if [[ $2 ]]; then
 	  curl -s -S -k --create-dirs -o ${SOURCEDIR}/${f} https://raw.githubusercontent.com/jbosstools/jbosstools-build-ci/master/${f} && \
 	  chmod +x ${SOURCEDIR}/${f}
 	done
-	${SOURCEDIR}/publish/rsync.sh -s ${SOURCEDIR} -i *lsp-server*.tar* \
+	${SOURCEDIR}/publish/rsync.sh -s ${SOURCEDIR} -i *lsp-server*.* \
 	  -DESTINATION ${DESTINATION} -k 4 -l 0 -a 4 --no-regen-metadata -BUILD_NUMBER ${BUILD_NUMBER} \
 	  -t oxygen/snapshots/builds/jbosstools-fabric8analytics-lsp-server_master/${BUILD_TIMESTAMP}-B${BUILD_NUMBER}/
 fi
