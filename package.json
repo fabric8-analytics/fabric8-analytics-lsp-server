@@ -1,7 +1,7 @@
 {
   "name": "component-analysis-lsp-server",
   "description": "LSP Server for Component Analysis",
-  "version": "0.0.4",
+  "version": "0.0.8",
   "author": "Pavel Odvody",
   "contributors": [
     {
@@ -12,6 +12,14 @@
   "license": "Apache-2.0",
   "engines": {
     "node": "*"
+  },
+  "keywords": [
+    "fabric8-analytics",
+    "LSP"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fabric8-analytics/fabric8-analytics-lsp-server.git"
   },
   "dependencies": {
     "request": "^2.79.0",
@@ -25,6 +33,6 @@
   },
   "scripts": {
     "build": "node node_modules/typescript/bin/tsc -p .",
-    "dist": "cp -r node_modules output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ ."
+    "dist": "cp -r node_modules output/ && cp ./package.json output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ ."
   }
 }

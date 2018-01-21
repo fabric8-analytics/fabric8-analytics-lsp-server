@@ -52,7 +52,7 @@ connection.onInitialize((params): InitializeResult => {
     return {
         capabilities: {
             textDocumentSync: documents.syncKind,
-            codeActionProvider: true
+            codeActionProvider: false
         }
     }
 });
