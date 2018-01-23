@@ -235,7 +235,7 @@ let get_metadata = (ecosystem, name, version, cb) => {
             });
         });
         httpsHandler.on('error', function(response) {
-            console.log('Address not found');
+            console.log('');
         });
     }
 };
