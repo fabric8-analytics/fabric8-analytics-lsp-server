@@ -219,7 +219,7 @@ let get_metadata = (ecosystem, name, version, cb) => {
     options['headers'] = {'Authorization': 'Bearer ' + config.api_token};
     winston.debug('get ' + options['host'] + options['path']);
     if(process.env.RECOMMENDER_API_URL){
-        https.get(options, function(res){
+        let httpsHandler = https.get(options, function(res){
             let body = '';
             res.on('data', function(chunk) { body += chunk; });
             res.on('end', function(){
@@ -233,6 +233,9 @@ let get_metadata = (ecosystem, name, version, cb) => {
                     cb(null);
                 }
             });
+        });
+        httpsHandler.on('error', function(response) {
+            console.log('Address not found');
         });
     }
 };
