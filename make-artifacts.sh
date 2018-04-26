@@ -33,5 +33,5 @@ if [[ $2 ]]; then
 	done
 	${SOURCEDIR}/publish/rsync.sh -s ${SOURCEDIR} -i *lsp-server*.* \
 	  -DESTINATION ${DESTINATION} -k 4 -l 0 -a 4 --no-regen-metadata -BUILD_NUMBER ${BUILD_NUMBER} \
-	  -t oxygen/snapshots/builds/jbosstools-fabric8analytics-lsp-server_master/${BUILD_TIMESTAMP}-B${BUILD_NUMBER}/
+	  -t photon/snapshots/builds/jbosstools-fabric8analytics-lsp-server_master/${BUILD_TIMESTAMP}-B${BUILD_NUMBER}/
 fi
