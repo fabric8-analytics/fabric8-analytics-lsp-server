@@ -1,12 +1,19 @@
 {
-  "name": "component-analysis-lsp-server",
+  "name": "fabric8-analytics-lsp-server",
   "description": "LSP Server for Component Analysis",
-  "version": "0.0.11",
+  "version": "0.0.0-development",
   "author": "Pavel Odvody",
-  "contributors": [
-    {
+  "contributors": [{
       "name": "Michal Srb",
       "email": "michal@redhat.com"
+    },
+    {
+      "name": "Jyasveer Gotta",
+      "email": "jgotta@redhat.com"
+    },
+    {
+      "name": "Jaivardhan Kumar",
+      "email": "jakumar@redhat.com"
     }
   ],
   "license": "Apache-2.0",
@@ -29,10 +36,21 @@
     "xml2object": "0.1.2"
   },
   "devDependencies": {
+    "@krux/condition-jenkins": "1.0.1",
+    "semantic-release": "8.2.0",
     "typescript": "^2.1.4"
   },
   "scripts": {
-    "build": "node node_modules/typescript/bin/tsc -p .",
-    "dist": "cp -r node_modules output/ && cp ./package.json output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ ."
+    "build": "npm run clean && node node_modules/typescript/bin/tsc -p . && cp LICENSE package.json README.md output && npm run dist",
+    "clean": "rm -Rf ca-lsp-server.tar output/",
+    "dist": "cp -r node_modules output/ && cp ./package.json output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ .",
+    "semantic-release": "semantic-release pre && npm run build && cp -r .git output && npm publish output/ && semantic-release post"
+  },
+  "release": {
+    "branch": "master",
+    "debug": false,
+    "verifyConditions": {
+      "path": "./node_modules/@krux/condition-jenkins"
+    }
   }
 }
