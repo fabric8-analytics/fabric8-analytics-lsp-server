@@ -38,13 +38,13 @@
   },
   "devDependencies": {
     "@krux/condition-jenkins": "1.0.1",
-    "semantic-release": "8.2.0",
+    "semantic-release": "15.9.9",
     "typescript": "^2.1.4"
   },
   "scripts": {
     "build": "node node_modules/typescript/bin/tsc -p .",
     "dist": "cp -r node_modules output/ && cp ./package.json output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ .",
-    "semantic-release": "semantic-release pre && npm run build && cp -r .git output && npm publish output/"
+    "semantic-release": "semantic-release pre && npm run build && cp -r .git output && npm publish output/ && semantic-release post"
   },
   "release": {
     "branch": "master",
