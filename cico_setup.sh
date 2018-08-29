@@ -40,9 +40,6 @@ build_project() {
   # run build
   npm run build
 
-  # copy static files to output folder
-  cp LICENSE package.json README.md output
-
   if [ $? -eq 0 ]; then
     echo 'CICO: build OK'
   else
