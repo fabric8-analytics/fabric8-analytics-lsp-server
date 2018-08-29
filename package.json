@@ -47,6 +47,6 @@
   },
   "release": {
     "branch": "master",
-    "debug": false,
+    "debug": false
   }
 }
