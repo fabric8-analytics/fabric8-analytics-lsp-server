@@ -37,6 +37,7 @@
     "xml2object": "0.1.2"
   },
   "devDependencies": {
+    "@krux/condition-jenkins": "1.0.1",
     "semantic-release": "8.2.0",
     "typescript": "^2.1.4"
   },
@@ -47,6 +48,9 @@
   },
   "release": {
     "branch": "master",
-    "debug": false
+    "debug": false,
+    "verifyConditions": {
+      "path": "./node_modules/@krux/condition-jenkins"
+    }
   }
 }
