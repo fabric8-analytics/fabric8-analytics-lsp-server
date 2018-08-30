@@ -43,6 +43,8 @@ build_project() {
   # create tar file
   npm run dist
 
+  ls
+
   if [ $? -eq 0 ]; then
     echo 'CICO: build OK'
   else
