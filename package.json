@@ -56,7 +56,7 @@
       "@semantic-release/npm",
       {
         "path": "@semantic-release/github",
-        "githubUrl": "https://github.com/fabric8-analytics/fabric8-analytics-lsp-server",
+        "githubUrl": "https://github.com/fabric8-analytics/fabric8-analytics-lsp-serverr",
         "assets": [{
           "path": "README.md",
           "label": "Readme"
