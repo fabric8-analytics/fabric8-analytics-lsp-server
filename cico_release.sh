@@ -20,4 +20,20 @@ function release() {
 
     # Build and Release fabric8-analytics-lsp-server (It will update the tag on github and push fabric8-analytics-lsp-server to npmjs.org)
     npm run semantic-release
+
+    publish_tar
+}
+
+function publish_tar() {
+    # get the latest release id
+    res=$(curl -s  https://api.github.com/repos/fabric8-analytics/fabric8-analytics-lsp-server/releases/latest | jq '. | { id: .id, upload_url: .upload_url }')
+
+    release_id=$(echo $res | jq .id)
+    upload_url=$(echo $res | jq .upload_url) 
+
+    echo $release_id
+    echo $upload_url
+
+    # upload the tar file to the latest release id
+    curl -X POST -H "Content-Type: application/gzip" -u $(npm whoami):$GH_TOKEN "https://$upload_url/repos/fabric8-analytics/fabric8-analytics-lsp-server/releases/$release_id/assets?name=ca-lsp-server.tar,label=LSP Server Tar File" 
 }
