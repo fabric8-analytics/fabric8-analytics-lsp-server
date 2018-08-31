@@ -18,4 +18,4 @@ export RECOMMENDER_API_TOKEN=the-token
 
 ## License
 
-Apache-2.0 
+Apache-2.0
