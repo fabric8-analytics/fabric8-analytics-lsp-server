@@ -35,5 +35,5 @@ function publish_tar() {
     echo $upload_url
 
     # upload the tar file to the latest release id
-    curl -X POST -H "Content-Type: application/tar" -u $(npm whoami):$GH_TOKEN "https://$upload_url/repos/fabric8-analytics/fabric8-analytics-lsp-server/releases/$release_id/assets?name=ca-lsp-server.tar,label=LSP Server Tar File" 
+    curl -X POST -H "Content-Type: application/tar" -u $(npm whoami):$GH_TOKEN "https://uploads.github.com/repos/fabric8-analytics/fabric8-analytics-lsp-server/releases/$release_id/assets?name=ca-lsp-server.tar,label=LSP Server Tar File" 
 }
