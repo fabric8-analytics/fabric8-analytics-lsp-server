@@ -39,5 +39,5 @@ function publish_tar() {
     # upload the tar file to the latest release id
     # curl -X POST -H "Content-Type: application/tar" -u $npm_user:$GH_TOKEN "https://uploads.github.com/repos/fabric8-analytics/fabric8-analytics-lsp-server/releases/$release_id/assets?name=ca-lsp-server.tar" 
 
-    curl -X POST -H "Content-Type: text/markdown" -u $npm_user:$GH_TOKEN "https://uploads.github.com/repos/fabric8-analytics/fabric8-analytics-lsp-server/releases/$release_id/assets?name=README.md"
+    curl -X POST -H "Content-Type: text/x-markdown; charset=utf-8" -u $npm_user:$GH_TOKEN "https://uploads.github.com/repos/fabric8-analytics/fabric8-analytics-lsp-server/releases/$release_id/assets?name=README.md"
 }
