@@ -16,6 +16,7 @@ load_jenkins_vars() {
 
 prep() {
   yum -y update
+  yum -y install epel-release
   yum -y install make git gcc-c++ bzip2 fontconfig jq
   curl -sL https://rpm.nodesource.com/setup_8.x | sudo -E bash -
   yum -y install nodejs
