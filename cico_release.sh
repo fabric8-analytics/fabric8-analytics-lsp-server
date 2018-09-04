@@ -53,7 +53,6 @@ function create_merge_PR_vscode {
     # extract version number from latest git tag
     new_lsp_server_version=$(git tag --sort=-v:refname | head -1 | cut -d'v' -f 2)
 
-    # Create PR on fabric8-npm-dependencies and merge it
     repo="fabric8-analytics-vscode-extension"
     org="fabric8-analytics"
     project="${org}/${repo}"
@@ -76,9 +75,11 @@ function create_merge_PR_vscode {
 
     git config --global user.email fabric8cd@gmail.com
     git config --global user.name fabric8-cd
+
     # Set authentication credentials to allow "git push"
     git remote set-url origin https://fabric8cd:${GH_TOKEN}@github.com/${project}.git
 
+    # Create PR on fabric8-analytics-vscode-extension to update LSP Server
     message="fix(version): update package.json fabric8-analytics-lsp-server to ${new_lsp_server_version}"
     updatePackageJSONVersion "$new_lsp_server_version"
     git add package.json
