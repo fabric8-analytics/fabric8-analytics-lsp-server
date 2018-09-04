@@ -51,7 +51,7 @@ function create_merge_PR_vscode {
     git pull --tags origin master
 
     # extract version number from latest git tag
-    new_lsp_server_version=$(git tag --sort=-v:refname | head -1 | cut -d'v' -f 2)
+    new_lsp_server_version=$(git tag -l | sort -V | head -1 | cut -d'v' -f 2)
 
     # Create PR on fabric8-npm-dependencies and merge it
     repo="fabric8-analytics-vscode-extension"
