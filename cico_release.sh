@@ -101,9 +101,9 @@ function create_merge_PR_vscode {
     waitUntilSuccess "${PR_id}" "${project}"
 
     # Merge PR
-    apiUrl="${baseUrl}/${project}/pulls/${PR_id}/merge"
-    echo "Merging PR ${PR_id}"
-    curl --silent -X PUT -H "Authorization: Bearer $GH_TOKEN" "${apiUrl}"
+    # apiUrl="${baseUrl}/${project}/pulls/${PR_id}/merge"
+    # echo "Merging PR ${PR_id}"
+    # curl --silent -X PUT -H "Authorization: Bearer $GH_TOKEN" "${apiUrl}"
 }
 
 # Updates fabric8-analytics-lsp-server's version in package.json file
