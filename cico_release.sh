@@ -169,7 +169,6 @@ function updatePackageJSONVersion {
 function updateRhCheScriptFile {
     local f=$1
     local v=$2
-    fabric8-analytics-lsp-server/releases/download/
     sed -i -E "s/\(fabric8-analytics-lsp-server\/releases\/download\/\)\(.*\)\(\/ca-lsp-server.tar\)/\1${v}\3/" ${f}
 }
 
