@@ -123,7 +123,7 @@ function create_PR_RHChe {
     cd ${repo} && git checkout -b versionUpdate"${id}"
 
     # find fabric8-analytics-lsp-server version
-    lsp_script_sh_path = "./rh-che/plugins/ls-bayesian-agent/src/main/resources/installers/1.0.0/com.redhat.bayesian.lsp.script.sh"
+    lsp_script_sh_path="./rh-che/plugins/ls-bayesian-agent/src/main/resources/installers/1.0.0/com.redhat.bayesian.lsp.script.sh"
     current_lsp_server_version=$( grep AGENT_BINARIES_URI= $lsp_script_sh_path | cut -d '/' -f 8 )
     echo "New LSP Server version:" $new_lsp_server_version
     echo "Current LSP Server version:" $current_lsp_server_version
