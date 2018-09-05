@@ -169,7 +169,7 @@ function updatePackageJSONVersion {
 function updateRhCheScriptFile {
     local f=$1
     local v=$2
-    sed -i -E "s/\(fabric8-analytics-lsp-server\/releases\/download\)\(\/.*\)\(\/ca-lsp-server.tar\)/\1\/${v}\3/" ${f}
+    sed -i -r -E "s/\(fabric8-analytics-lsp-server\/releases\/download\)\(\/.*\)\(\/ca-lsp-server.tar\)/\1\/${v}\3/" ${f}
 }
 
 # Wait for all CI checks to pass
