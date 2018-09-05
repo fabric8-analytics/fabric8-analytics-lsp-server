@@ -24,6 +24,8 @@ function release() {
     publish_tar
 
     create_merge_PR_vscode
+
+    create_PR_RHChe
 }
 
 function publish_tar() {
@@ -98,15 +100,61 @@ function create_merge_PR_vscode {
     echo "Received PR id: ${PR_id}"
 
     # Wait for all CI checks on PR to be successful
-    waitUntilSuccess "${PR_id}" "${project}"
+    # waitUntilSuccess "${PR_id}" "${project}"
 
     # Merge PR
     # apiUrl="${baseUrl}/${project}/pulls/${PR_id}/merge"
     # echo "Merging PR ${PR_id}"
     # curl --silent -X PUT -H "Authorization: Bearer $GH_TOKEN" "${apiUrl}"
-    ls
+}
+
+function create_PR_RHChe {
+    echo $new_lsp_server_version
+
+    # go to the root directory which is fabric8-analytics-lsp-server
     cd ..
-    ls
+
+    repo="rh-che"
+    org="redhat-developer"
+    project="${org}/${repo}"
+    baseUrl="https://api.github.com/repos"
+    id=$(uuidgen)
+    git clone "https://github.com/${project}.git"
+    cd ${repo} && git checkout -b versionUpdate"${id}"
+
+    # find fabric8-analytics-lsp-server version
+    lsp_script_sh_path = "./rh-che/plugins/ls-bayesian-agent/src/main/resources/installers/1.0.0/com.redhat.bayesian.lsp.script.sh"
+    current_lsp_server_version=$( grep AGENT_BINARIES_URI= $lsp_script_sh_path | cut -d '/' -f 8 )
+    echo "New LSP Server version:" $new_lsp_server_version
+    echo "Current LSP Server version:" $current_lsp_server_version
+    if [ "$new_lsp_server_version" == "$current_lsp_server_version" ]; then
+        echo "Skippping as fabric8-analytics-lsp-server is already on version $new_lsp_server_version"
+        exit 0
+    fi
+
+    git config --global user.email fabric8cd@gmail.com
+    git config --global user.name fabric8-cd
+
+    # Set authentication credentials to allow "git push"
+    git remote set-url origin https://fabric8cd:${GH_TOKEN}@github.com/${project}.git
+
+    # Create PR on fabric8-analytics-vscode-extension to update LSP Server
+    message="fix(version): update fabric8-analytics-lsp-server to ${new_lsp_server_version}"
+    updateRhCheScriptFile "$lsp_script_sh_path" "$new_lsp_server_version"
+    git add $lsp_script_sh_path
+    git commit -m "${message}"
+    git push origin versionUpdate"${id}"
+    local body="{
+        \"title\": \"${message}\",
+        \"head\": \"versionUpdate${id}\",
+        \"base\": \"master\"
+        }"
+
+    apiUrl="${baseUrl}/${project}/pulls"
+    echo "Creating PR for ${apiUrl}"
+    PR_id=$(curl --silent -X POST -H "Authorization: Bearer $GH_TOKEN" -d "${body}" "${apiUrl}" \
+            | sed -n 's/.*"number": \(.*\),/\1/p' )
+    echo "Received PR id: ${PR_id}"
 }
 
 # Updates fabric8-analytics-lsp-server's version in package.json file
@@ -115,6 +163,14 @@ function updatePackageJSONVersion {
     local p="fabric8-analytics-lsp-server"
     local v=$1
     sed -i -r "s/\"${p}\": \"[0-9][0-9]{0,2}.[0-9][0-9]{0,2}(.[0-9][0-9]{0,2})?(.[0-9][0-9]{0,2})?(-development)?\"/\"${p}\": \"${v}\"/g" ${f}
+}
+
+# Updates fabric8-analytics-lsp-server's version in com.redhat.bayesian.lsp.script.sh file
+function updateRhCheScriptFile {
+    local f=$1
+    local v=$2
+    fabric8-analytics-lsp-server/releases/download/
+    sed -i -E "s/\(fabric8-analytics-lsp-server\/releases\/download\/\)\(.*\)\(\/ca-lsp-server.tar\)/\1${v}\3/" ${f}
 }
 
 # Wait for all CI checks to pass
