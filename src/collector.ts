@@ -8,7 +8,7 @@ import * as Xml2Object from 'xml2object';
 import { Stream } from 'stream';
 
 /* By default the collector is going to process these dependency keys */
-const DefaultClasses = ["dependencies", "devDependencies", "optionalDependencies"];
+const DefaultClasses = ["dependencies"];
 
 /* String value with position */
 interface IPositionedString {
