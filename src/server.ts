@@ -252,13 +252,18 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         for (let dependency of deps) {
-            get_metadata('npm', dependency.name.value, dependency.version.value, (response) => {
-                if (response != null) {
-                    let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
-                    pipeline.run(response);
-                }
+            var regexVersion = new RegExp(/^[0-9]*[.][0-9]*[.][0-9]*[^.]$/);
+            if(dependency.name.value && regexVersion.test(dependency.version.value)) {
+                get_metadata('npm', dependency.name.value, dependency.version.value, (response) => {
+                    if (response != null) {
+                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
+                        pipeline.run(response);
+                    }
+                    aggregator.aggregate(dependency);
+                });
+            } else {
                 aggregator.aggregate(dependency);
-            });
+            }
         }
     });
 });
