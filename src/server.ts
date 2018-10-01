@@ -279,8 +279,9 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
         let aggregator = new Aggregator(deps, () => {
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
+        const regexVersion = /^((\d+|[A-Za-z]+)[-.])*((\d+|[A-Za-z]+))$/
         for (let dependency of deps) {
-            if(dependency.name.value && dependency.version.value) {
+            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value)) {
                 get_metadata('maven', dependency.name.value, dependency.version.value, (response) => {
                     if (response != null) {
                         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
