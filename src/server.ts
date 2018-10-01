@@ -280,13 +280,17 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         for (let dependency of deps) {
-            get_metadata('maven', dependency.name.value, dependency.version.value, (response) => {
-                if (response != null) {
-                    let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
-                    pipeline.run(response);
-                }
+            if(dependency.name.value && dependency.version.value && dependency.version.value) {
+                get_metadata('maven', dependency.name.value, dependency.version.value, (response) => {
+                    if (response != null) {
+                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
+                        pipeline.run(response);
+                    }
+                    aggregator.aggregate(dependency);
+                });
+            } else {
                 aggregator.aggregate(dependency);
-            });
+            }
         }
     });
 });
