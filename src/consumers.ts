@@ -113,8 +113,8 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
             return [{
                 severity: DiagnosticSeverity.Information,
                 range: get_range(this.context.version),
-                message: `Package ${this.context.name.value}-${this.context.version.value} - analysis is pending`,
-                source: 'Component Analysis'
+                message: `Application dependency ${this.context.name.value}-${this.context.version.value} - analysis is pending`,
+                source: 'Dependency Analytics'
             }]
         } else {
             return [];
@@ -143,8 +143,8 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             let diagnostic = {
                 severity: DiagnosticSeverity.Error,
                 range: get_range(this.context.version),
-                message: `Package ${this.context.name.value}-${this.context.version.value} is vulnerable: ${cves}`,
-                source: 'Component Analysis'
+                message: `Application dependency ${this.context.name.value}-${this.context.version.value} is vulnerable: ${cves}`,
+                source: 'Dependency Analytics'
             };
 
             // TODO: this can be done lazily
