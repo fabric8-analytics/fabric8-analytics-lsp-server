@@ -1,4 +1,4 @@
-# Component Analysis LSP Server
+# Dependency Analytics LSP Server
 
 LSP Server that can analyze your dependencies specified in `package.json`.
 

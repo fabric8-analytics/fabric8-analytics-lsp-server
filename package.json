@@ -1,9 +1,10 @@
 {
   "name": "fabric8-analytics-lsp-server",
-  "description": "LSP Server for Component Analysis",
+  "description": "LSP Server for Dependency Analytics",
   "version": "0.0.0-development",
   "author": "Pavel Odvody",
-  "contributors": [{
+  "contributors": [
+    {
       "name": "Michal Srb",
       "email": "michal@redhat.com"
     },
