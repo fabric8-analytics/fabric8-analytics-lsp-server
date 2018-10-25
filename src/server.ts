@@ -244,11 +244,17 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
     /* Convert from readable stream into string */
     let stream = stream_from_string(contents);
     let collector = new DependencyCollector(null);
+    connection.sendNotification('caNotification', 'Analysing dependencies for any security vulnerability');
 
     collector.collect(stream).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
+            if(diagnostics.length > 0) {
+                connection.sendNotification('caNotification', `Out of ${deps.length}, ${diagnostics.length} dependencies have vulnerabilities`);
+            } else {
+                connection.sendNotification('caNotification', `Out of ${deps.length}, No dependencies have vulnerabilities`);
+            }
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         const regexVersion = new RegExp(/^(\d+\.)?(\d+\.)?(\d+)$/);
@@ -272,11 +278,17 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
     /* Convert from readable stream into string */
     let stream = stream_from_string(contents);
     let collector = new PomXmlDependencyCollector();
+    connection.sendNotification('caNotification', 'Analysing dependencies for any security vulnerability');
 
     collector.collect(stream).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
+            if(diagnostics.length > 0) {
+                connection.sendNotification('caNotification', `Out of ${deps.length}, ${diagnostics.length} dependencies have vulnerabilities`);
+            } else {
+                connection.sendNotification('caNotification', `Out of ${deps.length}, No dependencies have vulnerabilities`);
+            }
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         const regexVersion = /^((\d+|[A-Za-z]+)[-.])*((\d+|[A-Za-z]+))$/

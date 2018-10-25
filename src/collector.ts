@@ -186,16 +186,21 @@ class NaivePomXmlSaxParser {
             // the XML document doesn't have to be well-formed, that's fine
             parser.error = null;
         });
+        parser.on("end", function () {
+            // the XML document doesn't have to be well-formed, that's fine
+            // parser.error = null;
+            this.dependencies = deps;
+        });
         return parser
     }
 
-    parse(): Array<IDependency> {
-        try {
-            this.stream.pipe(this.parser.saxStream);
-        } catch (e) {
-            console.error(e.message)
-        }
-        return this.dependencies
+    async parse() {
+        return new Promise(resolve => {
+            this.stream.pipe(this.parser.saxStream).on('end', (data) => {
+                resolve(this.dependencies);
+           });
+        });
+        
     }
 }
 
@@ -204,8 +209,11 @@ class PomXmlDependencyCollector {
 
     async collect(file: Stream): Promise<Array<IDependency>> {
         let parser = new NaivePomXmlSaxParser(file);
-        let dependencies: Array<IDependency> = parser.parse();
-        return dependencies;
+        let dependencies;
+         await parser.parse().then(data => {
+            dependencies = data;
+        });
+        return dependencies || [];
     }
 }
 
