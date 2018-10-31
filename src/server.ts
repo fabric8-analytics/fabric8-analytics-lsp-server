@@ -244,17 +244,18 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
     /* Convert from readable stream into string */
     let stream = stream_from_string(contents);
     let collector = new DependencyCollector(null);
-    connection.sendNotification('caNotification', 'Analyzing runtime dependencies for any security vulnerability');
+    connection.sendNotification('caNotification', {'data': 'Checking for security vulnerabilities ...'});
 
     collector.collect(stream).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
             if(diagnostics.length > 0) {
-                connection.sendNotification('caNotification', `Out of ${deps.length}, ${diagnostics.length} runtime dependencies have vulnerabilities`);
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. Found ${diagnostics.length} potential security vulnerability`, 'isEditAction': isEditAction});
             } else {
-                connection.sendNotification('caNotification', `Out of ${deps.length}, No runtime dependencies have vulnerabilities`);
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerability found`, 'isEditAction': isEditAction});
             }
+            isEditAction = false;
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         const regexVersion = new RegExp(/^(\d+\.)?(\d+\.)?(\d+)$/);
@@ -278,17 +279,18 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
     /* Convert from readable stream into string */
     let stream = stream_from_string(contents);
     let collector = new PomXmlDependencyCollector();
-    connection.sendNotification('caNotification', 'Analyzing runtime dependencies for any security vulnerability');
+    connection.sendNotification('caNotification', {'data': 'Checking for security vulnerabilities ...'});
 
     collector.collect(stream).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
             if(diagnostics.length > 0) {
-                connection.sendNotification('caNotification', `Out of ${deps.length}, ${diagnostics.length} runtime dependencies have vulnerabilities`);
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. Found ${diagnostics.length} potential security vulnerability`, 'isEditAction': isEditAction});
             } else {
-                connection.sendNotification('caNotification', `Out of ${deps.length}, No runtime dependencies have vulnerabilities`);
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerability found`, 'isEditAction': isEditAction});
             }
+            isEditAction = false;
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         const regexVersion = /^((\d+|[A-Za-z]+)[-.])*((\d+|[A-Za-z]+))$/
@@ -331,13 +333,16 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
 });
 
 let checkDelay;
+let isEditAction = false;
 connection.onDidSaveTextDocument((params) => {
+    isEditAction = true;
     clearTimeout(checkDelay);
     server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
 });
 
 connection.onDidChangeTextDocument((params) => {
     /* Update internal state for code lenses */
+    isEditAction = true;
     server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
     clearTimeout(checkDelay);
     checkDelay = setTimeout(() => {
@@ -346,6 +351,7 @@ connection.onDidChangeTextDocument((params) => {
 });
 
 connection.onDidOpenTextDocument((params) => {
+    isEditAction = false;
     server.handle_file_event(params.textDocument.uri, params.textDocument.text);
 });
 
@@ -362,6 +368,7 @@ connection.onCodeAction((params, token): Command[] => {
 });
 
 connection.onDidCloseTextDocument((params) => {
+    isEditAction = false;
     clearTimeout(checkDelay);
 });
 
