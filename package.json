@@ -39,7 +39,7 @@
   "devDependencies": {
     "@types/node": "^6.0.52",
     "@krux/condition-jenkins": "1.0.1",
-    "semantic-release": "8.2.0",
+    "semantic-release": "15.10.6",
     "typescript": "^2.1.4"
   },
   "scripts": {
