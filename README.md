@@ -1,6 +1,6 @@
 # Dependency Analytics LSP Server
 
-LSP Server that can analyze your dependencies specified in `package.json` and `pom.xml`.
+Language Server(LSP) that can analyze your dependencies specified in `package.json` and `pom.xml`.
 
 ## Build
 
