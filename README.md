@@ -13,7 +13,7 @@ npm run-script build
 we use 2 environment variables to setup the recommender API either you need to set OSIO user token or 3scale User key along with Api url as in below.
 
 ```
-export RECOMMENDER_API_URL= the-url
+export RECOMMENDER_API_URL= the-url + '/api/v1'
 ```
 
 ```

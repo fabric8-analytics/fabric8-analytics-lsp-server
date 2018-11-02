@@ -44,3 +44,4 @@ output/
 target/
 *.tar
 .history
+package-lock.json
