@@ -52,7 +52,7 @@ connection.onInitialize((params): InitializeResult => {
     return {
         capabilities: {
             textDocumentSync: documents.syncKind,
-            codeActionProvider: false
+            codeActionProvider: true
         }
     }
 });
@@ -251,9 +251,9 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
             if(diagnostics.length > 0) {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. Found ${diagnostics.length} potential security vulnerability`, 'isEditAction': isEditAction});
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. Found ${diagnostics.length} potential security vulnerabilities`, 'isEditAction': isEditAction});
             } else {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerability found`, 'isEditAction': isEditAction});
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`, 'isEditAction': isEditAction});
             }
             isEditAction = false;
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
@@ -286,9 +286,9 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
             if(diagnostics.length > 0) {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. Found ${diagnostics.length} potential security vulnerability`, 'isEditAction': isEditAction});
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. Found ${diagnostics.length} potential security vulnerabilities`, 'isEditAction': isEditAction});
             } else {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerability found`, 'isEditAction': isEditAction});
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`, 'isEditAction': isEditAction});
             }
             isEditAction = false;
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
