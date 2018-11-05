@@ -251,7 +251,7 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
             if(diagnostics.length > 0) {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. Found ${diagnostics.length} potential security vulnerabilities`, 'isEditAction': isEditAction, 'diagCount' : diagnostics.length});
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`, 'isEditAction': isEditAction, 'diagCount' : diagnostics.length});
             } else {
                 connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`, 'isEditAction': isEditAction, 'diagCount' : 0});
             }
@@ -286,7 +286,7 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
             if(diagnostics.length > 0) {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. Found ${diagnostics.length} potential security vulnerabilities`, 'isEditAction': isEditAction, 'diagCount' : diagnostics.length});
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`, 'isEditAction': isEditAction, 'diagCount' : diagnostics.length});
             } else {
                 connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`, 'isEditAction': isEditAction, 'diagCount' : 0});
             }
