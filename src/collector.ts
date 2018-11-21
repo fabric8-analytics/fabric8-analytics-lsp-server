@@ -87,7 +87,7 @@ class NaivePyParser {
         this.objSam.forEach(function(obj) {
             let entry: IKeyValueEntry = new KeyValueEntry(obj["pkgName"], {line: 0, column: 0});
                 entry.value = new Variant(ValueType.String, obj["version"]);
-                entry.value_position = {line: obj["line"], column: obj["pos"]};
+                entry.value_position = {line: obj["line"], column: obj["column"]};
                 let dep: IDependency = new Dependency(entry);
                 deps.push(dep);
         });
@@ -102,7 +102,8 @@ let toObject = (arr:any) => {
   let rv: Array<string> =  [];
   for (let i:number = 0; i < arr.length; ++i){
     if (arr[i] !== undefined){
-        let line: string = arr[i].replace(/\s/g,'');
+        // let line: string = arr[i].replace(/\s/g,'');
+        let line: string = arr[i];
         let lineArr: any;
         let lineStr: string;
          if(line.indexOf('#')!== -1){
@@ -111,12 +112,12 @@ let toObject = (arr:any) => {
          }else{
             lineStr = line;
          }
-         let subArr: Array<string>  = lineStr.split(/[==,>=]+/);
+         let subArr: Array<string>  = lineStr.split(/[==,>=,<=]+/);
          let subObj:any = {};
          subObj["pkgName"] = subArr[0];
          subObj["version"] = subArr[1] || "";
          subObj["line"] = i+1;
-         subObj["column"] = subArr[0].length +2;
+         subObj["column"] = subArr[0].length +3;
 		 rv.push(subObj);
     }
   }

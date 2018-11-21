@@ -312,22 +312,34 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
 
 files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
     let collector = new ReqDependencyCollector();
+    connection.sendNotification('caNotification', {'data': 'Checking for security vulnerabilities ...'});
 
     collector.collect(contents).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
+            if(diagnostics.length > 0) {
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`, 'isEditAction': isEditAction, 'diagCount' : diagnostics.length});
+            } else {
+                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`, 'isEditAction': isEditAction, 'diagCount' : 0});
+            }
+            isEditAction = false;
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
+        const regexVersion = new RegExp(/^(\d+\.)?(\d+\.)?(\d+)$/);
         for (let dependency of deps) {
             winston.info('python cmp name'+ dependency.name.value);
-            get_metadata('pypi', dependency.name.value, dependency.version.value, (response) => {
-                if (response != null) {
-                    let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
-                    pipeline.run(response);
-                }
+            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
+                get_metadata('pypi', dependency.name.value.trim(), dependency.version.value.trim(), (response) => {
+                    if (response != null) {
+                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
+                        pipeline.run(response);
+                    }
+                    aggregator.aggregate(dependency);
+                });
+            } else {
                 aggregator.aggregate(dependency);
-            });
+            }
         }
     });
 });
