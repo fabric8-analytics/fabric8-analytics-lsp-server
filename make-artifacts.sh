@@ -1,6 +1,7 @@
 #!/bin/bash -ex
 
 rm -Rf target/ output/
+git pull origin master
 npm install
 npm run-script build
 npm run dist
