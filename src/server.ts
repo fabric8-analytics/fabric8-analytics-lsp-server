@@ -196,51 +196,17 @@ if (fs.existsSync(rc_file)) {
 
 let DiagnosticsEngines = [SecurityEngine];
 
-// TODO: in-memory caching only, this needs to be more robust
-let metadataCache = new Map();
-
-let get_metadata = (ecosystem, name, version, cb) => {
-    let cacheKey = ecosystem + " " + name + " " + version;
-    let metadata = metadataCache[cacheKey];
-    if (metadata != null) {
-        winston.info('cache hit for ' + cacheKey);
-        cb(metadata);
-        return
-    }
-    let part = [ecosystem, name, version].join('/');
-
-    const options = url.parse(config.server_url);
-    if(config.three_scale_user_token){
-        options['path'] += `/component-analyses/${part}?user_key=${config.three_scale_user_token}`;
-    } else{
-        options['path'] += `/component-analyses/${part}/`;
-    }
-    //options['path'] += `/component-analyses/${part}/`;
-    options['headers'] = {'Authorization': 'Bearer ' + config.api_token};
-    winston.debug('get ' + options['host'] + options['path']);
-    if(process.env.RECOMMENDER_API_URL){
-        let httpsHandler = https.get(options, function(res){
-            let body = '';
-            res.on('data', function(chunk) { body += chunk; });
-            res.on('end', function(){
-                winston.info('status ' + this.statusCode);
-                if (this.statusCode == 200 || this.statusCode == 202) {
-                    let response = JSON.parse(body);
-                    winston.debug('response ' + response);
-                    metadataCache[cacheKey] = response;
-                    cb(response);
-                } else {
-                    cb(null);
-                }
-            });
-        });
-        httpsHandler.on('error', function(response) {
-            console.log('');
-        });
+const getCAmsg = (deps, diagnostics): string => {
+    if(diagnostics.length > 0) {
+        return `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`;
+    } else {
+        return `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
     }
 };
 
-const bulkComponentAnalysis = function (reqData) {
+const caDefaultMsg = 'Checking for security vulnerabilities ...';
+
+const bulkComponentAnalysis =  (reqData) => {
     return new Promise((resolve, reject) => {
         const options = {};
         options['url'] = config.server_url;
@@ -256,10 +222,8 @@ const bulkComponentAnalysis = function (reqData) {
         options['body'] = reqData;
         request.post(options, (err, httpResponse, body) => {
             if(err){
-                console.log('error', err);
                 reject(err);
             } else {
-                console.log('response Post '+body);
                 if ((httpResponse.statusCode === 200 || httpResponse.statusCode === 202)) {
                     let resp = JSON.parse(body);
                     resolve(resp);
@@ -277,12 +241,13 @@ const bulkComponentAnalysis = function (reqData) {
     });
 };
 
-const constructPayload = async function (ecosystem, packages) {
-    return await new Promise((resolve) => {
-        const regexVersion = new RegExp(/^(\d+\.)?(\d+\.)?(\d+)$/);
+const constructPayload =  (ecosystem, packages) => {
+    return new Promise((resolve) => {
+        const regexVersion = new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
         let request_payload = [];
             for (let pck of packages) {
-                if (pck.name.value && pck.version.value && regexVersion.test(pck.version.value)) {
+                if (pck.name.value && pck.version.value && regexVersion.test(pck.version.value)
+                && !(request_payload.some((item) => item.package === pck.name.value && item.version === pck.version.value))) {
                     request_payload.push({
                         "ecosystem": ecosystem,
                         "package": pck.name.value,
@@ -294,11 +259,11 @@ const constructPayload = async function (ecosystem, packages) {
     });   
 };
 
-let getComponentsInfo = function (request_payload, aggregator, components, diagnostics) {
+let getComponentsInfo =  async (request_payload, aggregator, components, diagnostics) => {
     for (let i = 0; i < request_payload.length; i += 10) {
         let pck = request_payload.slice(i, i + 10);
         let req_data = JSON.stringify(pck);
-        bulkComponentAnalysis(req_data).then((response) => {
+        await bulkComponentAnalysis(req_data).then((response) => {
             let componentAnalysisResponse : any;
             componentAnalysisResponse = response;
             for (let r of componentAnalysisResponse) {
@@ -311,7 +276,9 @@ let getComponentsInfo = function (request_payload, aggregator, components, diagn
                 }
             }
         })
-        .catch(err => console.log(err));
+        .catch(err => {
+            return null; 
+        });
     }    
 };
 
@@ -319,18 +286,13 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
     /* Convert from readable stream into string */
     let stream = stream_from_string(contents);
     let collector = new DependencyCollector(null);
-    connection.sendNotification('caNotification', {'data': 'Checking for security vulnerabilities ...'});
+    connection.sendNotification('caNotification', {'data': caDefaultMsg});
 
     collector.collect(stream).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
-            if(diagnostics.length > 0) {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`, 'isEditAction': isEditAction, 'diagCount' : diagnostics.length});
-            } else {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`, 'isEditAction': isEditAction, 'diagCount' : 0});
-            }
-            isEditAction = false;
+            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         constructPayload('npm', deps).then((payload) => {
@@ -343,18 +305,13 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
     /* Convert from readable stream into string */
     let stream = stream_from_string(contents);
     let collector = new PomXmlDependencyCollector();
-    connection.sendNotification('caNotification', {'data': 'Checking for security vulnerabilities ...'});
+    connection.sendNotification('caNotification', {'data': caDefaultMsg});
 
     collector.collect(stream).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
-            if(diagnostics.length > 0) {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`, 'isEditAction': isEditAction, 'diagCount' : diagnostics.length});
-            } else {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`, 'isEditAction': isEditAction, 'diagCount' : 0});
-            }
-            isEditAction = false;
+            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         constructPayload('maven', deps).then((payload) => {
@@ -365,18 +322,13 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
 
 files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
     let collector = new ReqDependencyCollector();
-    connection.sendNotification('caNotification', {'data': 'Checking for security vulnerabilities ...'});
+    connection.sendNotification('caNotification', {'data': caDefaultMsg});
 
     collector.collect(contents).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
-            if(diagnostics.length > 0) {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`, 'isEditAction': isEditAction, 'diagCount' : diagnostics.length});
-            } else {
-                connection.sendNotification('caNotification', {'data': `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`, 'isEditAction': isEditAction, 'diagCount' : 0});
-            }
-            isEditAction = false;
+            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         constructPayload('pypi', deps).then((payload) => {
@@ -386,16 +338,13 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
 });
 
 let checkDelay;
-let isEditAction = false;
 connection.onDidSaveTextDocument((params) => {
-    isEditAction = true;
     clearTimeout(checkDelay);
     server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
 });
 
 connection.onDidChangeTextDocument((params) => {
     /* Update internal state for code lenses */
-    isEditAction = true;
     server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
     clearTimeout(checkDelay);
     checkDelay = setTimeout(() => {
@@ -404,7 +353,6 @@ connection.onDidChangeTextDocument((params) => {
 });
 
 connection.onDidOpenTextDocument((params) => {
-    isEditAction = false;
     server.handle_file_event(params.textDocument.uri, params.textDocument.text);
 });
 
@@ -421,7 +369,6 @@ connection.onCodeAction((params, token): Command[] => {
 });
 
 connection.onDidCloseTextDocument((params) => {
-    isEditAction = false;
     clearTimeout(checkDelay);
 });
 

@@ -149,7 +149,7 @@ class Scope implements IJsonParserScope {
 
   /* used mainly for debug purposes */
   print() {
-    console.log(this.properties);
+    // console.log(this.properties);
     this.children.forEach((scope: IJsonParserScope) => { scope.print() });
   }
 };
