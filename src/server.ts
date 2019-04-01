@@ -266,15 +266,16 @@ let getComponentsInfo =  async (request_payload, aggregator, components, diagnos
         await bulkComponentAnalysis(req_data).then((response) => {
             let componentAnalysisResponse : any;
             componentAnalysisResponse = response;
-            for (let r of componentAnalysisResponse) {
-                for(let com of components) {
+            componentAnalysisResponse.filter((r) => {
+                components.filter((com) => {
                     if(r.result.data[0].version.pname[0] === com.name.value && r.result.data[0].version.version[0] === com.version.value){
                         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, com, config, diagnostics);
                         pipeline.run(r);
+                        aggregator.aggregate(com);
                     }
-                    aggregator.aggregate(com);
-                }
-            }
+                 });
+            });
+
         })
         .catch(err => {
             return null; 
