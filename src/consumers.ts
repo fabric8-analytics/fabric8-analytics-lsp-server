@@ -5,7 +5,7 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { Diagnostic, DiagnosticSeverity, Command } from 'vscode-languageserver'
+import { Diagnostic, DiagnosticSeverity, CodeAction } from 'vscode-languageserver'
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor
@@ -37,7 +37,7 @@ interface IConsumer
 /* Generic `T` producer */
 interface IProducer<T>
 {
-    produce(): T;
+    produce(ctx: any): T;
 };
 
 /* Each pipeline item is defined as a single consumer and producer pair */
@@ -60,17 +60,19 @@ class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
     dependency: IDependency;
     config: any;
     diagnostics: Array<Diagnostic>;
-    constructor(classes: Array<any>, dependency: IDependency, config: any, diags: Array<Diagnostic>) {
+    uri: string;
+    constructor(classes: Array<any>, dependency: IDependency, config: any, diags: Array<Diagnostic>, uri: string) {
         this.items = classes.map((i) => { return new i(dependency, config); });
         this.dependency = dependency;
         this.config = config;
         this.diagnostics = diags;
+        this.uri = uri;
     }
 
     run(data: any): Diagnostic[] {
         for (let item of this.items) {
             if (item.consume(data)) {
-                for (let d of item.produce())
+                for (let d of item.produce(this.uri))
                     this.diagnostics.push(d);
             }
         }
@@ -132,7 +134,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
         this.changeToBinding = {path: ['result', 'recommendation', 'change_to']};
     }
 
-    produce(): Diagnostic[] {
+    produce(ctx: any): Diagnostic[] {
         if (this.item.length > 0) {
             let cveList = [];
             for (let cve of this.item) {
@@ -149,13 +151,20 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 
             // TODO: this can be done lazily
             if (this.changeTo != null) {
-                let command = {
+                let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
-                    command: "lsp.applyTextEdit",
-                    arguments: [{range: diagnostic.range, newText: this.changeTo}]
+                    diagnostics: [diagnostic],
+                    edit: {
+                        changes: {
+                        }
+                    }
                 };
+                codeAction.edit.changes[ctx]= [{
+                    range: diagnostic.range,
+                    newText: this.changeTo
+                }];
                 diagnostic.message += ". Recommendation: use version " + this.changeTo;
-                codeActionsMap[diagnostic.message] = command
+                codeActionsMap[diagnostic.message] = codeAction
             }
             return [diagnostic]
         } else {
@@ -164,6 +173,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
     }
 };
 
-let codeActionsMap = new Map<string, Command>();
+let codeActionsMap = new Map<string, CodeAction>();
 
 export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap };
