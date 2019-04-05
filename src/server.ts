@@ -7,7 +7,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-	TextDocuments, Diagnostic, InitializeResult, CodeLens, Command, RequestHandler, CodeActionParams
+	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
 import { stream_from_string } from './utils';
 import { DependencyCollector, IDependency, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
@@ -259,7 +259,7 @@ const constructPayload =  (ecosystem, packages) => {
     });   
 };
 
-let getComponentsInfo =  async (request_payload, aggregator, components, diagnostics) => {
+let getComponentsInfo =  async (request_payload, aggregator, components, diagnostics, uri) => {
     for (let i = 0; i < request_payload.length; i += 10) {
         let pck = request_payload.slice(i, i + 10);
         let req_data = JSON.stringify(pck);
@@ -269,7 +269,7 @@ let getComponentsInfo =  async (request_payload, aggregator, components, diagnos
             componentAnalysisResponse.filter((r) => {
                 components.filter((com) => {
                     if(r.result.data[0].version.pname[0] === com.name.value && r.result.data[0].version.version[0] === com.version.value){
-                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, com, config, diagnostics);
+                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, com, config, diagnostics, uri);
                         pipeline.run(r);
                         aggregator.aggregate(com);
                     }
@@ -297,7 +297,7 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         constructPayload('npm', deps).then((payload) => {
-            getComponentsInfo(payload, aggregator, deps, diagnostics);
+            getComponentsInfo(payload, aggregator, deps, diagnostics, uri);
         });
     });
 });
@@ -316,7 +316,7 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         constructPayload('maven', deps).then((payload) => {
-            getComponentsInfo(payload, aggregator, deps, diagnostics);
+            getComponentsInfo(payload, aggregator, deps, diagnostics, uri);
         });
     });
 });
@@ -333,7 +333,7 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         constructPayload('pypi', deps).then((payload) => {
-            getComponentsInfo(payload, aggregator, deps, diagnostics);
+            getComponentsInfo(payload, aggregator, deps, diagnostics, uri);
         });
     });
 });
@@ -357,16 +357,16 @@ connection.onDidOpenTextDocument((params) => {
     server.handle_file_event(params.textDocument.uri, params.textDocument.text);
 });
 
-connection.onCodeAction((params, token): Command[] => {
+connection.onCodeAction((params, token): CodeAction[] => {
     clearTimeout(checkDelay);
-    let commands: Command[] = [];
+    let codeActions: CodeAction[] = [];
     for (let diagnostic of params.context.diagnostics) {
-        let command = codeActionsMap[diagnostic.message];
-        if (command != null) {
-            commands.push(command)
+        let codeAction = codeActionsMap[diagnostic.message];
+        if (codeAction != null) {
+            codeActions.push(codeAction)
         }
     }
-    return commands
+    return codeActions
 });
 
 connection.onDidCloseTextDocument((params) => {
