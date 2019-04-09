@@ -206,82 +206,55 @@ const getCAmsg = (deps, diagnostics): string => {
 
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
-const bulkComponentAnalysis =  (reqData) => {
+let metadataCache = new Map();
+let get_metadata = (ecosystem, name, version) => {
     return new Promise((resolve, reject) => {
-        const options = {};
-        options['url'] = config.server_url;
-        if(config.three_scale_user_token){
-            options['url'] += `/component-analyses/?user_key=${config.three_scale_user_token}`;
-        } else{
-            options['url'] += `/component-analyses`;
-        }
-        options['headers'] = {
-            'Content-Type': 'application/json',
-            'Authorization' : 'Bearer ' + config.api_token,
-        };
-        options['body'] = reqData;
-        request.post(options, (err, httpResponse, body) => {
-            if(err){
-                reject(err);
-            } else {
-                if ((httpResponse.statusCode === 200 || httpResponse.statusCode === 202)) {
-                    let resp = JSON.parse(body);
-                    resolve(resp);
-                } else if(httpResponse.statusCode === 401){
-                    reject(httpResponse.statusCode);
-                } else if(httpResponse.statusCode === 429 || httpResponse.statusCode === 403){
-                    reject(httpResponse.statusCode);
-                } else if(httpResponse.statusCode === 400){
-                    reject(httpResponse.statusCode);
-                } else {
-                    reject(httpResponse.statusCode);
+        let cacheKey = ecosystem + " " + name + " " + version;
+        let metadata = metadataCache[cacheKey];
+        if (metadata != null) {
+            winston.info('cache hit for ' + cacheKey);
+            connection.console.log('cache hit for ' + cacheKey);
+            resolve(metadata);
+        } else {
+            let part = [ecosystem, name, version].join('/');
+            const options = {};
+                options['url'] = config.server_url;
+                if(config.three_scale_user_token){
+                    options['url'] += `/component-analyses/${part}?user_key=${config.three_scale_user_token}`;
+                } else{
+                    options['url'] += `/component-analyses/${part}/`;
                 }
+                options['headers'] = {
+                    'Authorization' : 'Bearer ' + config.api_token,
+                };
+            winston.debug('get ' + options['url']);
+            connection.console.log('get ' + options['url']);
+            if(process.env.RECOMMENDER_API_URL){
+                request.get(options, (err, httpResponse, body) => {
+                    if(err){
+                        reject(err);
+                    } else {
+                        if ((httpResponse.statusCode === 200 || httpResponse.statusCode === 202)) {
+                            let response = JSON.parse(body);
+                            winston.debug('response ' + response);
+                            metadataCache[cacheKey] = response;
+                            resolve(response);
+                        } else if(httpResponse.statusCode === 401){
+                            reject(httpResponse.statusCode);
+                        } else if(httpResponse.statusCode === 429 || httpResponse.statusCode === 403){
+                            reject(httpResponse.statusCode);
+                        } else if(httpResponse.statusCode === 400){
+                            reject(httpResponse.statusCode);
+                        } else {
+                            reject(httpResponse.statusCode);
+                        }
+                    }
+                });
             }
-        });
+        }
     });
 };
 
-const constructPayload =  (ecosystem, packages) => {
-    return new Promise((resolve) => {
-        const regexVersion = new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
-        let request_payload = [];
-            for (let pck of packages) {
-                if (pck.name.value && pck.version.value && regexVersion.test(pck.version.value)
-                && !(request_payload.some((item) => item.package === pck.name.value && item.version === pck.version.value))) {
-                    request_payload.push({
-                        "ecosystem": ecosystem,
-                        "package": pck.name.value,
-                        "version": pck.version.value
-                    })
-                }
-            }
-        resolve(request_payload);
-    });   
-};
-
-let getComponentsInfo =  async (request_payload, aggregator, components, diagnostics, uri) => {
-    for (let i = 0; i < request_payload.length; i += 10) {
-        let pck = request_payload.slice(i, i + 10);
-        let req_data = JSON.stringify(pck);
-        await bulkComponentAnalysis(req_data).then((response) => {
-            let componentAnalysisResponse : any;
-            componentAnalysisResponse = response;
-            componentAnalysisResponse.filter((r) => {
-                components.filter((com) => {
-                    if(r.result.data[0].version.pname[0] === com.name.value && r.result.data[0].version.version[0] === com.version.value){
-                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, com, config, diagnostics, uri);
-                        pipeline.run(r);
-                        aggregator.aggregate(com);
-                    }
-                 });
-            });
-
-        })
-        .catch(err => {
-            return null; 
-        });
-    }    
-};
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
     /* Convert from readable stream into string */
@@ -296,9 +269,22 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
             connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
-        constructPayload('npm', deps).then((payload) => {
-            getComponentsInfo(payload, aggregator, deps, diagnostics, uri);
-        });
+        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+        for (let dependency of deps) {
+            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value)) {
+                get_metadata('npm', dependency.name.value, dependency.version.value).then((response) => {
+                    if (response != null) {
+                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
+                        pipeline.run(response);
+                    }
+                    aggregator.aggregate(dependency);
+                }).catch((err)=>{
+                    connection.console.log(err);
+                });
+            } else {
+                aggregator.aggregate(dependency);
+            }
+        }
     });
 });
 
@@ -315,9 +301,22 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
             connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
-        constructPayload('maven', deps).then((payload) => {
-            getComponentsInfo(payload, aggregator, deps, diagnostics, uri);
-        });
+        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+        for (let dependency of deps) {
+            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value)) {
+                get_metadata('maven', dependency.name.value, dependency.version.value).then((response) => {
+                    if (response != null) {
+                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
+                        pipeline.run(response);
+                    }
+                    aggregator.aggregate(dependency);
+                }).catch((err)=>{
+                    connection.console.log(err);
+                });
+            } else {
+                aggregator.aggregate(dependency);
+            }
+        }
     });
 });
 
@@ -332,9 +331,23 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
             connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
-        constructPayload('pypi', deps).then((payload) => {
-            getComponentsInfo(payload, aggregator, deps, diagnostics, uri);
-        });
+        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+        for (let dependency of deps) {
+            winston.info('python cmp name'+ dependency.name.value);
+            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
+                get_metadata('pypi', dependency.name.value, dependency.version.value).then((response) => {
+                    if (response != null) {
+                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
+                        pipeline.run(response);
+                    }
+                    aggregator.aggregate(dependency);
+                }).catch((err)=>{
+                    connection.console.log(err);
+                });
+            } else {
+                aggregator.aggregate(dependency);
+            }
+        }
     });
 });
 
@@ -366,7 +379,7 @@ connection.onCodeAction((params, token): CodeAction[] => {
             codeActions.push(codeAction)
         }
     }
-    return codeActions
+    return codeActions;
 });
 
 connection.onDidCloseTextDocument((params) => {
