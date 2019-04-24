@@ -228,7 +228,7 @@ let get_metadata = (ecosystem, name, version) => {
                     'Authorization' : 'Bearer ' + config.api_token,
                 };
             winston.debug('get ' + options['url']);
-            connection.console.log('get ' + options['url']);
+            connection.console.log('Scanning ' + part);
             if(process.env.RECOMMENDER_API_URL){
                 request.get(options, (err, httpResponse, body) => {
                     if(err){
