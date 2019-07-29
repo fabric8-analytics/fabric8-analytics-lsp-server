@@ -7,3 +7,5 @@ set -ex
 install_dependencies
 
 build_project
+
+run_unit_tests

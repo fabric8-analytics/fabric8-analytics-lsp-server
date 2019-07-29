@@ -72,75 +72,54 @@ class DependencyCollector implements IDependencyCollector {
 }
 
 class NaivePyParser {
-    constructor(objSam: any) {
-        this.objSam = objSam;
-        this.parser = this.createPyParser()
+    constructor(contents: string) {
+        this.dependencies = NaivePyParser.parseDependencies(contents);
     }
 
-    objSam: any;
-    parser: any;
-    dependencies: Array<IDependency> = [];
-    isDependency: boolean = false;
+    dependencies: Array<IDependency>;
 
-    createPyParser(): any {
-        let deps = this.dependencies;
-        this.objSam.forEach(function(obj) {
-            let entry: IKeyValueEntry = new KeyValueEntry(obj["pkgName"], {line: 0, column: 0});
-                entry.value = new Variant(ValueType.String, obj["version"]);
-                entry.value_position = {line: obj["line"], column: obj["column"]};
-                let dep: IDependency = new Dependency(entry);
-                deps.push(dep);
-        });
+    static parseDependencies(contents:string): Array<IDependency> {
+        const requirements = contents.split("\n");
+        return requirements.reduce((dependencies, req, index) => {
+            // skip any text after #
+            if (req.includes('#')) {
+                req = req.split('#')[0];
+            }
+            const parsedRequirement: Array<string>  = req.split(/[==,>=,<=]+/);
+            const pkgName:string = (parsedRequirement[0] || '').trim();
+            // skip empty lines
+            if (pkgName.length > 0) {
+                const version = (parsedRequirement[1] || '').trim();
+                const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
+                entry.value = new Variant(ValueType.String, version);
+                entry.value_position = { line: index + 1, column: req.indexOf(version) + 1 };
+                dependencies.push(new Dependency(entry));
+            }
+            return dependencies;
+        }, []);
     }
 
-     parse(): Array<IDependency> {
+    parse(): Array<IDependency> {
         return this.dependencies;
     }
 }
 
-let toObject = (arr:any) => {
-  let rv: Array<string> =  [];
-  for (let i:number = 0; i < arr.length; ++i){
-    if (arr[i] !== undefined){
-        // let line: string = arr[i].replace(/\s/g,'');
-        let line: string = arr[i];
-        let lineArr: any;
-        let lineStr: string;
-         if(line.indexOf('#')!== -1){
-            lineArr = line.split("#");
-            lineStr = lineArr[0];
-         }else{
-            lineStr = line;
-         }
-         let subArr: Array<string>  = lineStr.split(/[==,>=,<=]+/);
-         let subObj:any = {};
-         subObj["pkgName"] = subArr[0];
-         subObj["version"] = subArr[1] || "";
-         subObj["line"] = i+1;
-         subObj["column"] = subArr[0].length +3;
-		 rv.push(subObj);
-    }
-  }
-  return rv;
-}
 /* Process entries found in the txt files and collect all dependency
  * related information */
 class ReqDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
-        let tempArr = contents.split("\n");
-        let objSam = toObject(tempArr);
-        let parser = new NaivePyParser(objSam);
-        let dependencies: Array<IDependency> = parser.parse();
-        return dependencies;
+        let parser = new NaivePyParser(contents);
+        return parser.parse();
     }
+
 }
 
 class NaivePomXmlSaxParser {
     constructor(stream: Stream) {
         this.stream = stream;
-        this.parser = this.createParser()
+        this.parser = this.createParser();
     }
 
     stream: Stream;
