@@ -37,16 +37,40 @@
     "xml2object": "0.1.2"
   },
   "devDependencies": {
-    "@types/node": "^6.0.52",
     "@krux/condition-jenkins": "1.0.1",
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^6.0.52",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.0",
+    "nyc": "^14.1.1",
     "semantic-release": "8.2.0",
-    "typescript": "^2.1.4"
+    "ts-node": "^8.3.0",
+    "typescript": "^2.9.2"
   },
   "scripts": {
     "build": "npm run clean && node node_modules/typescript/bin/tsc -p . && cp LICENSE package.json README.md output && npm run dist",
     "clean": "rm -Rf ca-lsp-server.tar output/",
+    "test": "nyc mocha",
     "dist": "cp -r node_modules output/ && cp ./package.json output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ .",
     "semantic-release": "semantic-release pre && npm run build && cp -r .git output && npm publish output/ && semantic-release post"
+  },
+  "nyc": {
+    "include": [
+      "src/**/*.ts"
+    ],
+    "extension": [
+      ".ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ],
+    "reporter": [
+      "text",
+      "html"
+    ],
+    "sourceMap": true,
+    "instrument": true
   },
   "release": {
     "branch": "master",

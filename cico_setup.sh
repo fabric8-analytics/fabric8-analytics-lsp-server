@@ -51,6 +51,19 @@ build_project() {
   fi
 }
 
+run_unit_tests() {
+    # Exec unit tests
+    npm test
+
+    if [ $? -eq 0 ]; then
+        echo 'CICO: unit tests OK'
+    else
+        echo 'CICO: unit tests FAIL'
+        exit 2
+    fi
+}
+
+
 . cico_release.sh
 
 load_jenkins_vars
