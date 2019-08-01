@@ -8,6 +8,13 @@ Language Server(LSP) that can analyze your dependencies specified in `package.js
 npm install
 npm run-script build
 ```
+
+## Test
+
+```
+npm test
+```
+
 ## Setup
 
 we use 2 environment variables to setup the recommender API either you need to set OSIO user token or 3scale User key along with Api url as in below.
