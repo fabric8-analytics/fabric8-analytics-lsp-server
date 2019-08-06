@@ -44,7 +44,7 @@
     "chai": "^4.2.0",
     "mocha": "^6.2.0",
     "nyc": "^14.1.1",
-    "semantic-release": "8.2.0",
+    "semantic-release": "^15.13.20",
     "ts-node": "^8.3.0",
     "typescript": "^2.9.2"
   },
@@ -53,7 +53,7 @@
     "clean": "rm -Rf ca-lsp-server.tar output/",
     "test": "nyc mocha",
     "dist": "cp -r node_modules output/ && cp ./package.json output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ .",
-    "semantic-release": "semantic-release pre && npm run build && cp -r .git output && npm publish output/ && semantic-release post"
+    "semantic-release": "npm run build && cp -r .git output && npm publish output/ && npx semantic-release"
   },
   "nyc": {
     "include": [
