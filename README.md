@@ -43,4 +43,4 @@ Semantic release are done via fabric8cd using `semantic-release`.
 
 ## License
 
-Apache-2.0 
+Apache-2.0
