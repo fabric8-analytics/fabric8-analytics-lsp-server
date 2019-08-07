@@ -37,23 +37,25 @@
     "xml2object": "0.1.2"
   },
   "devDependencies": {
-    "@krux/condition-jenkins": "1.0.1",
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.7",
     "@types/node": "^6.0.52",
     "chai": "^4.2.0",
     "mocha": "^6.2.0",
     "nyc": "^14.1.1",
-    "semantic-release": "^15.13.20",
+    "semantic-release": "^15.13.19",
     "ts-node": "^8.3.0",
     "typescript": "^2.9.2"
   },
   "scripts": {
-    "build": "npm run clean && node node_modules/typescript/bin/tsc -p . && cp LICENSE package.json README.md output && npm run dist",
+    "build-semantic": "npm run clean && node node_modules/typescript/bin/tsc -p . && cp LICENSE package.json README.md output",
+    "build": "npm run build-semantic && npm run dist",
     "clean": "rm -Rf ca-lsp-server.tar output/",
     "test": "nyc mocha",
-    "dist": "cp -r node_modules output/ && cp ./package.json output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ .",
-    "semantic-release": "npm run build && cp -r .git output && npm publish output/ && npx semantic-release"
+    "semantic-pre": "cp -a node_modules output/ && cp -r ./package.json output/ && cp -r ./package-lock.json output/",
+    "semantic-post": "node -p -e \"require('./output/package.json').version\" > output/VERSION && tar cvjf ca-lsp-server.tar --exclude='node_modules/typescript'  -C output/ .",
+    "dist": "npm run semantic-pre && npm run semantic-post",
+    "semantic-release": "npm run build-semantic && npm run semantic-pre && semantic-release && npm run semantic-post"
   },
   "nyc": {
     "include": [
@@ -75,8 +77,15 @@
   "release": {
     "branch": "master",
     "debug": false,
-    "verifyConditions": {
-      "path": "./node_modules/@krux/condition-jenkins"
-    }
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github",
+      [ "@semantic-release/npm",
+        {
+          "pkgRoot": "output"
+        }
+      ]
+    ]
   }
 }

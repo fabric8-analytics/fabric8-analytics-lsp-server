@@ -9,6 +9,8 @@ load_jenkins_vars() {
         | sed 's/^/export /g' \
         > ~/.jenkins-env
       source ~/.jenkins-env
+      # It is used by semantic-release node module to check whether it is running on CI.
+      export CI=true
 
       echo "CICO: Jenkins environment variables loaded"
   fi
