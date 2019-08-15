@@ -19,7 +19,7 @@ function release() {
     npm config set loglevel verbose
 
     # Build and Release fabric8-analytics-lsp-server (It will update the tag on github and push fabric8-analytics-lsp-server to npmjs.org)
-    npm run semantic-release
+    CI=true npm run semantic-release
 
     publish_tar
 
