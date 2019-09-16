@@ -31,22 +31,22 @@
   },
   "dependencies": {
     "request": "^2.79.0",
-    "stream-json": "0.4.2",
-    "vscode-languageserver": "^4.1.3",
-    "winston": "2.3.1",
-    "xml2object": "0.1.2"
+    "stream-json": "1.3.1",
+    "winston": "3.2.1",
+    "xml2object": "0.1.2",
+    "vscode-languageserver": "^5.3.0-next.9"
   },
   "devDependencies": {
     "@krux/condition-jenkins": "1.0.1",
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.7",
-    "@types/node": "^6.0.52",
+    "@types/node": "^12.7.5",
     "chai": "^4.2.0",
     "mocha": "^6.2.0",
     "nyc": "^14.1.1",
     "semantic-release": "8.2.0",
     "ts-node": "^8.3.0",
-    "typescript": "^2.9.2"
+    "typescript": "^3.6.3"
   },
   "scripts": {
     "build": "npm run clean && node node_modules/typescript/bin/tsc -p . && cp LICENSE package.json README.md output && npm run dist",

@@ -18,17 +18,18 @@ const https = require('https');
 const request = require('request');
 const winston = require('winston');
 
- winston.level = 'debug';
- winston.add(winston.transports.File, { filename: '/workspace-logs/ls-bayesian/bayesian.log' });
- winston.remove(winston.transports.Console);
- winston.info('Starting Bayesian');
-
-/*
-let log_file = fs.openSync('file_log.log', 'w');
-let _LOG = (data) => {
-    fs.writeFileSync('file_log.log', data + '\n');
+let transport;
+try {
+  transport = new winston.transports.File({ filename: '/workspace-logs/ls-bayesian/bayesian.log' });
+} catch(err) {
+  transport = new winston.transports.Console({ silent: true });
 }
-*/
+const logger = winston.createLogger({
+  level: 'debug',
+  format: winston.format.simple(),
+  transports: [ transport ]
+});
+logger.info('Starting Bayesian');
 
 enum EventStream {
   Invalid,
@@ -212,7 +213,7 @@ let get_metadata = (ecosystem, name, version) => {
         let cacheKey = ecosystem + " " + name + " " + version;
         let metadata = metadataCache[cacheKey];
         if (metadata != null) {
-            winston.info('cache hit for ' + cacheKey);
+            logger.info('cache hit for ' + cacheKey);
             connection.console.log('cache hit for ' + cacheKey);
             resolve(metadata);
         } else {
@@ -227,7 +228,7 @@ let get_metadata = (ecosystem, name, version) => {
                 options['headers'] = {
                     'Authorization' : 'Bearer ' + config.api_token,
                 };
-            winston.debug('get ' + options['url']);
+            logger.debug('get ' + options['url']);
             connection.console.log('Scanning ' + part);
             if(process.env.RECOMMENDER_API_URL){
                 request.get(options, (err, httpResponse, body) => {
@@ -236,7 +237,7 @@ let get_metadata = (ecosystem, name, version) => {
                     } else {
                         if ((httpResponse.statusCode === 200 || httpResponse.statusCode === 202)) {
                             let response = JSON.parse(body);
-                            winston.debug('response ' + response);
+                            logger.debug('response ' + response);
                             metadataCache[cacheKey] = response;
                             resolve(response);
                         } else if(httpResponse.statusCode === 401){
@@ -333,7 +334,7 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
         });
         const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
         for (let dependency of deps) {
-            winston.info('python cmp name'+ dependency.name.value);
+            logger.info('python cmp name'+ dependency.name.value);
             if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
                 get_metadata('pypi', dependency.name.value, dependency.version.value).then((response) => {
                     if (response != null) {
