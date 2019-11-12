@@ -6,8 +6,10 @@
 import { Stream } from 'stream';
 /* Since the following modules are written in regular JS we can't use TS's import statement
    so we need to `require` those the JS way */
-import { Parser, Streamer, Emitter, Packer } from 'stream-json';
-
+import * as Parser from 'stream-json/ClassicParser';
+import * as Streamer from 'stream-json/Streamer';
+import * as Emitter from 'stream-json/Emitter';
+import * as Packer from 'stream-json/Packer';
 /* Determine to which class the emitted token belongs */
 enum TokenMarker {
   Invalid,
