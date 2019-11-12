@@ -210,14 +210,14 @@ const caDefaultMsg = 'Checking for security vulnerabilities ...';
 const metadataCache = new Map();
 const get_metadata = (ecosystem, name, version) => {
     return new Promise((resolve, reject) => {
-        let cacheKey = ecosystem + " " + name + " " + version;
-        let metadata = metadataCache[cacheKey];
+        const cacheKey = ecosystem + " " + name + " " + version;
+        const metadata = metadataCache[cacheKey];
         if (metadata != null) {
             logger.info('cache hit for ' + cacheKey);
             connection.console.log('cache hit for ' + cacheKey);
             resolve(metadata);
         } else {
-            let part = [ecosystem, name, version].join('/');
+            const part = [ecosystem, name, version].map(v => encodeURIComponent(v)).join('/');
             const options = {};
                 options['url'] = config.server_url;
                 if(config.three_scale_user_token){
@@ -250,6 +250,7 @@ const get_metadata = (ecosystem, name, version) => {
     });
 };
 
+const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = (ecosystem: string, uri: string, contents: string, collector: IDependencyCollector) => {
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
     collector.collect(contents).then((deps) => {
@@ -259,7 +260,6 @@ const sendDiagnostics = (ecosystem: string, uri: string, contents: string, colle
             connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
-        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
         for (let dependency of deps) {
             if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
                 get_metadata(ecosystem, dependency.name.value, dependency.version.value).then((response) => {
@@ -269,7 +269,8 @@ const sendDiagnostics = (ecosystem: string, uri: string, contents: string, colle
                     }
                     aggregator.aggregate(dependency);
                 }).catch((err)=>{
-                    connection.console.log(err);
+                    aggregator.aggregate(dependency);
+                    connection.console.log(`Error ${err} while ${dependency.name.value}:${dependency.version.value}`);
                 });
             } else {
                 aggregator.aggregate(dependency);
