@@ -9,8 +9,8 @@ import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
-import { stream_from_string } from './utils';
-import { DependencyCollector, IDependency, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
+import { Stream } from 'stream';
+import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 
 const url = require('url');
@@ -207,17 +207,17 @@ const getCAmsg = (deps, diagnostics): string => {
 
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
-let metadataCache = new Map();
-let get_metadata = (ecosystem, name, version) => {
+const metadataCache = new Map();
+const get_metadata = (ecosystem, name, version) => {
     return new Promise((resolve, reject) => {
-        let cacheKey = ecosystem + " " + name + " " + version;
-        let metadata = metadataCache[cacheKey];
+        const cacheKey = ecosystem + " " + name + " " + version;
+        const metadata = metadataCache[cacheKey];
         if (metadata != null) {
             logger.info('cache hit for ' + cacheKey);
             connection.console.log('cache hit for ' + cacheKey);
             resolve(metadata);
         } else {
-            let part = [ecosystem, name, version].join('/');
+            const part = [ecosystem, name, version].map(v => encodeURIComponent(v)).join('/');
             const options = {};
                 options['url'] = config.server_url;
                 if(config.three_scale_user_token){
@@ -240,12 +240,6 @@ let get_metadata = (ecosystem, name, version) => {
                             logger.debug('response ' + response);
                             metadataCache[cacheKey] = response;
                             resolve(response);
-                        } else if(httpResponse.statusCode === 401){
-                            reject(httpResponse.statusCode);
-                        } else if(httpResponse.statusCode === 429 || httpResponse.statusCode === 403){
-                            reject(httpResponse.statusCode);
-                        } else if(httpResponse.statusCode === 400){
-                            reject(httpResponse.statusCode);
                         } else {
                             reject(httpResponse.statusCode);
                         }
@@ -256,75 +250,9 @@ let get_metadata = (ecosystem, name, version) => {
     });
 };
 
-
-files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
-    /* Convert from readable stream into string */
-    let stream = stream_from_string(contents);
-    let collector = new DependencyCollector(null);
+const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+const sendDiagnostics = (ecosystem: string, uri: string, contents: string, collector: IDependencyCollector) => {
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
-
-    collector.collect(stream).then((deps) => {
-        let diagnostics = [];
-        /* Aggregate asynchronous requests and send the diagnostics at once */
-        let aggregator = new Aggregator(deps, () => {
-            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
-            connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
-        });
-        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
-        for (let dependency of deps) {
-            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value)) {
-                get_metadata('npm', dependency.name.value, dependency.version.value).then((response) => {
-                    if (response != null) {
-                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
-                        pipeline.run(response);
-                    }
-                    aggregator.aggregate(dependency);
-                }).catch((err)=>{
-                    connection.console.log(err);
-                });
-            } else {
-                aggregator.aggregate(dependency);
-            }
-        }
-    });
-});
-
-files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
-    /* Convert from readable stream into string */
-    let stream = stream_from_string(contents);
-    let collector = new PomXmlDependencyCollector();
-    connection.sendNotification('caNotification', {'data': caDefaultMsg});
-
-    collector.collect(stream).then((deps) => {
-        let diagnostics = [];
-        /* Aggregate asynchronous requests and send the diagnostics at once */
-        let aggregator = new Aggregator(deps, () => {
-            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
-            connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
-        });
-        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
-        for (let dependency of deps) {
-            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value)) {
-                get_metadata('maven', dependency.name.value, dependency.version.value).then((response) => {
-                    if (response != null) {
-                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
-                        pipeline.run(response);
-                    }
-                    aggregator.aggregate(dependency);
-                }).catch((err)=>{
-                    connection.console.log(err);
-                });
-            } else {
-                aggregator.aggregate(dependency);
-            }
-        }
-    });
-});
-
-files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
-    let collector = new ReqDependencyCollector();
-    connection.sendNotification('caNotification', {'data': caDefaultMsg});
-
     collector.collect(contents).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
@@ -332,24 +260,36 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
             connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
-        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
         for (let dependency of deps) {
-            logger.info('python cmp name'+ dependency.name.value);
             if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
-                get_metadata('pypi', dependency.name.value, dependency.version.value).then((response) => {
+                get_metadata(ecosystem, dependency.name.value, dependency.version.value).then((response) => {
                     if (response != null) {
                         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
                         pipeline.run(response);
                     }
                     aggregator.aggregate(dependency);
                 }).catch((err)=>{
-                    connection.console.log(err);
+                    aggregator.aggregate(dependency);
+                    connection.console.log(`Error ${err} while ${dependency.name.value}:${dependency.version.value}`);
                 });
             } else {
                 aggregator.aggregate(dependency);
             }
         }
     });
+};
+
+files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
+    sendDiagnostics('npm', uri, contents, new DependencyCollector(null));
+});
+
+files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
+    sendDiagnostics('maven', uri, contents, new PomXmlDependencyCollector());
+});
+
+
+files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
+    sendDiagnostics('pypi', uri, contents, new ReqDependencyCollector());
 });
 
 let checkDelay;
