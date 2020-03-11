@@ -206,7 +206,7 @@ const getCAmsg = (deps, diagnostics): string => {
 };
 
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
-
+const custom_header = JSON.parse(process.env.CUSTOM_HEADER);
 const metadataCache = new Map();
 const get_metadata = (ecosystem, name, version) => {
     return new Promise((resolve, reject) => {
@@ -227,6 +227,8 @@ const get_metadata = (ecosystem, name, version) => {
                 }
                 options['headers'] = {
                     'Authorization' : 'Bearer ' + config.api_token,
+                    'security-vendor' : custom_header.security_vendor,
+                    'plugin-version' : custom_header.plugin_version,
                 };
             logger.debug('get ' + options['url']);
             connection.console.log('Scanning ' + part);
