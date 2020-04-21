@@ -1,6 +1,6 @@
 # Dependency Analytics LSP Server
 
-[![Build Status](https://ci.centos.org/job/devtools-fabric8-analytics-lsp-server/100/badge/icon)](https://ci.centos.org/job/devtools-fabric8-analytics-lsp-server/100/)
+[![Build Status](https://ci.centos.org/job/devtools-fabric8-analytics-lsp-server/badge/icon)](https://ci.centos.org/job/devtools-fabric8-analytics-lsp-server/)
 
 Language Server(LSP) that can analyze your dependencies specified in `package.json` and `pom.xml`.
 
