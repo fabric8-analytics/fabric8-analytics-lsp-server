@@ -11,7 +11,7 @@ import {
 } from 'vscode-languageserver';
 import { Stream } from 'stream';
 import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
-import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
+import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap, VulPrivate, VulPublic, SetDefault } from './consumers';
 
 const url = require('url');
 const https = require('https');
@@ -191,18 +191,29 @@ let rc_file = path.join(config.home_dir, '.analysis_rc');
 if (fs.existsSync(rc_file)) {
     let rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
     if ('server' in rc) {
-        config.server_url = `${rc.server}/api/v1`;
+        config.server_url = `${rc.server}/api/v2`;
     }
 }
 
 let DiagnosticsEngines = [SecurityEngine];
 
 const getCAmsg = (deps, diagnostics): string => {
+    let msg : string;
     if(diagnostics.length > 0) {
-        return `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`;
+        if (VulPrivate > 0 && VulPublic > 0) {
+            msg = `Scanned ${deps.length} runtime dependencies, flagged ${VulPublic} Known Security Vulnerability and ${VulPrivate} Security Advisory along with quick fixes`;
+        } else if (VulPrivate == 0 && VulPublic > 0) {
+            msg = `Scanned ${deps.length} runtime dependencies, flagged ${VulPublic} Known Security Vulnerability along with quick fixes`;
+        } else if (VulPrivate > 0 && VulPublic == 0) {
+            msg = `Scanned ${deps.length} runtime dependencies, flagged ${VulPrivate} Security Advisory`;
+        } else {
+            msg = `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
+        }
     } else {
-        return `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
+        msg = `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
     }
+    SetDefault(0, 0);
+    return msg
 };
 
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
@@ -260,6 +271,7 @@ const sendDiagnostics = (ecosystem: string, uri: string, contents: string, colle
             connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
+        
         for (let dependency of deps) {
             if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
                 get_metadata(ecosystem, dependency.name.value, dependency.version.value).then((response) => {
@@ -286,7 +298,6 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
 files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
     sendDiagnostics('maven', uri, contents, new PomXmlDependencyCollector());
 });
-
 
 files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
     sendDiagnostics('pypi', uri, contents, new ReqDependencyCollector());
