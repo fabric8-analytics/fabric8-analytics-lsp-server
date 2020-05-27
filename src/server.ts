@@ -11,7 +11,7 @@ import {
 } from 'vscode-languageserver';
 import { Stream } from 'stream';
 import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
-import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap, VulPrivate, VulPublic, SetDefault } from './consumers';
+import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 
 const url = require('url');
 const https = require('https');
@@ -197,22 +197,21 @@ if (fs.existsSync(rc_file)) {
 
 let DiagnosticsEngines = [SecurityEngine];
 
-const getCAmsg = (deps, diagnostics): string => {
+const getCAmsg = (deps, diagnostics, totalCount): string => {
     let msg : string;
     if(diagnostics.length > 0) {
-        if (VulPrivate > 0 && VulPublic > 0) {
-            msg = `Scanned ${deps.length} runtime dependencies, flagged ${VulPublic} Known Security Vulnerability and ${VulPrivate} Security Advisory along with quick fixes`;
-        } else if (VulPrivate == 0 && VulPublic > 0) {
-            msg = `Scanned ${deps.length} runtime dependencies, flagged ${VulPublic} Known Security Vulnerability along with quick fixes`;
-        } else if (VulPrivate > 0 && VulPublic == 0) {
-            msg = `Scanned ${deps.length} runtime dependencies, flagged ${VulPrivate} Security Advisory`;
+        if (totalCount.advisoryCount > 0 && totalCount.vulnerabilityCount > 0) {
+            msg = `Scanned ${deps.length} runtime dependencies, flagged ${totalCount.vulnerabilityCount} Known Security Vulnerability and ${totalCount.advisoryCount} Security Advisory along with quick fixes`;
+        } else if (totalCount.advisoryCount == 0 && totalCount.vulnerabilityCount > 0) {
+            msg = `Scanned ${deps.length} runtime dependencies, flagged ${totalCount.vulnerabilityCount} Known Security Vulnerability along with quick fixes`;
+        } else if (totalCount.advisoryCount > 0 && totalCount.vulnerabilityCount == 0) {
+            msg = `Scanned ${deps.length} runtime dependencies, flagged ${totalCount.advisoryCount} Security Advisory`;
         } else {
             msg = `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
         }
     } else {
         msg = `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
     }
-    SetDefault(0, 0);
     return msg
 };
 
@@ -268,16 +267,25 @@ const sendDiagnostics = (ecosystem: string, uri: string, contents: string, colle
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
-            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
+            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         
+        let totalCount = {
+            vulnerabilityCount : 0,
+            advisoryCount : 0
+        }
+
         for (let dependency of deps) {
             if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
                 get_metadata(ecosystem, dependency.name.value, dependency.version.value).then((response) => {
                     if (response != null) {
                         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
                         pipeline.run(response);
+                        for (let item of pipeline.items) {
+                            totalCount.vulnerabilityCount += item.vulnerabilityCount;
+                            totalCount.advisoryCount += item.advisoryCount;
+                        }
                     }
                     aggregator.aggregate(dependency);
                 }).catch((err)=>{

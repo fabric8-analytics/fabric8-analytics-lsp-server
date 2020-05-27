@@ -7,10 +7,6 @@ import { IDependency } from './collector';
 import { get_range } from './utils';
 import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri } from 'vscode-languageserver'
 
-/* Count total # of Public and Private Vulnerability */
-let VulPublic = 0;
-let VulPrivate = 0;
-
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor
 {
@@ -35,6 +31,8 @@ interface IConsumer
 {
     binding: IBindingDescriptor;
     item: any;
+    vulnerabilityCount: any;
+    advisoryCount: any;
     consume(data: any): boolean;
 };
 
@@ -45,7 +43,7 @@ interface IProducer<T>
 };
 
 /* Each pipeline item is defined as a single consumer and producer pair */
-interface IPipelineItem<T> extends IConsumer, IProducer<T> {}; 
+interface IPipelineItem<T> extends IConsumer, IProducer<T> {};
 
 /* House bunches of `IPipelineItem`'s */
 interface IPipeline<T>
@@ -89,16 +87,16 @@ class AnalysisConsumer implements IConsumer
 {
     binding: IBindingDescriptor;
     changeToBinding: IBindingDescriptor;
-    regLinkBinding : IBindingDescriptor;
+    registrationLinkBinding : IBindingDescriptor;
     messageBinding : IBindingDescriptor;
-    pubVulBinding : IBindingDescriptor;
-    pvtVulBinding : IBindingDescriptor;
+    vulnerabilityCountBinding : IBindingDescriptor;
+    advisoryCountBinding : IBindingDescriptor;
     item: any;
     changeTo: string = null;
-    regLink: string = null;
+    registrationLink: string = null;
     message: string = null;
-    pubVul: number = 0;
-    pvtVul: number = 0;
+    vulnerabilityCount: number = 0;
+    advisoryCount: number = 0;
     constructor(public config: any){}
     consume(data: any): boolean {
         if (this.binding != null) {
@@ -109,17 +107,17 @@ class AnalysisConsumer implements IConsumer
         if (this.changeToBinding != null) {
             this.changeTo = bind_object(data, this.changeToBinding);
         }
-        if (this.regLinkBinding != null) {
-            this.regLink = bind_object(data, this.regLinkBinding);
+        if (this.registrationLinkBinding != null) {
+            this.registrationLink = bind_object(data, this.registrationLinkBinding);
         }
         if (this.messageBinding != null) {
             this.message = bind_object(data, this.messageBinding);
         }
-        if (this.pubVulBinding != null) {
-            this.pubVul = bind_object(data, this.pubVulBinding);
+        if (this.vulnerabilityCountBinding != null) {
+            this.vulnerabilityCount = bind_object(data, this.vulnerabilityCountBinding);
         }
-        if (this.pvtVulBinding != null) {
-            this.pvtVul = bind_object(data, this.pvtVulBinding);
+        if (this.advisoryCountBinding != null) {
+            this.advisoryCount = bind_object(data, this.advisoryCountBinding);
         }
         return this.item != null;
     }
@@ -147,9 +145,6 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
     }   
 }
 
-/* DocumentUri as a URI object to pass URLs */
-let targerLink : DocumentUri;
-
 /* Report CVEs in found dependencies */
 class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 {
@@ -159,25 +154,23 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
         /* recommendation to use a different version */
         this.changeToBinding = {path: ['recommended_versions']};
         /* snyk registration link */
-        this.regLinkBinding = {path: ['registration_link']};
+        this.registrationLinkBinding = {path: ['registration_link']};
         /* Diagnostic message */
         this.messageBinding = {path: ['message']};
-        /* Public and Private vulnerability count */
-        this.pubVulBinding = {path: ['known_security_vulnerability_count']};
-        this.pvtVulBinding = {path: ['security_advisory_count']};
+        /* Publicly known Security Vulnerability count */
+        this.vulnerabilityCountBinding = {path: ['known_security_vulnerability_count']};
+        /* Private Security Advisory count */
+        this.advisoryCountBinding = {path: ['security_advisory_count']};
     }
 
     produce(ctx: any): Diagnostic[] {
         if (this.item.length > 0) {
-            /* Counting total # of Public and Private Vulnerability */
-            VulPrivate += this.pvtVul;
-            VulPublic += this.pubVul;
-            /* Assign a string to a type DocumentUri */
-            targerLink = this.regLink;
+            /* DocumentUri as a URI object to pass URLs */
+            this.registrationLink as DocumentUri;
             /* The diagnostic's severity. */
             let diagSeverity;
 
-            if (this.pubVul == 0 && this.pvtVul > 0) {
+            if (this.vulnerabilityCount == 0 && this.advisoryCount > 0) {
                 diagSeverity = DiagnosticSeverity.Information; 
             } else {
                 diagSeverity = DiagnosticSeverity.Error;
@@ -188,11 +181,11 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                 range: get_range(this.context.version),
                 message: `${this.message}`,
                 source: 'Dependency Analytics',
-                code: `Find out more: ${targerLink}` 
+                code: `Find out more: ${this.registrationLink}` 
             };
 
             // TODO: this can be done lazily
-            if (this.changeTo != null && this.pubVul > 0) {
+            if (this.changeTo != null && this.vulnerabilityCount > 0) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
@@ -216,10 +209,5 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 };
 
 let codeActionsMap = new Map<string, CodeAction>();
-/* Reset Public and Private Vulnerability counts to zero*/
-let SetDefault = (v1: number, v2: number) => {
-    VulPrivate = v1;
-    VulPublic = v2;
-};
 
-export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap, VulPrivate, VulPublic, SetDefault };
+export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap };
