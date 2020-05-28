@@ -5,7 +5,7 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri } from 'vscode-languageserver'
+import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind } from 'vscode-languageserver'
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor
@@ -31,8 +31,6 @@ interface IConsumer
 {
     binding: IBindingDescriptor;
     item: any;
-    vulnerabilityCount: any;
-    advisoryCount: any;
     consume(data: any): boolean;
 };
 
@@ -165,8 +163,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 
     produce(ctx: any): Diagnostic[] {
         if (this.item.length > 0) {
-            /* DocumentUri as a URI object to pass URLs */
-            this.registrationLink as DocumentUri;
             /* The diagnostic's severity. */
             let diagSeverity;
 
@@ -179,17 +175,17 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             let diagnostic = {
                 severity: diagSeverity,
                 range: get_range(this.context.version),
-                message: `${this.message}`,
+                message: this.message,
                 source: 'Dependency Analytics',
                 code: `Find out more: ${this.registrationLink}` 
             };
 
             // TODO: this can be done lazily
-            if (this.changeTo != null && this.vulnerabilityCount > 0) {
+            if (this.changeTo && this.vulnerabilityCount > 0) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
-                    kind: CodeActionKind.QuickFix,  //provide a QuickFix option if recommended version is available
+                    kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
                     edit: {
                         changes: {
                         }
