@@ -286,7 +286,8 @@ const sendDiagnostics = (ecosystem: string, uri: string, contents: string, colle
                     if (response != null) {
                         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
                         pipeline.run(response);
-                        for (let item of pipeline.items) {
+                        for (const item of pipeline.items) {
+
                             let secEng = item as SecurityEngine;
                             totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
                             totalCount.advisoryCount += secEng.advisoryCount;
