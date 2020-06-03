@@ -5,7 +5,7 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind } from 'vscode-languageserver'
+import { Diagnostic, DiagnosticSeverity, CodeAction } from 'vscode-languageserver'
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor
@@ -41,7 +41,7 @@ interface IProducer<T>
 };
 
 /* Each pipeline item is defined as a single consumer and producer pair */
-interface IPipelineItem<T> extends IConsumer, IProducer<T> {};
+interface IPipelineItem<T> extends IConsumer, IProducer<T> {}; 
 
 /* House bunches of `IPipelineItem`'s */
 interface IPipeline<T>
@@ -85,16 +85,8 @@ class AnalysisConsumer implements IConsumer
 {
     binding: IBindingDescriptor;
     changeToBinding: IBindingDescriptor;
-    registrationLinkBinding : IBindingDescriptor;
-    messageBinding : IBindingDescriptor;
-    vulnerabilityCountBinding : IBindingDescriptor;
-    advisoryCountBinding : IBindingDescriptor;
     item: any;
     changeTo: string = null;
-    registrationLink: string = null;
-    message: string = null;
-    vulnerabilityCount: number = 0;
-    advisoryCount: number = 0;
     constructor(public config: any){}
     consume(data: any): boolean {
         if (this.binding != null) {
@@ -104,18 +96,6 @@ class AnalysisConsumer implements IConsumer
         }
         if (this.changeToBinding != null) {
             this.changeTo = bind_object(data, this.changeToBinding);
-        }
-        if (this.registrationLinkBinding != null) {
-            this.registrationLink = bind_object(data, this.registrationLinkBinding);
-        }
-        if (this.messageBinding != null) {
-            this.message = bind_object(data, this.messageBinding);
-        }
-        if (this.vulnerabilityCountBinding != null) {
-            this.vulnerabilityCount = bind_object(data, this.vulnerabilityCountBinding);
-        }
-        if (this.advisoryCountBinding != null) {
-            this.advisoryCount = bind_object(data, this.advisoryCountBinding);
         }
         return this.item != null;
     }
@@ -129,8 +109,9 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
     }
 
     produce(): Diagnostic[] {
-        if (this.item == {} && (this.item.finished_at === undefined ||
-            this.item.finished_at == null)) {
+        if (this.item == {} || 
+            this.item.finished_at === undefined ||
+            this.item.finished_at == null) {
             return [{
                 severity: DiagnosticSeverity.Information,
                 range: get_range(this.context.version),
@@ -148,44 +129,31 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 {
     constructor(public context: IDependency, config: any) {
         super(config);
-        this.binding = {path: ['component_analyses', 'vulnerability']};
+        this.binding = {path: ['result', 'recommendation', 'component-analyses', 'cve']};
         /* recommendation to use a different version */
-        this.changeToBinding = {path: ['recommended_versions']};
-        /* snyk registration link */
-        this.registrationLinkBinding = {path: ['registration_link']};
-        /* Diagnostic message */
-        this.messageBinding = {path: ['message']};
-        /* Publicly known Security Vulnerability count */
-        this.vulnerabilityCountBinding = {path: ['known_security_vulnerability_count']};
-        /* Private Security Advisory count */
-        this.advisoryCountBinding = {path: ['security_advisory_count']};
+        this.changeToBinding = {path: ['result', 'recommendation', 'change_to']};
     }
 
     produce(ctx: any): Diagnostic[] {
         if (this.item.length > 0) {
-            /* The diagnostic's severity. */
-            let diagSeverity;
-
-            if (this.vulnerabilityCount == 0 && this.advisoryCount > 0) {
-                diagSeverity = DiagnosticSeverity.Information; 
-            } else {
-                diagSeverity = DiagnosticSeverity.Error;
+            let cveList = [];
+            for (let cve of this.item) {
+                cveList.push(cve['id'])
             }
+            let cves = cveList.join(' ');
 
             let diagnostic = {
-                severity: diagSeverity,
+                severity: DiagnosticSeverity.Error,
                 range: get_range(this.context.version),
-                message: this.message,
-                source: 'Dependency Analytics',
-                code: `Find out more: ${this.registrationLink}` 
+                message: `Application dependency ${this.context.name.value}-${this.context.version.value} is vulnerable: ${cves}`,
+                source: 'Dependency Analytics'
             };
 
             // TODO: this can be done lazily
-            if (this.changeTo && this.vulnerabilityCount > 0) {
+            if (this.changeTo != null) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
-                    kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
                     edit: {
                         changes: {
                         }
@@ -195,6 +163,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                     range: diagnostic.range,
                     newText: this.changeTo
                 }];
+                diagnostic.message += ". Recommendation: use version " + this.changeTo;
                 codeActionsMap[diagnostic.message] = codeAction
             }
             return [diagnostic]
