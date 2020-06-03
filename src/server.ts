@@ -191,29 +191,18 @@ let rc_file = path.join(config.home_dir, '.analysis_rc');
 if (fs.existsSync(rc_file)) {
     let rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
     if ('server' in rc) {
-        config.server_url = `${rc.server}/api/v2`;
+        config.server_url = `${rc.server}/api/v1`;
     }
 }
 
 let DiagnosticsEngines = [SecurityEngine];
 
-const getCAmsg = (deps, diagnostics, totalCount): string => {
-    let msg = `Scanned ${deps.length} runtime ${deps.length == 1 ? 'dependency' : 'dependencies'}, `;
-
-    
+const getCAmsg = (deps, diagnostics): string => {
     if(diagnostics.length > 0) {
-        const vulStr = (count: number) => count == 1 ? 'Vulnerability' : 'Vulnerabilities';
-        const advStr = (count: number) => count == 1 ? 'Advisory' : 'Advisories';
-        const knownVulnMsg =  !totalCount.vulnerabilityCount || `${totalCount.vulnerabilityCount} Known Security ${vulStr(totalCount.vulnerabilityCount)}`;
-        const advisoryMsg =  !totalCount.advisoryCount || `${totalCount.advisoryCount} Security ${advStr(totalCount.advisoryCount)}`;
-        let summaryMsg = [knownVulnMsg, advisoryMsg].filter(x => x !== true).join(' and ');
-        summaryMsg += (totalCount.vulnerabilityCount > 0) ? " along with quick fixes" : "";
-        msg += summaryMsg ? ('flagged ' + summaryMsg) : 'No potential security vulnerabilities found';
+        return `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`;
     } else {
-        msg += `No potential security vulnerabilities found`;
+        return `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
     }
-
-    return msg
 };
 
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
@@ -260,12 +249,6 @@ const get_metadata = (ecosystem, name, version) => {
         }
     });
 };
-/* Total Counts of #Known Security Vulnerability and #Security Advisory */
-class TotalCount 
-{
-    vulnerabilityCount: number = 0;
-    advisoryCount: number = 0;
-};
 
 const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = (ecosystem: string, uri: string, contents: string, collector: IDependencyCollector) => {
@@ -274,23 +257,15 @@ const sendDiagnostics = (ecosystem: string, uri: string, contents: string, colle
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
-            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
+            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
-        
-        let totalCount = new TotalCount();
-
         for (let dependency of deps) {
             if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
                 get_metadata(ecosystem, dependency.name.value, dependency.version.value).then((response) => {
                     if (response != null) {
                         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
                         pipeline.run(response);
-                        for (const item of pipeline.items) {
-                            let secEng = item as SecurityEngine;
-                            totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
-                            totalCount.advisoryCount += secEng.advisoryCount;
-                        }
                     }
                     aggregator.aggregate(dependency);
                 }).catch((err)=>{
@@ -311,6 +286,7 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
 files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
     sendDiagnostics('maven', uri, contents, new PomXmlDependencyCollector());
 });
+
 
 files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
     sendDiagnostics('pypi', uri, contents, new ReqDependencyCollector());
