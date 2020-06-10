@@ -135,7 +135,7 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
                 severity: DiagnosticSeverity.Information,
                 range: get_range(this.context.version),
                 message: `Application dependency ${this.context.name.value}-${this.context.version.value} - analysis is pending`,
-                source: 'Dependency Analytics'
+                source: 'Dependency Analytics Plugin [Powered by Snyk]'
             }]
         } else {
             return [];
@@ -176,8 +176,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                 severity: diagSeverity,
                 range: get_range(this.context.version),
                 message: this.message,
-                source: 'Dependency Analytics',
-                code: `Find out more: ${this.registrationLink}` 
+                source: 'Dependency Analytics Plugin [Powered by Snyk]',
             };
 
             // TODO: this can be done lazily
