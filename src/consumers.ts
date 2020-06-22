@@ -121,6 +121,9 @@ class AnalysisConsumer implements IConsumer
     }
 };
 
+const runStackReport = 'View Dependency Analytics report [ctrl/cmd + shift + D]';
+const pluginName = 'Dependency Analytics plugin [Powered by Snyk]';
+
 /* We've received an empty/unfinished result, display that analysis is pending */
 class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
 {
@@ -134,8 +137,8 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
             return [{
                 severity: DiagnosticSeverity.Information,
                 range: get_range(this.context.version),
-                message: `Application dependency ${this.context.name.value}-${this.context.version.value} - analysis is pending`,
-                source: 'Dependency Analytics Plugin [Powered by Snyk]'
+                message: `Application dependency ${this.context.name.value}-${this.context.version.value} - analysis is pending \n\n${runStackReport}`,
+                source: `\n\n${pluginName}`,
             }]
         } else {
             return [];
@@ -175,8 +178,8 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             let diagnostic = {
                 severity: diagSeverity,
                 range: get_range(this.context.version),
-                message: this.message,
-                source: 'Dependency Analytics Plugin [Powered by Snyk]',
+                message: this.message + `\n\n${runStackReport}`,
+                source: `\n\n${pluginName}`,
             };
 
             // TODO: this can be done lazily
