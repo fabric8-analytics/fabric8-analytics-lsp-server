@@ -178,7 +178,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             let diagnostic = {
                 severity: diagSeverity,
                 range: get_range(this.context.version),
-                message: this.message + `\n\n${runStackReport}`,
+                message: `${this.message} \n\n${runStackReport}`,
                 source: `\n\n${pluginName}`,
             };
 
