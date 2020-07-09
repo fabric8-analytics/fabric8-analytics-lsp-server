@@ -198,7 +198,7 @@ if (fs.existsSync(rc_file)) {
 let DiagnosticsEngines = [SecurityEngine];
 
 const getCAmsg = (deps, diagnostics, totalCount): string => {
-    let msg = `Scanned ${deps.length} runtime ${deps.length == 1 ? 'dependency' : 'dependencies'}, `;
+    let msg = `Scanned ${deps.length} ${deps.length == 1 ? 'dependency' : 'dependencies'}, `;
 
     
     if(diagnostics.length > 0) {
