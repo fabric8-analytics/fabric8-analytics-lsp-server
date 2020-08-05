@@ -139,8 +139,7 @@ class NaivePomXmlSaxParser {
 
         parser.on("object", function (name, obj) {
             if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version") && 
-                (!obj.hasOwnProperty("scope") || (obj.hasOwnProperty("scope") && obj["scope"] === "compile") || 
-                (obj.hasOwnProperty("scope") && obj["scope"] === "runtime"))) {
+                (!obj.hasOwnProperty("scope") || (obj.hasOwnProperty("scope") && obj["scope"] != "test"))) {
                 let ga = `${obj["groupId"]}:${obj["artifactId"]}`;
                 let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
                 entry.value = new Variant(ValueType.String, obj["version"]);
