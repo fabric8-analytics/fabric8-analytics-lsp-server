@@ -30,11 +30,11 @@
     "url": "https://github.com/fabric8-analytics/fabric8-analytics-lsp-server.git"
   },
   "dependencies": {
-    "request": "^2.79.0",
+    "node-fetch": "^2.6.0",
     "stream-json": "0.6.1",
+    "vscode-languageserver": "^5.3.0-next.9",
     "winston": "3.2.1",
-    "xml2object": "0.1.2",
-    "vscode-languageserver": "^5.3.0-next.9"
+    "xml2object": "0.1.2"
   },
   "devDependencies": {
     "@krux/condition-jenkins": "1.0.1",
