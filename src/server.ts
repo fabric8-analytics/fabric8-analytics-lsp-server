@@ -9,8 +9,8 @@ import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
-import { stream_from_string } from './utils';
-import { DependencyCollector, IDependency, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
+import { Stream } from 'stream';
+import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 
 const url = require('url');
@@ -18,17 +18,18 @@ const https = require('https');
 const request = require('request');
 const winston = require('winston');
 
- winston.level = 'debug';
- winston.add(winston.transports.File, { filename: '/workspace-logs/ls-bayesian/bayesian.log' });
- winston.remove(winston.transports.Console);
- winston.info('Starting Bayesian');
-
-/*
-let log_file = fs.openSync('file_log.log', 'w');
-let _LOG = (data) => {
-    fs.writeFileSync('file_log.log', data + '\n');
+let transport;
+try {
+  transport = new winston.transports.File({ filename: '/workspace-logs/ls-bayesian/bayesian.log' });
+} catch(err) {
+  transport = new winston.transports.Console({ silent: true });
 }
-*/
+const logger = winston.createLogger({
+  level: 'debug',
+  format: winston.format.simple(),
+  transports: [ transport ]
+});
+logger.info('Starting Bayesian');
 
 enum EventStream {
   Invalid,
@@ -190,33 +191,44 @@ let rc_file = path.join(config.home_dir, '.analysis_rc');
 if (fs.existsSync(rc_file)) {
     let rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
     if ('server' in rc) {
-        config.server_url = `${rc.server}/api/v1`;
+        config.server_url = `${rc.server}/api/v2`;
     }
 }
 
 let DiagnosticsEngines = [SecurityEngine];
 
-const getCAmsg = (deps, diagnostics): string => {
+const getCAmsg = (deps, diagnostics, totalCount): string => {
+    let msg = `Scanned ${deps.length} ${deps.length == 1 ? 'dependency' : 'dependencies'}, `;
+
+    
     if(diagnostics.length > 0) {
-        return `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`;
+        const vulStr = (count: number) => count == 1 ? 'Vulnerability' : 'Vulnerabilities';
+        const advStr = (count: number) => count == 1 ? 'Advisory' : 'Advisories';
+        const knownVulnMsg =  !totalCount.vulnerabilityCount || `${totalCount.vulnerabilityCount} Known Security ${vulStr(totalCount.vulnerabilityCount)}`;
+        const advisoryMsg =  !totalCount.advisoryCount || `${totalCount.advisoryCount} Security ${advStr(totalCount.advisoryCount)}`;
+        let summaryMsg = [knownVulnMsg, advisoryMsg].filter(x => x !== true).join(' and ');
+        summaryMsg += (totalCount.vulnerabilityCount > 0) ? " along with quick fixes" : "";
+        msg += summaryMsg ? ('flagged ' + summaryMsg) : 'No potential security vulnerabilities found';
     } else {
-        return `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
+        msg += `No potential security vulnerabilities found`;
     }
+
+    return msg
 };
 
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
-let metadataCache = new Map();
-let get_metadata = (ecosystem, name, version) => {
+const metadataCache = new Map();
+const get_metadata = (ecosystem, name, version) => {
     return new Promise((resolve, reject) => {
-        let cacheKey = ecosystem + " " + name + " " + version;
-        let metadata = metadataCache[cacheKey];
+        const cacheKey = ecosystem + " " + name + " " + version;
+        const metadata = metadataCache[cacheKey];
         if (metadata != null) {
-            winston.info('cache hit for ' + cacheKey);
+            logger.info('cache hit for ' + cacheKey);
             connection.console.log('cache hit for ' + cacheKey);
             resolve(metadata);
         } else {
-            let part = [ecosystem, name, version].join('/');
+            const part = [ecosystem, name, version].map(v => encodeURIComponent(v)).join('/');
             const options = {};
                 options['url'] = config.server_url;
                 if(config.three_scale_user_token){
@@ -227,7 +239,7 @@ let get_metadata = (ecosystem, name, version) => {
                 options['headers'] = {
                     'Authorization' : 'Bearer ' + config.api_token,
                 };
-            winston.debug('get ' + options['url']);
+            logger.debug('get ' + options['url']);
             connection.console.log('Scanning ' + part);
             if(process.env.RECOMMENDER_API_URL){
                 request.get(options, (err, httpResponse, body) => {
@@ -236,15 +248,9 @@ let get_metadata = (ecosystem, name, version) => {
                     } else {
                         if ((httpResponse.statusCode === 200 || httpResponse.statusCode === 202)) {
                             let response = JSON.parse(body);
-                            winston.debug('response ' + response);
+                            logger.debug('response ' + response);
                             metadataCache[cacheKey] = response;
                             resolve(response);
-                        } else if(httpResponse.statusCode === 401){
-                            reject(httpResponse.statusCode);
-                        } else if(httpResponse.statusCode === 429 || httpResponse.statusCode === 403){
-                            reject(httpResponse.statusCode);
-                        } else if(httpResponse.statusCode === 400){
-                            reject(httpResponse.statusCode);
                         } else {
                             reject(httpResponse.statusCode);
                         }
@@ -254,101 +260,60 @@ let get_metadata = (ecosystem, name, version) => {
         }
     });
 };
+/* Total Counts of #Known Security Vulnerability and #Security Advisory */
+class TotalCount 
+{
+    vulnerabilityCount: number = 0;
+    advisoryCount: number = 0;
+};
 
-
-files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
-    /* Convert from readable stream into string */
-    let stream = stream_from_string(contents);
-    let collector = new DependencyCollector(null);
+const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+const sendDiagnostics = (ecosystem: string, uri: string, contents: string, collector: IDependencyCollector) => {
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
-
-    collector.collect(stream).then((deps) => {
-        let diagnostics = [];
-        /* Aggregate asynchronous requests and send the diagnostics at once */
-        let aggregator = new Aggregator(deps, () => {
-            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
-            connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
-        });
-        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
-        for (let dependency of deps) {
-            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value)) {
-                get_metadata('npm', dependency.name.value, dependency.version.value).then((response) => {
-                    if (response != null) {
-                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
-                        pipeline.run(response);
-                    }
-                    aggregator.aggregate(dependency);
-                }).catch((err)=>{
-                    connection.console.log(err);
-                });
-            } else {
-                aggregator.aggregate(dependency);
-            }
-        }
-    });
-});
-
-files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
-    /* Convert from readable stream into string */
-    let stream = stream_from_string(contents);
-    let collector = new PomXmlDependencyCollector();
-    connection.sendNotification('caNotification', {'data': caDefaultMsg});
-
-    collector.collect(stream).then((deps) => {
-        let diagnostics = [];
-        /* Aggregate asynchronous requests and send the diagnostics at once */
-        let aggregator = new Aggregator(deps, () => {
-            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
-            connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
-        });
-        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
-        for (let dependency of deps) {
-            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value)) {
-                get_metadata('maven', dependency.name.value, dependency.version.value).then((response) => {
-                    if (response != null) {
-                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
-                        pipeline.run(response);
-                    }
-                    aggregator.aggregate(dependency);
-                }).catch((err)=>{
-                    connection.console.log(err);
-                });
-            } else {
-                aggregator.aggregate(dependency);
-            }
-        }
-    });
-});
-
-files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
-    let collector = new ReqDependencyCollector();
-    connection.sendNotification('caNotification', {'data': caDefaultMsg});
-
     collector.collect(contents).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
-            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
+            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
-        const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+        
+        let totalCount = new TotalCount();
+
         for (let dependency of deps) {
-            winston.info('python cmp name'+ dependency.name.value);
             if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
-                get_metadata('pypi', dependency.name.value, dependency.version.value).then((response) => {
+                get_metadata(ecosystem, dependency.name.value, dependency.version.value).then((response) => {
                     if (response != null) {
                         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
                         pipeline.run(response);
+                        for (const item of pipeline.items) {
+                            let secEng = item as SecurityEngine;
+                            totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
+                            totalCount.advisoryCount += secEng.advisoryCount;
+                        }
                     }
                     aggregator.aggregate(dependency);
                 }).catch((err)=>{
-                    connection.console.log(err);
+                    aggregator.aggregate(dependency);
+                    connection.console.log(`Error ${err} while ${dependency.name.value}:${dependency.version.value}`);
                 });
             } else {
                 aggregator.aggregate(dependency);
             }
         }
     });
+};
+
+files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
+    sendDiagnostics('npm', uri, contents, new DependencyCollector(null));
+});
+
+files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
+    sendDiagnostics('maven', uri, contents, new PomXmlDependencyCollector());
+});
+
+files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
+    sendDiagnostics('pypi', uri, contents, new ReqDependencyCollector());
 });
 
 let checkDelay;

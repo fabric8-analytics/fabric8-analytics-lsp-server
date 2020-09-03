@@ -5,6 +5,7 @@
 'use strict';
 import { StreamingParser, IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './json';
 import * as Xml2Object from 'xml2object';
+import { stream_from_string } from './utils';
 import { Stream } from 'stream';
 
 /* By default the collector is going to process these dependency keys */
@@ -25,7 +26,7 @@ interface IDependency {
 /* Dependency collector interface */
 interface IDependencyCollector {
   classes: Array<string>;
-  collect(file: Stream): Promise<Array<IDependency>>;
+  collect(contents: string): Promise<Array<IDependency>>;
 }
 
 /* Dependency class that can be created from `IKeyValueEntry` */
@@ -51,7 +52,8 @@ class DependencyCollector implements IDependencyCollector {
         this.classes = classes || DefaultClasses
     }
 
-    async collect(file: Stream): Promise<Array<IDependency>> {
+    async collect(contents: string): Promise<Array<IDependency>> {
+        const file = stream_from_string(contents);
         let parser = new StreamingParser(file);
         let dependencies: Array<IDependency> = [];
         let tree = await parser.parse();
@@ -137,8 +139,7 @@ class NaivePomXmlSaxParser {
 
         parser.on("object", function (name, obj) {
             if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version") && 
-                (!obj.hasOwnProperty("scope") || (obj.hasOwnProperty("scope") && obj["scope"] === "compile") || 
-                (obj.hasOwnProperty("scope") && obj["scope"] === "runtime"))) {
+                (!obj.hasOwnProperty("scope") || (obj.hasOwnProperty("scope") && obj["scope"] != "test"))) {
                 let ga = `${obj["groupId"]}:${obj["artifactId"]}`;
                 let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
                 entry.value = new Variant(ValueType.String, obj["version"]);
@@ -187,7 +188,8 @@ class NaivePomXmlSaxParser {
 class PomXmlDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(file: Stream): Promise<Array<IDependency>> {
+    async collect(contents: string): Promise<Array<IDependency>> {
+        const file = stream_from_string(contents);
         let parser = new NaivePomXmlSaxParser(file);
         let dependencies;
          await parser.parse().then(data => {
