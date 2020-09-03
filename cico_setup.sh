@@ -17,6 +17,7 @@ load_jenkins_vars() {
 prep() {
   yum -y update
   # install latest version of git
+  yum -y install epel-release
   yum -y install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
   yum -y install make git gcc-c++ bzip2 fontconfig jq
   curl -sL https://rpm.nodesource.com/setup_14.x | sudo -E bash -
