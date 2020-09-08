@@ -178,7 +178,8 @@ const getCAmsg = (deps, diagnostics, totalCount): string => {
         const knownVulnMsg =  !totalCount.vulnerabilityCount || `${totalCount.vulnerabilityCount} Known Security ${vulStr(totalCount.vulnerabilityCount)}`;
         const advisoryMsg =  !totalCount.advisoryCount || `${totalCount.advisoryCount} Security ${advStr(totalCount.advisoryCount)}`;
         let summaryMsg = [knownVulnMsg, advisoryMsg].filter(x => x !== true).join(' and ');
-        summaryMsg += (totalCount.vulnerabilityCount > 0) ? " along with quick fixes" : "";
+        summaryMsg += (totalCount.exploitCount > 0) ? ` with ${totalCount.exploitCount} Exploitable ${vulStr(totalCount.exploitCount)}` : "";
+        summaryMsg += ((totalCount.vulnerabilityCount + totalCount.advisoryCount) > 0) ? " along with quick fixes" : "";
         msg += summaryMsg ? ('flagged ' + summaryMsg) : 'No potential security vulnerabilities found';
     } else {
         msg += `No potential security vulnerabilities found`;
@@ -225,6 +226,7 @@ class TotalCount
 {
     vulnerabilityCount: number = 0;
     advisoryCount: number = 0;
+    exploitCount: number = 0;
 };
 
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
@@ -237,6 +239,7 @@ function runPipeline(response, diagnostics, diagnosticFilePath, dependencyMap, t
             const secEng = item as SecurityEngine;
             totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
             totalCount.advisoryCount += secEng.advisoryCount;
+            totalCount.exploitCount += secEng.exploitCount;
         }
         connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
     })
