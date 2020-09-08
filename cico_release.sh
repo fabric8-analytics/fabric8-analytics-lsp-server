@@ -23,7 +23,7 @@ function release() {
 
     publish_tar
 
-    create_merge_PR_vscode
+    # create_merge_PR_vscode
 
     # create_PR_RHChe
 }
