@@ -37,6 +37,7 @@
     "vscode-languageserver": "^5.3.0-next.9"
   },
   "devDependencies": {
+    "@semantic-release/exec": "^5.0.0",
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.7.5",
@@ -48,14 +49,9 @@
     "typescript": "^3.6.3"
   },
   "scripts": {
-    "build-semantic": "npm run clean && node node_modules/typescript/bin/tsc -p . && cp LICENSE package.json README.md output",
-    "build": "npm run build-semantic && npm run dist",
-    "clean": "rm -Rf ca-lsp-server.tar output/",
+    "build": "tsc -p .",
     "test": "nyc mocha",
-    "semantic-pre": "cp -a node_modules output/ && cp -r ./package.json output/ && cp -r ./package-lock.json output/",
-    "semantic-post": "node -p -e \"require('./output/package.json').version\" > output/VERSION && tar cvjf ca-lsp-server.tar --exclude='node_modules/typescript'  -C output/ .",
-    "dist": "npm run semantic-pre && npm run semantic-post",
-    "semantic-release": "npm run build-semantic && npm run semantic-pre && semantic-release && npm run semantic-post"
+    "semantic-release": "semantic-release --debug"
   },
   "nyc": {
     "include": [
@@ -76,13 +72,27 @@
   },
   "release": {
     "branchs": [
-      "master"
+      "origin/master"
     ],
     "debug": true,
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
-      "@semantic-release/github",
+      [
+        "@semantic-release/exec",
+        {
+          "verifyConditionsCmd": "npm run build && cp package.json package-lock.json output",
+          "publishCmd": "cd output && npm i --only=prod && echo ${nextRelease.version}>VERSION && tar cvjf ../ca-lsp-server.tar ."
+        }
+      ],
+      [
+        "@semantic-release/github",
+        {
+          "assets": [
+            {"path": "ca-lsp-server.tar"}
+          ]
+        }
+      ],
       [
         "@semantic-release/npm",
         {
