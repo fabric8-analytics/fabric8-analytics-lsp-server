@@ -71,7 +71,7 @@
     "instrument": true
   },
   "release": {
-    "branchs": [
+    "branches": [
       "origin/master"
     ],
     "debug": true,
