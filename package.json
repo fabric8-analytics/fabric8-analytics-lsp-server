@@ -71,10 +71,6 @@
     "instrument": true
   },
   "release": {
-    "branches": [
-      "origin/master"
-    ],
-    "debug": true,
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
@@ -89,7 +85,9 @@
         "@semantic-release/github",
         {
           "assets": [
-            {"path": "ca-lsp-server.tar"}
+            {
+              "path": "ca-lsp-server.tar"
+            }
           ]
         }
       ],

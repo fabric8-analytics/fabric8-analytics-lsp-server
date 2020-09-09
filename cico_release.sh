@@ -19,5 +19,6 @@ function release() {
     npm config set loglevel verbose
 
     # Build and Release fabric8-analytics-lsp-server (It will update the tag on github and push fabric8-analytics-lsp-server to npmjs.org)
-    CI=true npm run semantic-release
+    # From GIT_BRANCH remove origin/ to make semantic-release happy.
+    GIT_BRANCH="${GIT_BRANCH//origin\//}" npm run semantic-release
 }
