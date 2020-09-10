@@ -10,7 +10,7 @@ import {
 	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
 import { Stream } from 'stream';
-import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
+import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 
 const url = require('url');
@@ -200,7 +200,7 @@ let DiagnosticsEngines = [SecurityEngine];
 const getCAmsg = (deps, diagnostics, totalCount): string => {
     let msg = `Scanned ${deps.length} ${deps.length == 1 ? 'dependency' : 'dependencies'}, `;
 
-    
+
     if(diagnostics.length > 0) {
         const vulStr = (count: number) => count == 1 ? 'Vulnerability' : 'Vulnerabilities';
         const advStr = (count: number) => count == 1 ? 'Advisory' : 'Advisories';
@@ -261,7 +261,7 @@ const get_metadata = (ecosystem, name, version) => {
     });
 };
 /* Total Counts of #Known Security Vulnerability and #Security Advisory */
-class TotalCount 
+class TotalCount
 {
     vulnerabilityCount: number = 0;
     advisoryCount: number = 0;
@@ -277,7 +277,7 @@ const sendDiagnostics = (ecosystem: string, uri: string, contents: string, colle
             connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
-        
+
         let totalCount = new TotalCount();
 
         for (let dependency of deps) {
@@ -314,6 +314,10 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
 
 files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
     sendDiagnostics('pypi', uri, contents, new ReqDependencyCollector());
+});
+
+files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
+    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector());
 });
 
 let checkDelay;

@@ -8,6 +8,8 @@ import * as Xml2Object from 'xml2object';
 import { stream_from_string } from './utils';
 import { Stream } from 'stream';
 
+const semverRegex = require('semver-regex');
+
 /* By default the collector is going to process these dependency keys */
 const DefaultClasses = ["dependencies"];
 
@@ -35,11 +37,11 @@ class Dependency implements IDependency {
   version: IPositionedString;
   constructor(dependency: IKeyValueEntry) {
     this.name = {
-        value: dependency.key, 
+        value: dependency.key,
         position: dependency.key_position
-    }; 
+    };
     this.version = {
-        value: dependency.value.object, 
+        value: dependency.value.object,
         position: dependency.value_position
     }
   }
@@ -118,6 +120,53 @@ class ReqDependencyCollector {
 
 }
 
+class NaiveGomodParser {
+    constructor(contents: string) {
+        this.dependencies = NaiveGomodParser.parseDependencies(contents);
+    }
+
+    dependencies: Array<IDependency>;
+
+    static parseDependencies(contents:string): Array<IDependency> {
+        const gomod = contents.split("\n");
+        return gomod.reduce((dependencies, line, index) => {
+            // skip any text after '//'
+            if (line.includes("//")) {
+                line = line.split("//")[0];
+            }
+            const version = semverRegex().exec(line)
+            // Skip lines without version string
+            if (version && version.length > 0) {
+                const parts: Array<string>  = line.trim().split(' ');
+                const pkgName:string = (parts[0] || '').trim();
+                if (pkgName.length > 0) {
+                    const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
+                    entry.value = new Variant(ValueType.String, version[0]);
+                    entry.value_position = { line: index + 1, column: line.indexOf(version[0]) + 1 };
+                    dependencies.push(new Dependency(entry));
+                }
+            }
+            return dependencies;
+        }, []);
+    }
+
+    parse(): Array<IDependency> {
+        return this.dependencies;
+    }
+}
+
+/* Process entries found in the go.mod file and collect all dependency
+ * related information */
+class GomodDependencyCollector {
+    constructor(public classes: Array<string> = ["dependencies"]) {}
+
+    async collect(contents: string): Promise<Array<IDependency>> {
+        let parser = new NaiveGomodParser(contents);
+        return parser.parse();
+    }
+
+}
+
 class NaivePomXmlSaxParser {
     constructor(stream: Stream) {
         this.stream = stream;
@@ -138,7 +187,7 @@ class NaivePomXmlSaxParser {
         let versionColumn = this.versionStartColumn;
 
         parser.on("object", function (name, obj) {
-            if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version") && 
+            if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version") &&
                 (!obj.hasOwnProperty("scope") || (obj.hasOwnProperty("scope") && obj["scope"] != "test"))) {
                 let ga = `${obj["groupId"]}:${obj["artifactId"]}`;
                 let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
@@ -181,7 +230,7 @@ class NaivePomXmlSaxParser {
                 resolve(this.dependencies);
            });
         });
-        
+
     }
 }
 
@@ -199,4 +248,4 @@ class PomXmlDependencyCollector {
     }
 }
 
-export { IDependencyCollector, DependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector, IPositionedString, IDependency };
+export { IDependencyCollector, DependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };
