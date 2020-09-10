@@ -148,7 +148,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 {
     constructor(public context: IDependency, config: any) {
         super(config);
-        this.binding = {path: ['component_analyses', 'vulnerability']};
+        this.binding = {path: ['vulnerability']};
         /* recommendation to use a different version */
         this.changeToBinding = {path: ['recommended_versions']};
         /* snyk registration link */
