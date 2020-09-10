@@ -180,7 +180,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             };
 
             // TODO: this can be done lazily
-            if (this.changeTo) {
+            if (this.changeTo && (this.vulnerabilityCount > 0 || this.exploitCount != null)) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
