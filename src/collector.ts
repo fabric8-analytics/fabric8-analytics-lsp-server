@@ -37,11 +37,11 @@ class Dependency implements IDependency {
   version: IPositionedString;
   constructor(dependency: IKeyValueEntry) {
     this.name = {
-        value: dependency.key,
+        value: dependency.key, 
         position: dependency.key_position
-    };
+    }; 
     this.version = {
-        value: dependency.value.object,
+        value: dependency.value.object, 
         position: dependency.value_position
     }
   }
@@ -187,7 +187,7 @@ class NaivePomXmlSaxParser {
         let versionColumn = this.versionStartColumn;
 
         parser.on("object", function (name, obj) {
-            if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version") &&
+            if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version") && 
                 (!obj.hasOwnProperty("scope") || (obj.hasOwnProperty("scope") && obj["scope"] != "test"))) {
                 let ga = `${obj["groupId"]}:${obj["artifactId"]}`;
                 let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
@@ -230,7 +230,7 @@ class NaivePomXmlSaxParser {
                 resolve(this.dependencies);
            });
         });
-
+        
     }
 }
 

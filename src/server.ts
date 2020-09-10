@@ -15,7 +15,7 @@ import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap 
 
 const url = require('url');
 const https = require('https');
-const request = require('request');
+const fetch = require('node-fetch');
 const winston = require('winston');
 
 let transport;
@@ -132,38 +132,6 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
     }
 };
 
-interface IAggregator
-{
-    callback: any;
-    is_ready(): boolean;
-    aggregate(IDependency): void;
-};
-
-class Aggregator implements IAggregator
-{
-    mapping: Map<IDependency, boolean>;
-    diagnostics: Array<Diagnostic>;
-    constructor(items: Array<IDependency>, public callback: any){
-        this.mapping = new Map<IDependency, boolean>();
-        for (let item of items) {
-            this.mapping.set(item, false);
-        }
-    }
-    is_ready(): boolean {
-        let val = true;
-        for (let m of this.mapping.entries()) {
-            val = val && m[1];
-        }
-        return val;
-    }
-    aggregate(dep: IDependency): void {
-        this.mapping.set(dep, true);
-        if (this.is_ready()) {
-            this.callback();
-        }
-    }
-};
-
 class AnalysisConfig
 {
     server_url:         string;
@@ -172,6 +140,7 @@ class AnalysisConfig
     forbidden_licenses: Array<string>;
     no_crypto:          boolean;
     home_dir:           string;
+    uuid:               string;
 
     constructor() {
         // TODO: this needs to be configurable
@@ -181,6 +150,7 @@ class AnalysisConfig
         this.forbidden_licenses = [];
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
+        this.uuid = process.env.UUID || "";
     }
 };
 
@@ -197,17 +167,19 @@ if (fs.existsSync(rc_file)) {
 
 let DiagnosticsEngines = [SecurityEngine];
 
+/* Generate summarized notification message for vulnerability analysis */
 const getCAmsg = (deps, diagnostics, totalCount): string => {
     let msg = `Scanned ${deps.length} ${deps.length == 1 ? 'dependency' : 'dependencies'}, `;
 
-
+    
     if(diagnostics.length > 0) {
         const vulStr = (count: number) => count == 1 ? 'Vulnerability' : 'Vulnerabilities';
         const advStr = (count: number) => count == 1 ? 'Advisory' : 'Advisories';
         const knownVulnMsg =  !totalCount.vulnerabilityCount || `${totalCount.vulnerabilityCount} Known Security ${vulStr(totalCount.vulnerabilityCount)}`;
         const advisoryMsg =  !totalCount.advisoryCount || `${totalCount.advisoryCount} Security ${advStr(totalCount.advisoryCount)}`;
         let summaryMsg = [knownVulnMsg, advisoryMsg].filter(x => x !== true).join(' and ');
-        summaryMsg += (totalCount.vulnerabilityCount > 0) ? " along with quick fixes" : "";
+        summaryMsg += (totalCount.exploitCount > 0) ? ` with ${totalCount.exploitCount} Exploitable ${vulStr(totalCount.exploitCount)}` : "";
+        summaryMsg += ((totalCount.vulnerabilityCount + totalCount.advisoryCount) > 0) ? " along with quick fixes" : "";
         msg += summaryMsg ? ('flagged ' + summaryMsg) : 'No potential security vulnerabilities found';
     } else {
         msg += `No potential security vulnerabilities found`;
@@ -218,90 +190,92 @@ const getCAmsg = (deps, diagnostics, totalCount): string => {
 
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
-const metadataCache = new Map();
-const get_metadata = (ecosystem, name, version) => {
-    return new Promise((resolve, reject) => {
-        const cacheKey = ecosystem + " " + name + " " + version;
-        const metadata = metadataCache[cacheKey];
-        if (metadata != null) {
-            logger.info('cache hit for ' + cacheKey);
-            connection.console.log('cache hit for ' + cacheKey);
-            resolve(metadata);
+/* Fetch Vulnerabilities by component-analysis batch api-call */
+const fetchVulnerabilities = async (reqData) => {
+    let url = config.server_url;
+    if (config.three_scale_user_token) {
+        url += `/component-analyses/?user_key=${config.three_scale_user_token}`;
+    } else {
+        url += `/component-analyses`;
+    }
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + config.api_token,
+        'uuid': config.uuid,
+    };
+    try {
+        const response = await fetch(url , {
+            method: 'post',
+            body:    JSON.stringify(reqData),
+            headers: headers,
+        });
+         
+        if (response.ok) {
+            const respData = await response.json();
+            return respData;
         } else {
-            const part = [ecosystem, name, version].map(v => encodeURIComponent(v)).join('/');
-            const options = {};
-                options['url'] = config.server_url;
-                if(config.three_scale_user_token){
-                    options['url'] += `/component-analyses/${part}?user_key=${config.three_scale_user_token}`;
-                } else{
-                    options['url'] += `/component-analyses/${part}/`;
-                }
-                options['headers'] = {
-                    'Authorization' : 'Bearer ' + config.api_token,
-                };
-            logger.debug('get ' + options['url']);
-            connection.console.log('Scanning ' + part);
-            if(process.env.RECOMMENDER_API_URL){
-                request.get(options, (err, httpResponse, body) => {
-                    if(err){
-                        reject(err);
-                    } else {
-                        if ((httpResponse.statusCode === 200 || httpResponse.statusCode === 202)) {
-                            let response = JSON.parse(body);
-                            logger.debug('response ' + response);
-                            metadataCache[cacheKey] = response;
-                            resolve(response);
-                        } else {
-                            reject(httpResponse.statusCode);
-                        }
-                    }
-                });
-            }
+            return response.status;
         }
-    });
+    } catch(err) {
+        alert(err);
+    }
 };
+
 /* Total Counts of #Known Security Vulnerability and #Security Advisory */
-class TotalCount
+class TotalCount 
 {
     vulnerabilityCount: number = 0;
     advisoryCount: number = 0;
+    exploitCount: number = 0;
 };
 
-const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
-const sendDiagnostics = (ecosystem: string, uri: string, contents: string, collector: IDependencyCollector) => {
-    connection.sendNotification('caNotification', {'data': caDefaultMsg});
-    collector.collect(contents).then((deps) => {
-        let diagnostics = [];
-        /* Aggregate asynchronous requests and send the diagnostics at once */
-        let aggregator = new Aggregator(deps, () => {
-            connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
-            connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
-        });
-
-        let totalCount = new TotalCount();
-
-        for (let dependency of deps) {
-            if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
-                get_metadata(ecosystem, dependency.name.value, dependency.version.value).then((response) => {
-                    if (response != null) {
-                        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, uri);
-                        pipeline.run(response);
-                        for (const item of pipeline.items) {
-                            let secEng = item as SecurityEngine;
-                            totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
-                            totalCount.advisoryCount += secEng.advisoryCount;
-                        }
-                    }
-                    aggregator.aggregate(dependency);
-                }).catch((err)=>{
-                    aggregator.aggregate(dependency);
-                    connection.console.log(`Error ${err} while ${dependency.name.value}:${dependency.version.value}`);
-                });
-            } else {
-                aggregator.aggregate(dependency);
-            }
+/* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
+function runPipeline(response, diagnostics, diagnosticFilePath, dependencyMap, totalCount) {
+    response.forEach(r => {
+        const dependency = dependencyMap.get(r.package + r.version);
+        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, diagnosticFilePath);
+        pipeline.run(r);
+        for (const item of pipeline.items) {
+            const secEng = item as SecurityEngine;
+            totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
+            totalCount.advisoryCount += secEng.advisoryCount;
+            totalCount.exploitCount += secEng.exploitCount;
         }
-    });
+        connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
+    })
+}
+
+/* Slice payload in each chunk size of @batchSize */
+function slicePayload(payload, batchSize, ecosystem): any {
+    let reqData = [];
+    for (let i = 0; i < payload.length; i += batchSize) {
+        reqData.push({
+            "ecosystem": ecosystem,
+            "package_versions": payload.slice(i, i + batchSize)
+        });
+    }
+    return reqData;
+}
+
+const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
+    connection.sendNotification('caNotification', {'data': caDefaultMsg});
+    const deps = await collector.collect(contents);
+    const validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
+    const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
+    const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
+    const batchSize = 10;
+    let diagnostics = [];
+    let totalCount = new TotalCount();
+    const start = new Date().getTime();
+    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request => 
+        fetchVulnerabilities(request).then(response => 
+        runPipeline(response, diagnostics, diagnosticFilePath, requestMapper, totalCount)));
+
+    await Promise.allSettled(allRequests);
+    const end = new Date().getTime();
+    console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
+    connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
 };
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
