@@ -85,16 +85,16 @@ class AnalysisConsumer implements IConsumer
 {
     binding: IBindingDescriptor;
     changeToBinding: IBindingDescriptor;
-    registrationLinkBinding : IBindingDescriptor;
     messageBinding : IBindingDescriptor;
     vulnerabilityCountBinding : IBindingDescriptor;
     advisoryCountBinding : IBindingDescriptor;
+    exploitCountBinding : IBindingDescriptor;
     item: any;
     changeTo: string = null;
-    registrationLink: string = null;
     message: string = null;
     vulnerabilityCount: number = 0;
     advisoryCount: number = 0;
+    exploitCount: number = 0;
     constructor(public config: any){}
     consume(data: any): boolean {
         if (this.binding != null) {
@@ -105,9 +105,6 @@ class AnalysisConsumer implements IConsumer
         if (this.changeToBinding != null) {
             this.changeTo = bind_object(data, this.changeToBinding);
         }
-        if (this.registrationLinkBinding != null) {
-            this.registrationLink = bind_object(data, this.registrationLinkBinding);
-        }
         if (this.messageBinding != null) {
             this.message = bind_object(data, this.messageBinding);
         }
@@ -116,6 +113,9 @@ class AnalysisConsumer implements IConsumer
         }
         if (this.advisoryCountBinding != null) {
             this.advisoryCount = bind_object(data, this.advisoryCountBinding);
+        }
+        if (this.exploitCountBinding != null) {
+            this.exploitCount = bind_object(data, this.exploitCountBinding);
         }
         return this.item != null;
     }
@@ -151,14 +151,14 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
         this.binding = {path: ['vulnerability']};
         /* recommendation to use a different version */
         this.changeToBinding = {path: ['recommended_versions']};
-        /* snyk registration link */
-        this.registrationLinkBinding = {path: ['registration_link']};
         /* Diagnostic message */
         this.messageBinding = {path: ['message']};
         /* Publicly known Security Vulnerability count */
         this.vulnerabilityCountBinding = {path: ['known_security_vulnerability_count']};
         /* Private Security Advisory count */
         this.advisoryCountBinding = {path: ['security_advisory_count']};
+        /* Exloitable vulnerability count */
+        this.exploitCountBinding = {path: ['exploitable_vulnerabilities_count']};
     }
 
     produce(ctx: any): Diagnostic[] {
@@ -180,7 +180,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             };
 
             // TODO: this can be done lazily
-            if (this.changeTo && this.vulnerabilityCount > 0) {
+            if (this.changeTo) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
