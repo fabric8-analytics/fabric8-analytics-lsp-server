@@ -49,7 +49,7 @@
     "typescript": "^3.6.3"
   },
   "scripts": {
-    "build": "tsc -p . && cp package.json output",
+    "build": "tsc -p . && cp package.json LICENSE README.md output",
     "test": "nyc mocha",
     "semantic-release": "semantic-release --debug"
   },
