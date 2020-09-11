@@ -10,7 +10,7 @@ import {
 	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
 import { Stream } from 'stream';
-import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
+import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 
 const url = require('url');
@@ -288,10 +288,6 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
 
 files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
     sendDiagnostics('pypi', uri, contents, new ReqDependencyCollector());
-});
-
-files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
-    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector());
 });
 
 let checkDelay;
