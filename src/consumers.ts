@@ -94,7 +94,7 @@ class AnalysisConsumer implements IConsumer
     message: string = null;
     vulnerabilityCount: number = 0;
     advisoryCount: number = 0;
-    exploitCount: number = 0;
+    exploitCount: number | null;
     constructor(public config: any){}
     consume(data: any): boolean {
         if (this.binding != null) {
