@@ -8,7 +8,7 @@ import * as Xml2Object from 'xml2object';
 import { stream_from_string } from './utils';
 import { Stream } from 'stream';
 
-const semverRegex = require('semver-regex');
+import semverRegex = require('semver-regex');
 
 /* By default the collector is going to process these dependency keys */
 const DefaultClasses = ["dependencies"];
