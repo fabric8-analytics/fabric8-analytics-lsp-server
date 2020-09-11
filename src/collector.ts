@@ -142,7 +142,7 @@ class NaiveGomodParser {
                 if (pkgName.length > 0) {
                     const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                     entry.value = new Variant(ValueType.String, version[0]);
-                    entry.value_position = { line: index + 1, column: line.indexOf(version[0]) + 1 };
+                    entry.value_position = { line: index + 1, column: version.index + 1 };
                     dependencies.push(new Dependency(entry));
                 }
             }
