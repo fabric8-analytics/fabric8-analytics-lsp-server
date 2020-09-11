@@ -38,7 +38,7 @@ class Dependency implements IDependency {
   name:             IPositionedString;
   version:          IPositionedString;
   version_prefix:   string
-  constructor(dependency: IKeyValueEntry, version_prefix: string) {
+  constructor(dependency: IKeyValueEntry, version_prefix: string = "") {
     this.name = {
         value: dependency.key, 
         position: dependency.key_position
@@ -70,7 +70,7 @@ class DependencyCollector implements IDependencyCollector {
         for (const p of top_level.properties) {
             if (this.classes.indexOf(p.key) > -1) {
                 for (const dependency of <[IKeyValueEntry]> p.value.object) {
-                    dependencies.push(new Dependency(dependency, ""));
+                    dependencies.push(new Dependency(dependency));
                 }
             }
         }
@@ -101,7 +101,7 @@ class NaivePyParser {
                 const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                 entry.value = new Variant(ValueType.String, version);
                 entry.value_position = { line: index + 1, column: req.indexOf(version) + 1 };
-                dependencies.push(new Dependency(entry, ""));
+                dependencies.push(new Dependency(entry));
             }
             return dependencies;
         }, []);
@@ -197,7 +197,7 @@ class NaivePomXmlSaxParser {
                 let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
                 entry.value = new Variant(ValueType.String, obj["version"]);
                 entry.value_position = {line: versionLine, column: versionColumn};
-                let dep: IDependency = new Dependency(entry, "");
+                let dep: IDependency = new Dependency(entry);
                 deps.push(dep)
             }
         });
