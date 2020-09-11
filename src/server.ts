@@ -262,8 +262,8 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
     const deps = await collector.collect(contents);
     const validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-    const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
-    const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
+    const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value.replace(d.version_prefix, "")}));
+    const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value.replace(d.version_prefix, ""), d]));
     const batchSize = 10;
     let diagnostics = [];
     let totalCount = new TotalCount();

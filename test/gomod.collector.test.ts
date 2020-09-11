@@ -18,19 +18,23 @@ describe('Golang go.mod parser test', () => {
         expect(deps.length).equal(4);
         expect(deps[0]).is.eql({
           name: {value: 'github.com/alecthomas/units', position: {line: 0, column: 0}},
-          version: {value: '0.0.0-20151022065526-2efee857e7cf', position: {line: 4, column: 42}}
+          version: {value: '0.0.0-20151022065526-2efee857e7cf', position: {line: 4, column: 42}},
+          version_prefix: "v"
         });
         expect(deps[1]).is.eql({
           name: {value: 'github.com/davecgh/go-spew', position: {line: 0, column: 0}},
-          version: {value: '1.1.1', position: {line: 5, column: 41}}
+          version: {value: '1.1.1', position: {line: 5, column: 41}},
+          version_prefix: "v"
         });
         expect(deps[2]).is.eql({
           name: {value: 'github.com/pmezard/go-difflib', position: {line: 0, column: 0}},
-          version: {value: '1.0.0', position: {line: 6, column: 44}}
+          version: {value: '1.0.0', position: {line: 6, column: 44}},
+          version_prefix: "v"
         });
         expect(deps[3]).is.eql({
           name: {value: 'github.com/stretchr/testify', position: {line: 0, column: 0}},
-          version: {value: '1.2.2', position: {line: 7, column: 42}}
+          version: {value: '1.2.2', position: {line: 7, column: 42}},
+          version_prefix: "v"
         });
     });
 
@@ -49,15 +53,18 @@ describe('Golang go.mod parser test', () => {
         expect(deps.length).equal(3);
         expect(deps[0]).is.eql({
           name: {value: 'github.com/alecthomas/units', position: {line: 0, column: 0}},
-          version: {value: '0.0.0-20151022065526-2efee857e7cf', position: {line: 4, column: 42}}
+          version: {value: '0.0.0-20151022065526-2efee857e7cf', position: {line: 4, column: 42}},
+          version_prefix: "v"
         });
         expect(deps[1]).is.eql({
           name: {value: 'github.com/pmezard/go-difflib', position: {line: 0, column: 0}},
-          version: {value: '1.0.0', position: {line: 6, column: 44}}
+          version: {value: '1.0.0', position: {line: 6, column: 44}},
+          version_prefix: "v"
         });
         expect(deps[2]).is.eql({
           name: {value: 'github.com/stretchr/testify', position: {line: 0, column: 0}},
-          version: {value: '1.2.2', position: {line: 7, column: 42}}
+          version: {value: '1.2.2', position: {line: 7, column: 42}},
+          version_prefix: "v"
         });
     });
 
@@ -78,11 +85,13 @@ describe('Golang go.mod parser test', () => {
         expect(deps.length).equal(2);
         expect(deps[0]).is.eql({
           name: {value: 'github.com/alecthomas/units', position: {line: 0, column: 0}},
-          version: {value: '0.0.0-20151022065526-2efee857e7cf', position: {line: 6, column: 42}}
+          version: {value: '0.0.0-20151022065526-2efee857e7cf', position: {line: 6, column: 42}},
+          version_prefix: "v"
         });
         expect(deps[1]).is.eql({
           name: {value: 'github.com/stretchr/testify', position: {line: 0, column: 0}},
-          version: {value: '1.2.2', position: {line: 8, column: 42}}
+          version: {value: '1.2.2', position: {line: 8, column: 42}},
+          version_prefix: "v"
         });
     });
 
@@ -100,19 +109,23 @@ describe('Golang go.mod parser test', () => {
         expect(deps.length).equal(4);
         expect(deps[0]).is.eql({
           name: {value: 'github.com/alecthomas/units', position: {line: 0, column: 0}},
-          version: {value: '0.0.0-20151022065526-2efee857e7cf', position: {line: 4, column: 45}}
+          version: {value: '0.0.0-20151022065526-2efee857e7cf', position: {line: 4, column: 45}},
+          version_prefix: "v"
         });
         expect(deps[1]).is.eql({
           name: {value: 'github.com/davecgh/go-spew', position: {line: 0, column: 0}},
-          version: {value: '1.1.1', position: {line: 5, column: 50}}
+          version: {value: '1.1.1', position: {line: 5, column: 50}},
+          version_prefix: "v"
         });
         expect(deps[2]).is.eql({
           name: {value: 'github.com/pmezard/go-difflib', position: {line: 0, column: 0}},
-          version: {value: '1.0.0', position: {line: 6, column: 52}}
+          version: {value: '1.0.0', position: {line: 6, column: 52}},
+          version_prefix: "v"
         });
         expect(deps[3]).is.eql({
           name: {value: 'github.com/stretchr/testify', position: {line: 0, column: 0}},
-          version: {value: '1.2.2', position: {line: 7, column: 46}}
+          version: {value: '1.2.2', position: {line: 7, column: 46}},
+          version_prefix: "v"
         });
     });
 });

@@ -9,6 +9,7 @@ import { stream_from_string } from './utils';
 import { Stream } from 'stream';
 
 import semverRegex = require('semver-regex');
+import { throws } from 'assert';
 
 /* By default the collector is going to process these dependency keys */
 const DefaultClasses = ["dependencies"];
@@ -23,6 +24,7 @@ interface IPositionedString {
 interface IDependency {
   name:    IPositionedString;
   version: IPositionedString;
+  version_prefix: string;
 }
 
 /* Dependency collector interface */
@@ -33,9 +35,10 @@ interface IDependencyCollector {
 
 /* Dependency class that can be created from `IKeyValueEntry` */
 class Dependency implements IDependency {
-  name:    IPositionedString;
-  version: IPositionedString;
-  constructor(dependency: IKeyValueEntry) {
+  name:             IPositionedString;
+  version:          IPositionedString;
+  version_prefix:   string
+  constructor(dependency: IKeyValueEntry, version_prefix: string) {
     this.name = {
         value: dependency.key, 
         position: dependency.key_position
@@ -44,6 +47,7 @@ class Dependency implements IDependency {
         value: dependency.value.object, 
         position: dependency.value_position
     }
+    this.version_prefix = version_prefix
   }
 }
 
@@ -66,7 +70,7 @@ class DependencyCollector implements IDependencyCollector {
         for (const p of top_level.properties) {
             if (this.classes.indexOf(p.key) > -1) {
                 for (const dependency of <[IKeyValueEntry]> p.value.object) {
-                    dependencies.push(new Dependency(dependency));
+                    dependencies.push(new Dependency(dependency, ""));
                 }
             }
         }
@@ -97,7 +101,7 @@ class NaivePyParser {
                 const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                 entry.value = new Variant(ValueType.String, version);
                 entry.value_position = { line: index + 1, column: req.indexOf(version) + 1 };
-                dependencies.push(new Dependency(entry));
+                dependencies.push(new Dependency(entry, ""));
             }
             return dependencies;
         }, []);
@@ -110,7 +114,7 @@ class NaivePyParser {
 
 /* Process entries found in the txt files and collect all dependency
  * related information */
-class ReqDependencyCollector {
+class ReqDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
@@ -141,9 +145,9 @@ class NaiveGomodParser {
                 const pkgName:string = (parts[0] || '').trim();
                 if (pkgName.length > 0) {
                     const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
-                    entry.value = new Variant(ValueType.String, version[0].replace('v', ''));
+                    entry.value = new Variant(ValueType.String, version[0]);
                     entry.value_position = { line: index + 1, column: version.index + 1 };
-                    dependencies.push(new Dependency(entry));
+                    dependencies.push(new Dependency(entry, "v"));
                 }
             }
             return dependencies;
@@ -157,7 +161,7 @@ class NaiveGomodParser {
 
 /* Process entries found in the go.mod file and collect all dependency
  * related information */
-class GomodDependencyCollector {
+class GomodDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
@@ -193,7 +197,7 @@ class NaivePomXmlSaxParser {
                 let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
                 entry.value = new Variant(ValueType.String, obj["version"]);
                 entry.value_position = {line: versionLine, column: versionColumn};
-                let dep: IDependency = new Dependency(entry);
+                let dep: IDependency = new Dependency(entry, "");
                 deps.push(dep)
             }
         });
@@ -234,7 +238,7 @@ class NaivePomXmlSaxParser {
     }
 }
 
-class PomXmlDependencyCollector {
+class PomXmlDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
