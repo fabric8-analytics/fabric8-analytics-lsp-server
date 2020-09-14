@@ -24,7 +24,6 @@ interface IPositionedString {
 interface IDependency {
   name:    IPositionedString;
   version: IPositionedString;
-  version_prefix: string;
 }
 
 /* Dependency collector interface */
@@ -35,10 +34,9 @@ interface IDependencyCollector {
 
 /* Dependency class that can be created from `IKeyValueEntry` */
 class Dependency implements IDependency {
-  name:             IPositionedString;
-  version:          IPositionedString;
-  version_prefix:   string
-  constructor(dependency: IKeyValueEntry, version_prefix: string = "") {
+  name:    IPositionedString;
+  version: IPositionedString;
+  constructor(dependency: IKeyValueEntry) {
     this.name = {
         value: dependency.key, 
         position: dependency.key_position
@@ -47,7 +45,6 @@ class Dependency implements IDependency {
         value: dependency.value.object, 
         position: dependency.value_position
     }
-    this.version_prefix = version_prefix
   }
 }
 
@@ -134,20 +131,24 @@ class NaiveGomodParser {
     static parseDependencies(contents:string): Array<IDependency> {
         const gomod = contents.split("\n");
         return gomod.reduce((dependencies, line, index) => {
-            // skip any text after '//'
-            if (line.includes("//")) {
-                line = line.split("//")[0];
-            }
-            const version = semverRegex().exec(line)
-            // Skip lines without version string
-            if (version && version.length > 0) {
-                const parts: Array<string>  = line.trim().split(' ');
-                const pkgName:string = (parts[0] || '').trim();
-                if (pkgName.length > 0) {
-                    const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
-                    entry.value = new Variant(ValueType.String, version[0]);
-                    entry.value_position = { line: index + 1, column: version.index + 1 };
-                    dependencies.push(new Dependency(entry, "v"));
+            // Ignore "replace" lines
+            if (!line.includes("=>")) {
+                // skip any text after '//'
+                if (line.includes("//")) {
+                    line = line.split("//")[0];
+                }
+                const version = semverRegex().exec(line)
+                // Skip lines without version string
+                if (version && version.length > 0) {
+                    const parts: Array<string>  = line.trim().split(' ');
+                    const pkgName:string = (parts[0] || '').trim();
+                    // Ignore line starting with replace clause and empty package
+                    if (pkgName.length > 0) {
+                        const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
+                        entry.value = new Variant(ValueType.String, version[0]);
+                        entry.value_position = { line: index + 1, column: version.index + 1 };
+                        dependencies.push(new Dependency(entry));
+                    }
                 }
             }
             return dependencies;

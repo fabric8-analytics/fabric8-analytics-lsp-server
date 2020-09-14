@@ -46,18 +46,15 @@ describe('Maven pom.xml parser test', () => {
         expect(deps.length).equal(3);
         expect(deps[0]).is.eql({
           name: {value: '{a.groupId}:bc', position: {line: 0, column: 0}},
-          version: {value: '{a.version}', position: {line: 7, column: 30}},
-          version_prefix: ""
+          version: {value: '{a.version}', position: {line: 7, column: 30}}
         });
         expect(deps[1]).is.eql({
           name: {value: 'b:c-d', position: {line: 0, column: 0}},
-          version: {value: '1.2.3', position: {line: 14, column: 30}},
-          version_prefix: ""
+          version: {value: '1.2.3', position: {line: 14, column: 30}}
         });
         expect(deps[2]).is.eql({
           name: {value: 'c:ab-cd', position: {line: 0, column: 0}},
-          version: {value: '2.3', position: {line: 22, column: 30}},
-          version_prefix: ""
+          version: {value: '2.3', position: {line: 22, column: 30}}
         });
     });
 
@@ -92,18 +89,15 @@ describe('Maven pom.xml parser test', () => {
         expect(deps.length).equal(3);
         expect(deps[0]).is.eql({
           name: {value: '{a.groupId}:bc', position: {line: 0, column: 0}},
-          version: {value: '{a.version}', position: {line: 7, column: 30}},
-          version_prefix: ""
+          version: {value: '{a.version}', position: {line: 7, column: 30}}
         });
         expect(deps[1]).is.eql({
           name: {value: 'b:c-d', position: {line: 0, column: 0}},
-          version: {value: '1.2.3', position: {line: 14, column: 30}},
-          version_prefix: ""
+          version: {value: '1.2.3', position: {line: 14, column: 30}}
         });
         expect(deps[2]).is.eql({
           name: {value: 'c:ab-cd', position: {line: 0, column: 0}},
-          version: {value: '2.3', position: {line: 21, column: 30}},
-          version_prefix: ""
+          version: {value: '2.3', position: {line: 21, column: 30}}
         });
     });
 

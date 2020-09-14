@@ -182,7 +182,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             // TODO: this can be done lazily
             if (this.changeTo) {
                 let codeAction: CodeAction = {
-                    title: "Switch to recommended version " + this.context.version_prefix + this.changeTo,
+                    title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
                     kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
                     edit: {
@@ -192,7 +192,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                 };
                 codeAction.edit.changes[ctx]= [{
                     range: diagnostic.range,
-                    newText: this.context.version_prefix + this.changeTo
+                    newText: this.changeTo
                 }];
                 codeActionsMap[diagnostic.message] = codeAction
             }

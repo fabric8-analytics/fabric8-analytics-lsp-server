@@ -261,9 +261,12 @@ const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
     const deps = await collector.collect(contents);
-    const validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-    const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value.replace(d.version_prefix, "")}));
-    const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value.replace(d.version_prefix, ""), d]));
+    let validPackages = deps
+    if (ecosystem != "golang") {
+        validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
+    }
+    const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
+    const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
     const batchSize = 10;
     let diagnostics = [];
     let totalCount = new TotalCount();
