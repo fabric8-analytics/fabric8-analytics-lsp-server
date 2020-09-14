@@ -9,7 +9,6 @@ import { stream_from_string } from './utils';
 import { Stream } from 'stream';
 
 import semverRegex = require('semver-regex');
-import { throws } from 'assert';
 
 /* By default the collector is going to process these dependency keys */
 const DefaultClasses = ["dependencies"];
