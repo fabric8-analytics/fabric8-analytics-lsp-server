@@ -8,6 +8,8 @@ import * as Xml2Object from 'xml2object';
 import { stream_from_string } from './utils';
 import { Stream } from 'stream';
 
+import semverRegex = require('semver-regex');
+
 /* By default the collector is going to process these dependency keys */
 const DefaultClasses = ["dependencies"];
 
@@ -108,11 +110,62 @@ class NaivePyParser {
 
 /* Process entries found in the txt files and collect all dependency
  * related information */
-class ReqDependencyCollector {
+class ReqDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
         let parser = new NaivePyParser(contents);
+        return parser.parse();
+    }
+
+}
+
+class NaiveGomodParser {
+    constructor(contents: string) {
+        this.dependencies = NaiveGomodParser.parseDependencies(contents);
+    }
+
+    dependencies: Array<IDependency>;
+
+    static parseDependencies(contents:string): Array<IDependency> {
+        const gomod = contents.split("\n");
+        return gomod.reduce((dependencies, line, index) => {
+            // Ignore "replace" lines
+            if (!line.includes("=>")) {
+                // skip any text after '//'
+                if (line.includes("//")) {
+                    line = line.split("//")[0];
+                }
+                const version = semverRegex().exec(line)
+                // Skip lines without version string
+                if (version && version.length > 0) {
+                    const parts: Array<string>  = line.trim().split(' ');
+                    const pkgName:string = (parts[0] || '').trim();
+                    // Ignore line starting with replace clause and empty package
+                    if (pkgName.length > 0) {
+                        const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
+                        entry.value = new Variant(ValueType.String, version[0]);
+                        entry.value_position = { line: index + 1, column: version.index + 1 };
+                        dependencies.push(new Dependency(entry));
+                    }
+                }
+            }
+            return dependencies;
+        }, []);
+    }
+
+    parse(): Array<IDependency> {
+        return this.dependencies;
+    }
+}
+
+/* Process entries found in the go.mod file and collect all dependency
+ * related information */
+class GomodDependencyCollector implements IDependencyCollector {
+    constructor(public classes: Array<string> = ["dependencies"]) {}
+
+    async collect(contents: string): Promise<Array<IDependency>> {
+        let parser = new NaiveGomodParser(contents);
         return parser.parse();
     }
 
@@ -185,7 +238,7 @@ class NaivePomXmlSaxParser {
     }
 }
 
-class PomXmlDependencyCollector {
+class PomXmlDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
@@ -199,4 +252,4 @@ class PomXmlDependencyCollector {
     }
 }
 
-export { IDependencyCollector, DependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector, IPositionedString, IDependency };
+export { IDependencyCollector, DependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };
