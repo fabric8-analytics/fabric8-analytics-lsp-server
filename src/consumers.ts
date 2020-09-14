@@ -94,7 +94,7 @@ class AnalysisConsumer implements IConsumer
     message: string = null;
     vulnerabilityCount: number = 0;
     advisoryCount: number = 0;
-    exploitCount: number = 0;
+    exploitCount: number | null;
     constructor(public config: any){}
     consume(data: any): boolean {
         if (this.binding != null) {
@@ -180,7 +180,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             };
 
             // TODO: this can be done lazily
-            if (this.changeTo) {
+            if (this.changeTo && (this.vulnerabilityCount > 0 || this.exploitCount != null)) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
