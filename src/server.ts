@@ -267,7 +267,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     }
     const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
     const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
-    const batchSize = 10;
+    const batchSize = 15;
     let diagnostics = [];
     let totalCount = new TotalCount();
     const start = new Date().getTime();
