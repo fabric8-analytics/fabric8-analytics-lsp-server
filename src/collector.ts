@@ -8,7 +8,12 @@ import * as Xml2Object from 'xml2object';
 import { stream_from_string } from './utils';
 import { Stream } from 'stream';
 
-import semverRegex = require('semver-regex');
+/* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
+ * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
+ * At the moment, using regex directly to extract version information without 'v' prefix. */
+//import semverRegex = require('semver-regex');
+const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig
+                
 
 /* By default the collector is going to process these dependency keys */
 const DefaultClasses = ["dependencies"];
@@ -136,16 +141,19 @@ class NaiveGomodParser {
                 if (line.includes("//")) {
                     line = line.split("//")[0];
                 }
-                const version = semverRegex().exec(line)
-                // Skip lines without version string
+                // Not using semver directly, look at comment on import statement.
+                //const version = semverRegex().exec(line)
+                regExp.lastIndex = 0;
+                const version = regExp.exec(line);
+      	        // Skip lines without version string
                 if (version && version.length > 0) {
-                    const parts: Array<string>  = line.trim().split(' ');
+                    const parts: Array<string>  = line.replace('require', '').replace('(', '').replace(')', '').trim().split(' ');
                     const pkgName:string = (parts[0] || '').trim();
                     // Ignore line starting with replace clause and empty package
                     if (pkgName.length > 0) {
                         const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
-                        entry.value = new Variant(ValueType.String, version[0]);
-                        entry.value_position = { line: index + 1, column: version.index + 1 };
+                        entry.value = new Variant(ValueType.String, 'v' + version[0]);
+                        entry.value_position = { line: index + 1, column: version.index };
                         dependencies.push(new Dependency(entry));
                     }
                 }
