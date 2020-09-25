@@ -9,13 +9,12 @@ import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
-import { Stream } from 'stream';
 import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
+import fetch from 'node-fetch';
 
 const url = require('url');
 const https = require('https');
-const fetch = require('node-fetch');
 const winston = require('winston');
 
 let transport;
