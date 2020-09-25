@@ -57,13 +57,25 @@ describe('npm package.json parser test', () => {
           "dependencies": {
            "hello":                "1.0",
               "world":"^1.0",
-        "foo": "1.0"
+
+
+        "foo":
+
+          "     10.0.1"
           }
         }`);
         expect(deps.length).equal(3);
         expect(deps[0]).is.eql({
           name: {value: "hello", position: {line: 4, column: 13}},
           version: {value: "1.0", position: {line: 4, column: 37}}
+        });
+        expect(deps[1]).is.eql({
+          name: {value: "world", position: {line: 5, column: 16}},
+          version: {value: "^1.0", position: {line: 5, column: 24}}
+        });
+        expect(deps[2]).is.eql({
+          name: {value: "foo", position: {line: 8, column: 10}},
+          version: {value: "     10.0.1", position: {line: 10, column: 12}}
         });
     });
 });
