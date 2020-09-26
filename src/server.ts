@@ -208,21 +208,22 @@ const fetchVulnerabilities = async (reqData) => {
             body:    JSON.stringify(reqData),
             headers: headers,
         });
-         
+
+        connection.console.log(`fetching vuln for ${reqData.package_versions.length} packages`);
         if (response.ok) {
             const respData = await response.json();
             return respData;
         } else {
+            connection.console.warn(`fetch error. http status ${response.status}`);
             return response.status;
         }
     } catch(err) {
-        alert(err);
+        connection.console.error(`Exception while fetch: ${err}`);
     }
 };
 
 /* Total Counts of #Known Security Vulnerability and #Security Advisory */
-class TotalCount 
-{
+class TotalCount {
     vulnerabilityCount: number = 0;
     advisoryCount: number = 0;
     exploitCount: number = 0;
@@ -270,13 +271,13 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     let diagnostics = [];
     let totalCount = new TotalCount();
     const start = new Date().getTime();
-    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request => 
-        fetchVulnerabilities(request).then(response => 
+    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request =>
+        fetchVulnerabilities(request).then(response =>
         runPipeline(response, diagnostics, diagnosticFilePath, requestMapper, totalCount)));
 
     await Promise.allSettled(allRequests);
     const end = new Date().getTime();
-    console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
+    connection.console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
     connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
 };
 
