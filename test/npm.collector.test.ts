@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import { DependencyCollector } from '../src/collector';
+import { PackageJsonCollector } from '../src/collector';
 
 describe('npm package.json parser test', () => {
-    const collector = new DependencyCollector(null);
+    const collector = new PackageJsonCollector();
 
     it('tests empty package.json', async () => {
         const deps = await collector.collect(`
@@ -35,6 +35,43 @@ describe('npm package.json parser test', () => {
           version: {value: "1.0", position: {line: 4, column: 23}}
         });
     });
+
+    it('tests single dependency as devDependencies', async () => {
+        let collector = new PackageJsonCollector(["devDependencies"]);
+        let deps = await collector.collect(`{
+          "devDependencies": {
+            "hello": "1.0"
+          },
+          "dependencies": {
+            "foo": "10.1.1"
+          }
+        }`);
+        expect(deps.length).equal(1);
+        expect(deps[0]).is.eql({
+          name: {value: "hello", position: {line: 3, column: 14}},
+          version: {value: "1.0", position: {line: 3, column: 23}}
+        });
+
+        collector = new PackageJsonCollector(["devDependencies", "dependencies"]);
+        deps = await collector.collect(`{
+          "devDependencies": {
+            "hello": "1.0"
+          },
+          "dependencies": {
+            "foo": "10.1.1"
+          }
+        }`);
+        expect(deps.length).equal(2);
+        expect(deps[0]).is.eql({
+          name: {value: "hello", position: {line: 3, column: 14}},
+          version: {value: "1.0", position: {line: 3, column: 23}}
+        });
+        expect(deps[1]).is.eql({
+          name: {value: "foo", position: {line: 6, column: 14}},
+          version: {value: "10.1.1", position: {line: 6, column: 21}}
+        });
+    });
+
 
     it('tests single dependency with version in next line', async () => {
         const deps = await collector.collect(`{

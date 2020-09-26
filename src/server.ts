@@ -9,7 +9,7 @@ import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
-import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
+import { IDependency, IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import fetch from 'node-fetch';
 
@@ -282,7 +282,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
 };
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
-    sendDiagnostics('npm', uri, contents, new DependencyCollector(null));
+    sendDiagnostics('npm', uri, contents, new PackageJsonCollector());
 });
 
 files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
