@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { Stream, Readable } from 'stream';
-import { IPosition } from './json';
+import { IPosition } from './types';
 import { IPositionedString } from './collector';
 import { Position, Range } from 'vscode-languageserver';
 

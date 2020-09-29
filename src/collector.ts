@@ -3,20 +3,18 @@
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
-import { StreamingParser, IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './json';
-import * as Xml2Object from 'xml2object';
-import { stream_from_string } from './utils';
 import { Stream } from 'stream';
+import * as Xml2Object from 'xml2object';
+import * as jsonAst from 'json-to-ast';
+import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
+import { stream_from_string } from './utils';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
  * At the moment, using regex directly to extract version information without 'v' prefix. */
 //import semverRegex = require('semver-regex');
 const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig
-                
 
-/* By default the collector is going to process these dependency keys */
-const DefaultClasses = ["dependencies"];
 
 /* String value with position */
 interface IPositionedString {
@@ -42,42 +40,14 @@ class Dependency implements IDependency {
   version: IPositionedString;
   constructor(dependency: IKeyValueEntry) {
     this.name = {
-        value: dependency.key, 
+        value: dependency.key,
         position: dependency.key_position
-    }; 
+    };
     this.version = {
-        value: dependency.value.object, 
+        value: dependency.value.object,
         position: dependency.value_position
     }
   }
-}
-
-/* Process entries found in the JSON files and collect all dependency
- * related information */
-class DependencyCollector implements IDependencyCollector {
-    constructor(public classes) {
-        this.classes = classes || DefaultClasses
-    }
-
-    async collect(contents: string): Promise<Array<IDependency>> {
-        const file = stream_from_string(contents);
-        let parser = new StreamingParser(file);
-        let dependencies: Array<IDependency> = [];
-        let tree = await parser.parse();
-        let top_level = tree.children[0];
-
-        /* Iterate over all keys, select those in which we're interested as defined
-        by `classes`, and map each item to a new `Dependency` object */
-        for (const p of top_level.properties) {
-            if (this.classes.indexOf(p.key) > -1) {
-                for (const dependency of <[IKeyValueEntry]> p.value.object) {
-                    dependencies.push(new Dependency(dependency));
-                }
-            }
-        }
-
-        return dependencies;
-    }
 }
 
 class NaivePyParser {
@@ -242,7 +212,7 @@ class NaivePomXmlSaxParser {
                 resolve(this.dependencies);
            });
         });
-        
+
     }
 }
 
@@ -260,4 +230,21 @@ class PomXmlDependencyCollector implements IDependencyCollector {
     }
 }
 
-export { IDependencyCollector, DependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };
+class PackageJsonCollector implements IDependencyCollector {
+    constructor(public classes: Array<string> = ["dependencies"]) {}
+
+    async collect(contents: string): Promise<Array<IDependency>> {
+      const ast = jsonAst(contents);
+      return ast.children.
+              filter(c => this.classes.includes(c.key.value)).
+              flatMap(c => c.value.children).
+              map(c => {
+                  let entry: IKeyValueEntry = new KeyValueEntry(c.key.value, {line: c.key.loc.start.line, column: c.key.loc.start.column + 1});
+                  entry.value = new Variant(ValueType.String, c.value.value);
+                  entry.value_position = {line: c.value.loc.start.line, column: c.value.loc.start.column + 1};
+                  return new Dependency(entry);
+              });
+    }
+}
+
+export { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };
