@@ -9,7 +9,7 @@ import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
-import { IDependency, IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
+import { IDependency, IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import fetch from 'node-fetch';
 
@@ -261,10 +261,7 @@ const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
     const deps = await collector.collect(contents);
-    let validPackages = deps
-    if (ecosystem != "golang") {
-        validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-    }
+    const validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
     const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
     const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
     const batchSize = 10;
@@ -291,10 +288,6 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
 
 files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
     sendDiagnostics('pypi', uri, contents, new ReqDependencyCollector());
-});
-
-files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
-    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector());
 });
 
 let checkDelay;
