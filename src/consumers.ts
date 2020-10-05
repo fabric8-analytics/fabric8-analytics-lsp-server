@@ -8,8 +8,7 @@ import { get_range } from './utils';
 import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind } from 'vscode-languageserver'
 
 /* Descriptor describing what key-path to extract from the document */
-interface IBindingDescriptor
-{
+interface IBindingDescriptor {
     path: Array<string>;
 };
 
@@ -27,25 +26,22 @@ let bind_object = (obj: any, desc: IBindingDescriptor) => {
 };
 
 /* Arbitrary metadata consumer interface */
-interface IConsumer
-{
+interface IConsumer {
     binding: IBindingDescriptor;
     item: any;
     consume(data: any): boolean;
 };
 
 /* Generic `T` producer */
-interface IProducer<T>
-{
+interface IProducer<T> {
     produce(ctx: any): T;
 };
 
 /* Each pipeline item is defined as a single consumer and producer pair */
-interface IPipelineItem<T> extends IConsumer, IProducer<T> {};
+interface IPipelineItem<T> extends IConsumer, IProducer<T> { };
 
 /* House bunches of `IPipelineItem`'s */
-interface IPipeline<T>
-{
+interface IPipeline<T> {
     items: Array<IPipelineItem<T>>;
     run(data: any): T;
 };
@@ -81,21 +77,22 @@ class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
 };
 
 /* A consumer that uses the binding interface to consume a metadata object */
-class AnalysisConsumer implements IConsumer
-{
+class AnalysisConsumer implements IConsumer {
     binding: IBindingDescriptor;
     changeToBinding: IBindingDescriptor;
-    messageBinding : IBindingDescriptor;
-    vulnerabilityCountBinding : IBindingDescriptor;
-    advisoryCountBinding : IBindingDescriptor;
-    exploitCountBinding : IBindingDescriptor;
+    messageBinding: IBindingDescriptor;
+    vulnerabilityCountBinding: IBindingDescriptor;
+    advisoryCountBinding: IBindingDescriptor;
+    exploitCountBinding: IBindingDescriptor;
+    highestSeverityBinding: IBindingDescriptor;
     item: any;
     changeTo: string = null;
     message: string = null;
     vulnerabilityCount: number = 0;
     advisoryCount: number = 0;
     exploitCount: number | null;
-    constructor(public config: any){}
+    highestSeverity: string = null;
+    constructor(public config: any) { }
     consume(data: any): boolean {
         if (this.binding != null) {
             this.item = bind_object(data, this.binding);
@@ -117,13 +114,15 @@ class AnalysisConsumer implements IConsumer
         if (this.exploitCountBinding != null) {
             this.exploitCount = bind_object(data, this.exploitCountBinding);
         }
+        if (this.highestSeverityBinding != null) {
+            this.highestSeverity = bind_object(data, this.highestSeverityBinding);
+        }
         return this.item != null;
     }
 };
 
 /* We've received an empty/unfinished result, display that analysis is pending */
-class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
-{
+class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer {
     constructor(public context: IDependency, config: any) {
         super(config);
     }
@@ -140,25 +139,26 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
         } else {
             return [];
         }
-    }   
+    }
 }
 
 /* Report CVEs in found dependencies */
-class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
-{
+class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
     constructor(public context: IDependency, config: any) {
         super(config);
-        this.binding = {path: ['vulnerability']};
+        this.binding = { path: ['vulnerability'] };
         /* recommendation to use a different version */
-        this.changeToBinding = {path: ['recommended_versions']};
+        this.changeToBinding = { path: ['recommended_versions'] };
         /* Diagnostic message */
-        this.messageBinding = {path: ['message']};
+        this.messageBinding = { path: ['message'] };
         /* Publicly known Security Vulnerability count */
-        this.vulnerabilityCountBinding = {path: ['known_security_vulnerability_count']};
+        this.vulnerabilityCountBinding = { path: ['known_security_vulnerability_count'] };
         /* Private Security Advisory count */
-        this.advisoryCountBinding = {path: ['security_advisory_count']};
+        this.advisoryCountBinding = { path: ['security_advisory_count'] };
         /* Exloitable vulnerability count */
-        this.exploitCountBinding = {path: ['exploitable_vulnerabilities_count']};
+        this.exploitCountBinding = { path: ['exploitable_vulnerabilities_count'] };
+        /* Highest Severity */
+        this.highestSeverityBinding = { path: ['highest_severity'] };
     }
 
     produce(ctx: any): Diagnostic[] {
@@ -167,16 +167,24 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             let diagSeverity;
 
             if (this.vulnerabilityCount == 0 && this.advisoryCount > 0) {
-                diagSeverity = DiagnosticSeverity.Information; 
+                diagSeverity = DiagnosticSeverity.Information;
             } else {
                 diagSeverity = DiagnosticSeverity.Error;
             }
 
+            const recommendedVersion = this.changeTo || "N/A";
+            const exploitCount = this.exploitCount || "unavailable";
+            const msg = `${this.context.name.value}: ${this.context.version.value}
+Known security vulnerability: ${this.vulnerabilityCount}
+Security advisory: ${this.advisoryCount}
+Exploits: ${exploitCount}
+Highest severity: ${this.highestSeverity}
+Recommendation: ${recommendedVersion}`;
             let diagnostic = {
                 severity: diagSeverity,
                 range: get_range(this.context.version),
-                message: this.message,
-                source: 'Dependency Analytics Plugin [Powered by Snyk]',
+                message: msg,
+                source: '\nDependency Analytics Plugin [Powered by Snyk]',
             };
 
             // TODO: this can be done lazily
@@ -190,7 +198,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                         }
                     }
                 };
-                codeAction.edit.changes[ctx]= [{
+                codeAction.edit.changes[ctx] = [{
                     range: diagnostic.range,
                     newText: this.changeTo
                 }];
