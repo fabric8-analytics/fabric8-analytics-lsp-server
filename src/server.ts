@@ -150,9 +150,6 @@ class AnalysisConfig
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
         this.uuid = process.env.UUID || "";
-        
-        this.server_url = "http://127.0.0.1:5000/api/v2";
-        this.api_token = "not-set";
     }
 };
 

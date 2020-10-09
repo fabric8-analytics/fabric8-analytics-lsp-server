@@ -183,8 +183,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
             } else {
                 diagSeverity = DiagnosticSeverity.Error;
             }
-            
-            console.log(this.package, 'exploits: ', this.exploitCount, ' severity: ', this.highestSeverity, ' rec: ', this.changeTo)
 
             const recommendedVersion = this.changeTo || "N/A";
             const exploitCount = this.exploitCount || "unavailable";
