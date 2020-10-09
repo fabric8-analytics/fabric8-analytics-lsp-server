@@ -34,7 +34,7 @@ interface IConsumer {
 
 /* Generic `T` producer */
 interface IProducer<T> {
-    produce(ctx: any): T;
+    produce(ctx: any, cls: DiagnosticsPipeline): T;
 };
 
 /* Each pipeline item is defined as a single consumer and producer pair */
@@ -68,7 +68,7 @@ class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
     run(data: any): Diagnostic[] {
         for (let item of this.items) {
             if (item.consume(data)) {
-                for (let d of item.produce(this.uri))
+                for (let d of item.produce(this.uri, this))
                     this.diagnostics.push(d);
             }
         }
@@ -79,6 +79,8 @@ class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
 /* A consumer that uses the binding interface to consume a metadata object */
 class AnalysisConsumer implements IConsumer {
     binding: IBindingDescriptor;
+    packageBinding: IBindingDescriptor;
+    versionBinding: IBindingDescriptor;
     changeToBinding: IBindingDescriptor;
     messageBinding: IBindingDescriptor;
     vulnerabilityCountBinding: IBindingDescriptor;
@@ -86,6 +88,8 @@ class AnalysisConsumer implements IConsumer {
     exploitCountBinding: IBindingDescriptor;
     highestSeverityBinding: IBindingDescriptor;
     item: any;
+    package: string = null;
+    version: string = null;
     changeTo: string = null;
     message: string = null;
     vulnerabilityCount: number = 0;
@@ -98,6 +102,12 @@ class AnalysisConsumer implements IConsumer {
             this.item = bind_object(data, this.binding);
         } else {
             this.item = data;
+        }
+        if (this.packageBinding != null) {
+            this.package = bind_object(data, this.packageBinding);
+        }
+        if (this.versionBinding != null) {
+            this.version = bind_object(data, this.versionBinding);
         }
         if (this.changeToBinding != null) {
             this.changeTo = bind_object(data, this.changeToBinding);
@@ -147,6 +157,8 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
     constructor(public context: IDependency, config: any) {
         super(config);
         this.binding = { path: ['vulnerability'] };
+        this.packageBinding = { path: ['package'] };
+        this.versionBinding = { path: ['version'] };
         /* recommendation to use a different version */
         this.changeToBinding = { path: ['recommended_versions'] };
         /* Diagnostic message */
@@ -161,7 +173,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         this.highestSeverityBinding = { path: ['highest_severity'] };
     }
 
-    produce(ctx: any): Diagnostic[] {
+    produce(ctx: any, cls: DiagnosticsPipeline): Diagnostic[] {
         if (this.item.length > 0) {
             /* The diagnostic's severity. */
             let diagSeverity;
@@ -171,10 +183,13 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
             } else {
                 diagSeverity = DiagnosticSeverity.Error;
             }
+            
+            console.log(this.package, 'exploits: ', this.exploitCount, ' severity: ', this.highestSeverity, ' rec: ', this.changeTo)
 
             const recommendedVersion = this.changeTo || "N/A";
             const exploitCount = this.exploitCount || "unavailable";
             const msg = `${this.context.name.value}: ${this.context.version.value}
+Number of packages: 1
 Known security vulnerability: ${this.vulnerabilityCount}
 Security advisory: ${this.advisoryCount}
 Exploits: ${exploitCount}
@@ -187,8 +202,88 @@ Recommendation: ${recommendedVersion}`;
                 source: '\nDependency Analytics Plugin [Powered by Snyk]',
             };
 
+            let diagnosticLinePresent = false
+            let diagnosticIndex = 0
+            for (let i = 0; i < cls.diagnostics.length; i++) {
+                if (cls.diagnostics[i].range.start.line.toString() == diagnostic.range.start.line.toString()) {
+                    diagnosticLinePresent = true
+                    diagnosticIndex = i
+                }
+            }
+
+            if (diagnosticLinePresent) {
+                // Add new counts to old one
+                let oldMessage = cls.diagnostics[diagnosticIndex].message.split("\n")
+                let packageCount = parseInt(oldMessage[1].split(":")[1].trim()) + 1
+                let securityVulnerabilityCount = parseInt(oldMessage[2].split(":")[1].trim()) + this.vulnerabilityCount
+                let securityAdvisoryCount = parseInt(oldMessage[3].split(":")[1].trim()) + this.advisoryCount
+
+                // Compute sum of exploits, taking 'unavailable' value for exploit.
+                let oldExploit = oldMessage[4].split(":")[1].trim()
+                var newExploitCount: any
+                if (oldExploit == "unavailable") {
+                    newExploitCount = this.exploitCount || "unavailable";
+                } else {
+                    newExploitCount = parseInt(oldExploit) + this.exploitCount
+                }
+
+                // Compute highest severity
+                const oldSeverity = oldMessage[5].split(":")[1].trim()
+                var newSeverity = oldSeverity
+                if (this.highestSeverity == "critical" || oldSeverity == "critical")
+                    newSeverity = "critical"
+                else if (this.highestSeverity == "high" || oldSeverity == "high")
+                    newSeverity = "high"
+                else if (this.highestSeverity == "medium" || oldSeverity == "medium")
+                    newSeverity = "medium"
+                else if (this.highestSeverity == "low" || oldSeverity == "low")
+                    newSeverity = "low"
+                
+                // Compute rec version based on max criteria
+                const oldRecVersion = oldMessage[6].split(":")[1].trim()
+                var newRecVersion = oldRecVersion
+                if (oldRecVersion == "N/A") {
+                    newRecVersion = this.changeTo || "N/A";
+                } else if (this.changeTo) {
+                    const d = oldRecVersion.replace("v", "").split('.')
+                    const oldRecVerParts = [parseInt(d[0]), parseInt(d[1]), parseInt(d[2])]
+                    const n = this.changeTo.replace("v", "").split('.')
+                    const newRecVerParts = [parseInt(n[0]), parseInt(n[1]), parseInt(n[2])]
+                    
+                    if (oldRecVerParts[0] > newRecVerParts[0]) {
+                        newRecVersion = oldRecVersion
+                    } else if (oldRecVerParts[0] < newRecVerParts[0]) {
+                        newRecVersion = this.changeTo
+                    } else {
+                        // Major version is equal
+                        if (oldRecVerParts[1] > newRecVerParts[1]) {
+                            newRecVersion = oldRecVersion
+                        } else if (oldRecVerParts[1] < newRecVerParts[1]) {
+                            newRecVersion = this.changeTo
+                        } else {
+                            // Minor version is equal
+                            if (oldRecVerParts[2] > newRecVerParts[2]) {
+                                newRecVersion = oldRecVersion
+                            } else {
+                                newRecVersion = this.changeTo
+                            }    
+                        }    
+                    }
+                }
+            
+                const newPackageMessage = `${oldMessage[0].trim()}
+Number of packages: ${packageCount}
+Known security vulnerability: ${securityVulnerabilityCount}
+Security advisory: ${securityAdvisoryCount}
+Exploits: ${newExploitCount}
+Highest severity: ${newSeverity}
+Recommendation: ${newRecVersion}`;
+                cls.diagnostics[diagnosticIndex].message = newPackageMessage
+            }
+
+            // Add quick action if not present for this range
             // TODO: this can be done lazily
-            if (this.changeTo && (this.vulnerabilityCount > 0 || this.exploitCount != null)) {
+            if (!diagnosticLinePresent && this.changeTo && (this.vulnerabilityCount > 0 || this.exploitCount != null)) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
@@ -202,9 +297,14 @@ Recommendation: ${recommendedVersion}`;
                     range: diagnostic.range,
                     newText: this.changeTo
                 }];
-                codeActionsMap[diagnostic.message] = codeAction
+                // We will have line|start as key instead of message
+                codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character] = codeAction
             }
-            return [diagnostic]
+
+            if (!diagnosticLinePresent)
+                return [diagnostic]
+            else
+                return []
         } else {
             return [];
         }

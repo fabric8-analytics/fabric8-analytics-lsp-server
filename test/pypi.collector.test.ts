@@ -9,7 +9,7 @@ describe('PyPi requirements.txt parser test', () => {
             b==2.1.1
             c>=10.1
             d<=20.1.2.3.4.5.6.7.8
-        `);
+        `, '');
         expect(deps.length).equal(4);
         expect(deps[0]).is.eql({
           name: {value: 'a', position: {line: 0, column: 0}},
@@ -36,7 +36,7 @@ describe('PyPi requirements.txt parser test', () => {
             c # yet another comment >=10.1
             d<=20.1.2.3.4.5.6.7.8
             # done
-        `);
+        `, '');
         expect(deps.length).equal(3);
         expect(deps[0]).is.eql({
           name: {value: 'a', position: {line: 0, column: 0}},
@@ -57,7 +57,7 @@ describe('PyPi requirements.txt parser test', () => {
 
             a==1
 
-        `);
+        `, '');
         expect(deps.length).equal(1);
         expect(deps[0]).is.eql({
           name: {value: 'a', position: {line: 0, column: 0}},
@@ -71,7 +71,7 @@ describe('PyPi requirements.txt parser test', () => {
 
                   b        <=     10.1               
 
-        `);
+        `, '');
         expect(deps.length).equal(2);
         expect(deps[0]).is.eql({
           name: {value: 'a', position: {line: 0, column: 0}},

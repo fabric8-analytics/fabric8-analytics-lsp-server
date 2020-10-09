@@ -8,6 +8,9 @@ import * as Xml2Object from 'xml2object';
 import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string } from './utils';
+import * as fs from 'fs';
+import * as paths from 'path';
+import { execSync } from 'child_process';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
@@ -31,7 +34,7 @@ interface IDependency {
 /* Dependency collector interface */
 interface IDependencyCollector {
   classes: Array<string>;
-  collect(contents: string): Promise<Array<IDependency>>;
+  collect(contents: string, manifestFile: string): Promise<Array<IDependency>>;
 }
 
 /* Dependency class that can be created from `IKeyValueEntry` */
@@ -88,7 +91,7 @@ class NaivePyParser {
 class ReqDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string): Promise<Array<IDependency>> {
+    async collect(contents: string, manifestFile: string): Promise<Array<IDependency>> {
         let parser = new NaivePyParser(contents);
         return parser.parse();
     }
@@ -96,14 +99,54 @@ class ReqDependencyCollector implements IDependencyCollector {
 }
 
 class NaiveGomodParser {
-    constructor(contents: string) {
-        this.dependencies = NaiveGomodParser.parseDependencies(contents);
+    constructor(contents: string, manifestFile: string) {
+        this.dependencies = NaiveGomodParser.parseDependencies(contents, manifestFile);
     }
 
     dependencies: Array<IDependency>;
 
-    static parseDependencies(contents:string): Array<IDependency> {
+    static parseDependencies(contents:string, manifestFile: string): Array<IDependency> {
         const gomod = contents.split("\n");
+
+        const vscodeRootpath = manifestFile.replace("file://", "").replace("/go.mod", "")
+        const targetDir = paths.join(vscodeRootpath, 'target');
+        const goImportsFilePath = paths.join(targetDir, 'goimports.txt');
+        
+        // Create target folder if not exists.
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir);
+        }
+
+        const cmd: string = [
+            `cd`,
+            `"${vscodeRootpath}" &&`,
+            `go`,
+            `list`,
+            `-f`,
+            `"{{.Imports}}"`,
+            `./...`,
+            `>`,
+            `"${goImportsFilePath}"`,
+        ].join(' ');
+        
+        execSync(
+            cmd,
+            { maxBuffer: 1024 * 1200 });
+        
+        const gopackages = fs.readFileSync(goImportsFilePath).toString().split("\n");
+        let importPackages = gopackages.reduce((importPackages, line) => {
+            let pckgs = line.replace('[', '').replace(']', '').trim().split(' ')
+            if (pckgs.length > 0) {
+                pckgs.forEach(v => {
+                    if (importPackages.indexOf(v) < 0)
+                        importPackages.push(v)
+                })
+            }
+            return importPackages
+        }, []);
+
+        console.log("Found %d import packages", importPackages.length)
+
         return gomod.reduce((dependencies, line, index) => {
             // Ignore "replace" lines
             if (!line.includes("=>")) {
@@ -115,16 +158,26 @@ class NaiveGomodParser {
                 //const version = semverRegex().exec(line)
                 regExp.lastIndex = 0;
                 const version = regExp.exec(line);
-      	        // Skip lines without version string
+                // Skip lines without version string
                 if (version && version.length > 0) {
-                    const parts: Array<string>  = line.replace('require', '').replace('(', '').replace(')', '').trim().split(' ');
-                    const pkgName:string = (parts[0] || '').trim();
+                    const parts: Array<string> = line.replace('require', '').replace('(', '').replace(')', '').trim().split(' ');
+                    const pkgName: string = (parts[0] || '').trim();
                     // Ignore line starting with replace clause and empty package
                     if (pkgName.length > 0) {
                         const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                         entry.value = new Variant(ValueType.String, 'v' + version[0]);
                         entry.value_position = { line: index + 1, column: version.index };
                         dependencies.push(new Dependency(entry));
+
+                        // Find packages of this module.
+                        importPackages.forEach(pckg => {
+                            if (pckg != pkgName && pckg.startsWith(pkgName + "/")) {
+                                const entry: IKeyValueEntry = new KeyValueEntry(pckg, { line: 0, column: 0 });
+                                entry.value = new Variant(ValueType.String, 'v' + version[0]);
+                                entry.value_position = { line: index + 1, column: version.index };
+                                dependencies.push(new Dependency(entry));
+                            }
+                        })
                     }
                 }
             }
@@ -142,8 +195,8 @@ class NaiveGomodParser {
 class GomodDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string): Promise<Array<IDependency>> {
-        let parser = new NaiveGomodParser(contents);
+    async collect(contents: string, manifestFile: string): Promise<Array<IDependency>> {
+        let parser = new NaiveGomodParser(contents, manifestFile);
         return parser.parse();
     }
 
@@ -219,7 +272,7 @@ class NaivePomXmlSaxParser {
 class PomXmlDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string): Promise<Array<IDependency>> {
+    async collect(contents: string, manifestFile: string): Promise<Array<IDependency>> {
         const file = stream_from_string(contents);
         let parser = new NaivePomXmlSaxParser(file);
         let dependencies;
@@ -233,7 +286,7 @@ class PomXmlDependencyCollector implements IDependencyCollector {
 class PackageJsonCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string): Promise<Array<IDependency>> {
+    async collect(contents: string, manifestFile: string): Promise<Array<IDependency>> {
       const ast = jsonAst(contents);
       return ast.children.
               filter(c => this.classes.includes(c.key.value)).

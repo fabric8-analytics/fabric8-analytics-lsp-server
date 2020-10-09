@@ -50,7 +50,7 @@ describe('Response consumer test', () => {
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, diagnosticFilePath);
         pipeline.run(response);
         const secEng = pipeline.items[0] as SecurityEngine;
-        const msg = "abc: 1.2.3\nKnown security vulnerability: 1\nSecurity advisory: 1\nExploits: unavailable\nHighest severity: critical\nRecommendation: 2.3.4";
+        const msg = "abc: 1.2.3\nNumber of packages: 1\nKnown security vulnerability: 1\nSecurity advisory: 1\nExploits: unavailable\nHighest severity: critical\nRecommendation: 2.3.4";
 
         expect(diagnostics.length).equal(1);
         expect(diagnostics[0].message).equal(msg);
@@ -88,7 +88,7 @@ describe('Response consumer test', () => {
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, diagnosticFilePath);
         pipeline.run(response);
         const secEng = pipeline.items[0] as SecurityEngine;
-        const msg = "abc: 1.2.3\nKnown security vulnerability: 1\nSecurity advisory: 1\nExploits: 1\nHighest severity: critical\nRecommendation: 2.3.4";
+        const msg = "abc: 1.2.3\nNumber of packages: 1\nKnown security vulnerability: 1\nSecurity advisory: 1\nExploits: 1\nHighest severity: critical\nRecommendation: 2.3.4";
 
         expect(diagnostics.length).equal(1);
         expect(diagnostics[0].message).equal(msg);
@@ -125,7 +125,7 @@ describe('Response consumer test', () => {
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, diagnosticFilePath);
         pipeline.run(response);
         const secEng = pipeline.items[0] as SecurityEngine;
-        const msg = "abc: 1.2.3\nKnown security vulnerability: 0\nSecurity advisory: 1\nExploits: unavailable\nHighest severity: critical\nRecommendation: N/A";
+        const msg = "abc: 1.2.3\nNumber of packages: 1\nKnown security vulnerability: 0\nSecurity advisory: 1\nExploits: unavailable\nHighest severity: critical\nRecommendation: N/A";
 
         expect(diagnostics.length).equal(1);
         expect(diagnostics[0].message).equal(msg);

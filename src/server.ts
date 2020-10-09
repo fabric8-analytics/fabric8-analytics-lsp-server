@@ -150,6 +150,9 @@ class AnalysisConfig
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
         this.uuid = process.env.UUID || "";
+        
+        this.server_url = "http://127.0.0.1:5000/api/v2";
+        this.api_token = "not-set";
     }
 };
 
@@ -260,25 +263,32 @@ function slicePayload(payload, batchSize, ecosystem): any {
 const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
-    const deps = await collector.collect(contents);
-    let validPackages = deps
-    if (ecosystem != "golang") {
-        validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-    }
-    const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
-    const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
-    const batchSize = 10;
-    let diagnostics = [];
-    let totalCount = new TotalCount();
-    const start = new Date().getTime();
-    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request =>
-        fetchVulnerabilities(request).then(response =>
-        runPipeline(response, diagnostics, diagnosticFilePath, requestMapper, totalCount)));
+    let deps = null;
+    try {
+        deps = await collector.collect(contents, diagnosticFilePath);    
 
-    await Promise.allSettled(allRequests);
-    const end = new Date().getTime();
-    connection.console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
-    connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
+        let validPackages = deps
+        if (ecosystem != "golang") {
+            validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
+        }
+        const requestPayload = validPackages.map(d => ({ "package": d.name.value, "version": d.version.value }));
+        const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
+        const batchSize = 10;
+        let diagnostics = [];
+        let totalCount = new TotalCount();
+        const start = new Date().getTime();
+        const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request =>
+            fetchVulnerabilities(request).then(response =>
+                runPipeline(response, diagnostics, diagnosticFilePath, requestMapper, totalCount)));
+    
+        await Promise.allSettled(allRequests);
+        const end = new Date().getTime();
+        console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
+        connection.sendNotification('caNotification', { 'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount': diagnostics.length > 0 ? diagnostics.length : 0 });
+    } catch (error) {
+        console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error)
+        connection.sendNotification('caError', {'data': 'Invalid menifest file or need to syncronize package details.'})
+    }
 };
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
@@ -320,7 +330,7 @@ connection.onCodeAction((params, token): CodeAction[] => {
     clearTimeout(checkDelay);
     let codeActions: CodeAction[] = [];
     for (let diagnostic of params.context.diagnostics) {
-        let codeAction = codeActionsMap[diagnostic.message];
+        let codeAction = codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character];
         if (codeAction != null) {
             codeActions.push(codeAction)
         }

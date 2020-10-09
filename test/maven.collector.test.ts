@@ -42,7 +42,7 @@ describe('Maven pom.xml parser test', () => {
                 </dependency>
             </dependencies>
          </dependencyManagement>
-        `);
+        `, '');
         expect(deps.length).equal(3);
         expect(deps[0]).is.eql({
           name: {value: '{a.groupId}:bc', position: {line: 0, column: 0}},
@@ -85,7 +85,7 @@ describe('Maven pom.xml parser test', () => {
                 </dependency>
             </dependencies>
          </dependencyManagement>
-        `);
+        `, '');
         expect(deps.length).equal(3);
         expect(deps[0]).is.eql({
           name: {value: '{a.groupId}:bc', position: {line: 0, column: 0}},
@@ -131,14 +131,14 @@ describe('Maven pom.xml parser test', () => {
                 </dependency>
             </dependencies>
          </dependencyManagement>
-        `);
+        `, '');
         expect(deps.length).equal(0);
     });
 
     it('tests pom.xml with empty string', async () => {
         const deps = await collector.collect(
         `
-        `);
+        `, '');
         expect(deps.length).equal(0);
     });
 
@@ -147,7 +147,7 @@ describe('Maven pom.xml parser test', () => {
         `<dependencyManagement>
             
          </dependencyManagement>
-        `);
+        `, '');
         expect(deps.length).equal(0);
     });
 
@@ -158,7 +158,7 @@ describe('Maven pom.xml parser test', () => {
       
             </dependencies>
          </dependencyManagement>
-        `);
+        `, '');
         expect(deps.length).equal(0);
     });
 });
