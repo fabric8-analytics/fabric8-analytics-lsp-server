@@ -97,6 +97,77 @@ describe('Response consumer test', () => {
         expect(secEng.exploitCount).equal(1);
     });
 
+    it('Consume response for multiple packages', () => {
+        let DiagnosticsEngines = [SecurityEngine];
+        let diagnostics = [];
+        var response = {
+            "package_unknown": false,
+            "package": "github.com/abc",
+            "version": "1.2.3",
+            "recommended_versions": "2.3.4",
+            "registration_link": "https://abc.io/login",
+            "vulnerability": [
+                {
+                    "id": "ABC-VULN",
+                    "cvss": "9.8",
+                    "is_private": true,
+                    "cwes": [
+                        "CWE-79"
+                    ]
+                }
+            ],
+            "message": "github.com/abc - 1.2.3 has 1 known security vulnerability and 1 security advisory with 1 exploitable vulnerability. Recommendation: use version 2.3.4. ",
+            "highest_severity": "critical",
+            "known_security_vulnerability_count": 1,
+            "security_advisory_count": 1,
+            "exploitable_vulnerabilities_count": 1
+        };
+
+        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, diagnosticFilePath);
+        pipeline.run(response);
+        var secEng = pipeline.items[0] as SecurityEngine;
+        var msg = "github.com/abc: 1.2.3\nNumber of packages: 1\nKnown security vulnerability: 1\nSecurity advisory: 1\nExploits: 1\nHighest severity: critical\nRecommendation: 2.3.4";
+
+        expect(diagnostics.length).equal(1);
+        expect(diagnostics[0].message).equal(msg);
+        expect(secEng.vulnerabilityCount).equal(1);
+        expect(secEng.advisoryCount).equal(1);
+        expect(secEng.exploitCount).equal(1);
+
+        response = {
+            "package_unknown": false,
+            "package": "github.com/abc/pkg/auth",
+            "version": "1.2.3",
+            "recommended_versions": "2.6.4",
+            "registration_link": "https://abc.io/login",
+            "vulnerability": [
+                {
+                    "id": "ABC-VULN",
+                    "cvss": "9.8",
+                    "is_private": true,
+                    "cwes": [
+                        "CWE-79"
+                    ]
+                }
+            ],
+            "message": "github.com/abc/pkg/auth - 1.2.3 has 1 known security vulnerability and 1 security advisory with 1 exploitable vulnerability. Recommendation: use version 2.3.4. ",
+            "highest_severity": "high",
+            "known_security_vulnerability_count": 3,
+            "security_advisory_count": 2,
+            "exploitable_vulnerabilities_count": 1
+        };
+
+        pipeline.run(response);
+        secEng = pipeline.items[0] as SecurityEngine;
+        msg = "github.com/abc: 1.2.3\nNumber of packages: 2\nKnown security vulnerability: 4\nSecurity advisory: 3\nExploits: 2\nHighest severity: critical\nRecommendation: 2.6.4";
+
+        expect(diagnostics.length).equal(1);
+        expect(diagnostics[0].message).equal(msg);
+        expect(secEng.vulnerabilityCount).equal(3);
+        expect(secEng.advisoryCount).equal(2);
+        expect(secEng.exploitCount).equal(1);
+    });
+
     it('Consume response for free-users with only security advisories', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];

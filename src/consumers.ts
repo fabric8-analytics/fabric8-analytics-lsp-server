@@ -183,10 +183,10 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
             } else {
                 diagSeverity = DiagnosticSeverity.Error;
             }
-
+            
             const recommendedVersion = this.changeTo || "N/A";
             const exploitCount = this.exploitCount || "unavailable";
-            const msg = `${this.context.name.value}: ${this.context.version.value}
+            const msg = `${this.package}: ${this.version}
 Number of packages: 1
 Known security vulnerability: ${this.vulnerabilityCount}
 Security advisory: ${this.advisoryCount}
@@ -211,10 +211,10 @@ Recommendation: ${recommendedVersion}`;
 
             if (diagnosticLinePresent) {
                 // Add new counts to old one
-                let oldMessage = cls.diagnostics[diagnosticIndex].message.split("\n")
-                let packageCount = parseInt(oldMessage[1].split(":")[1].trim()) + 1
-                let securityVulnerabilityCount = parseInt(oldMessage[2].split(":")[1].trim()) + this.vulnerabilityCount
-                let securityAdvisoryCount = parseInt(oldMessage[3].split(":")[1].trim()) + this.advisoryCount
+                const oldMessage = cls.diagnostics[diagnosticIndex].message.split("\n")
+                const packageCount = parseInt(oldMessage[1].split(":")[1].trim()) + 1
+                const securityVulnerabilityCount = parseInt(oldMessage[2].split(":")[1].trim()) + this.vulnerabilityCount
+                const securityAdvisoryCount = parseInt(oldMessage[3].split(":")[1].trim()) + this.advisoryCount
 
                 // Compute sum of exploits, taking 'unavailable' value for exploit.
                 let oldExploit = oldMessage[4].split(":")[1].trim()
