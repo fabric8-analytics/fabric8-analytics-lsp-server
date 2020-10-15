@@ -6,6 +6,7 @@
 import { IDependency } from './collector';
 import { get_range } from './utils';
 import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind } from 'vscode-languageserver'
+import compareVersions = require('compare-versions');
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor {
@@ -173,6 +174,49 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         this.highestSeverityBinding = { path: ['highest_severity'] };
     }
 
+    private getAggregaterExploitCount(oldExploitCount: string): string {
+        // Compute sum of exploits, taking 'unavailable' value for exploit.
+        var newExploitCount: any
+        if (oldExploitCount == "unavailable") {
+            newExploitCount = this.exploitCount || "unavailable";
+        } else {
+            newExploitCount = parseInt(oldExploitCount) + this.exploitCount
+        }
+
+        return newExploitCount.toString()
+    }
+
+    private getAggregatedSeverity(oldSeverity: string): string {
+        // Compute highest severity
+        var newSeverity = oldSeverity
+        if (this.highestSeverity == "critical" || oldSeverity == "critical")
+            newSeverity = "critical"
+        else if (this.highestSeverity == "high" || oldSeverity == "high")
+            newSeverity = "high"
+        else if (this.highestSeverity == "medium" || oldSeverity == "medium")
+            newSeverity = "medium"
+        else if (this.highestSeverity == "low" || oldSeverity == "low")
+            newSeverity = "low"
+
+        return newSeverity
+    }
+
+    private getMaxRecVersion(oldRecVersion: string): string {
+        var newRecVersion = oldRecVersion;
+
+        // Compute rec version based on max criteria
+        var newRecVersion = oldRecVersion
+        if (oldRecVersion == "N/A") {
+            newRecVersion = this.changeTo || "N/A";
+        } else if (this.changeTo) {
+            if (compareVersions(oldRecVersion, this.changeTo) == -1) {
+                newRecVersion = this.changeTo
+            }
+        }
+
+        return newRecVersion
+    }
+
     produce(ctx: any, cls: DiagnosticsPipeline): Diagnostic[] {
         if (this.item.length > 0) {
             /* The diagnostic's severity. */
@@ -215,59 +259,9 @@ Recommendation: ${recommendedVersion}`;
                 const packageCount = parseInt(oldMessage[1].split(":")[1].trim()) + 1
                 const securityVulnerabilityCount = parseInt(oldMessage[2].split(":")[1].trim()) + this.vulnerabilityCount
                 const securityAdvisoryCount = parseInt(oldMessage[3].split(":")[1].trim()) + this.advisoryCount
-
-                // Compute sum of exploits, taking 'unavailable' value for exploit.
-                let oldExploit = oldMessage[4].split(":")[1].trim()
-                var newExploitCount: any
-                if (oldExploit == "unavailable") {
-                    newExploitCount = this.exploitCount || "unavailable";
-                } else {
-                    newExploitCount = parseInt(oldExploit) + this.exploitCount
-                }
-
-                // Compute highest severity
-                const oldSeverity = oldMessage[5].split(":")[1].trim()
-                var newSeverity = oldSeverity
-                if (this.highestSeverity == "critical" || oldSeverity == "critical")
-                    newSeverity = "critical"
-                else if (this.highestSeverity == "high" || oldSeverity == "high")
-                    newSeverity = "high"
-                else if (this.highestSeverity == "medium" || oldSeverity == "medium")
-                    newSeverity = "medium"
-                else if (this.highestSeverity == "low" || oldSeverity == "low")
-                    newSeverity = "low"
-                
-                // Compute rec version based on max criteria
-                const oldRecVersion = oldMessage[6].split(":")[1].trim()
-                var newRecVersion = oldRecVersion
-                if (oldRecVersion == "N/A") {
-                    newRecVersion = this.changeTo || "N/A";
-                } else if (this.changeTo) {
-                    const d = oldRecVersion.replace("v", "").split('.')
-                    const oldRecVerParts = [parseInt(d[0]), parseInt(d[1]), parseInt(d[2])]
-                    const n = this.changeTo.replace("v", "").split('.')
-                    const newRecVerParts = [parseInt(n[0]), parseInt(n[1]), parseInt(n[2])]
-                    
-                    if (oldRecVerParts[0] > newRecVerParts[0]) {
-                        newRecVersion = oldRecVersion
-                    } else if (oldRecVerParts[0] < newRecVerParts[0]) {
-                        newRecVersion = this.changeTo
-                    } else {
-                        // Major version is equal
-                        if (oldRecVerParts[1] > newRecVerParts[1]) {
-                            newRecVersion = oldRecVersion
-                        } else if (oldRecVerParts[1] < newRecVerParts[1]) {
-                            newRecVersion = this.changeTo
-                        } else {
-                            // Minor version is equal
-                            if (oldRecVerParts[2] > newRecVerParts[2]) {
-                                newRecVersion = oldRecVersion
-                            } else {
-                                newRecVersion = this.changeTo
-                            }    
-                        }    
-                    }
-                }
+                const newExploitCount = this.getAggregaterExploitCount(oldMessage[4].split(":")[1].trim())
+                const newSeverity = this.getAggregatedSeverity(oldMessage[5].split(":")[1].trim())
+                const newRecVersion = this.getMaxRecVersion(oldMessage[6].split(":")[1].trim())
             
                 const newPackageMessage = `${oldMessage[0].trim()}
 Number of packages: ${packageCount}

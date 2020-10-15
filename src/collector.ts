@@ -109,31 +109,10 @@ class NaiveGomodParser {
         const gomod = contents.split("\n");
 
         const vscodeRootpath = manifestFile.replace("file://", "").replace("/go.mod", "")
-        const targetDir = paths.join(vscodeRootpath, 'target');
-        const goImportsFilePath = paths.join(targetDir, 'goimports.txt');
+        const gopackages = execSync(
+                            `cd "${vscodeRootpath}" && go list -f "{{.Imports}}" ./...`,
+                            { maxBuffer: 1024 * 1200 }).toString().split("\n");
         
-        // Create target folder if not exists.
-        if (!fs.existsSync(targetDir)) {
-            fs.mkdirSync(targetDir);
-        }
-
-        const cmd: string = [
-            `cd`,
-            `"${vscodeRootpath}" &&`,
-            `go`,
-            `list`,
-            `-f`,
-            `"{{.Imports}}"`,
-            `./...`,
-            `>`,
-            `"${goImportsFilePath}"`,
-        ].join(' ');
-        
-        execSync(
-            cmd,
-            { maxBuffer: 1024 * 1200 });
-        
-        const gopackages = fs.readFileSync(goImportsFilePath).toString().split("\n");
         let importPackages = gopackages.reduce((importPackages, line) => {
             let pckgs = line.replace('[', '').replace(']', '').trim().split(' ')
             if (pckgs.length > 0) {
