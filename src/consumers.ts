@@ -227,7 +227,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
             } else {
                 diagSeverity = DiagnosticSeverity.Error;
             }
-            
+
             const recommendedVersion = this.changeTo || "N/A";
             const exploitCount = this.exploitCount || "unavailable";
             const msg = `${this.package}: ${this.version}

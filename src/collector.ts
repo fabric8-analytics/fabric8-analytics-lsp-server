@@ -110,16 +110,13 @@ class NaiveGomodParser {
 
         const vscodeRootpath = manifestFile.replace("file://", "").replace("/go.mod", "")
         const gopackages = execSync(
-                            `cd "${vscodeRootpath}" && go list -f "{{.Imports}}" ./...`,
+                            `cd "${vscodeRootpath}" && go list -f '{{ join .Imports "\\n" }}' ./...`,
                             { maxBuffer: 1024 * 1200 }).toString().split("\n");
         
-        let importPackages = gopackages.reduce((importPackages, line) => {
-            let pckgs = line.replace('[', '').replace(']', '').trim().split(' ')
-            if (pckgs.length > 0) {
-                pckgs.forEach(v => {
-                    if (importPackages.indexOf(v) < 0)
-                        importPackages.push(v)
-                })
+        let importPackages = gopackages.reduce((importPackages, importPckg) => {
+            if (importPckg.length > 0) {
+                if (importPackages.indexOf(importPckg) < 0)
+                    importPackages.push(importPckg)
             }
             return importPackages
         }, []);
