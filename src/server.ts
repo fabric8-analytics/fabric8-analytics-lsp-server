@@ -284,7 +284,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         connection.sendNotification('caNotification', { 'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount': diagnostics.length > 0 ? diagnostics.length : 0 });
     } catch (error) {
         console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error)
-        connection.sendNotification('caError', {'data': 'Invalid menifest file or need to syncronize package details.'})
+        connection.sendNotification('caError', {'data': 'Unable to execute `go list` command, run `go mod tidy` to resolve dependencies issues'})
     }
 };
 

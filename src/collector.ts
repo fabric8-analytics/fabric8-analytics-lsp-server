@@ -8,9 +8,7 @@ import * as Xml2Object from 'xml2object';
 import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string } from './utils';
-import * as fs from 'fs';
-import * as paths from 'path';
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
@@ -99,31 +97,14 @@ class ReqDependencyCollector implements IDependencyCollector {
 }
 
 class NaiveGomodParser {
-    constructor(contents: string, manifestFile: string) {
-        this.dependencies = NaiveGomodParser.parseDependencies(contents, manifestFile);
+    constructor(contents: string, goImports: Set<string>) {
+        this.dependencies = NaiveGomodParser.parseDependencies(contents, goImports);
     }
 
     dependencies: Array<IDependency>;
 
-    static parseDependencies(contents:string, manifestFile: string): Array<IDependency> {
-        const gomod = contents.split("\n");
-
-        const vscodeRootpath = manifestFile.replace("file://", "").replace("/go.mod", "")
-        const gopackages = execSync(
-                            `cd "${vscodeRootpath}" && go list -f '{{ join .Imports "\\n" }}' ./...`,
-                            { maxBuffer: 1024 * 1200 }).toString().split("\n");
-        
-        let importPackages = gopackages.reduce((importPackages, importPckg) => {
-            if (importPckg.length > 0) {
-                if (importPackages.indexOf(importPckg) < 0)
-                    importPackages.push(importPckg)
-            }
-            return importPackages
-        }, []);
-
-        console.log("Found %d import packages", importPackages.length)
-
-        return gomod.reduce((dependencies, line, index) => {
+    static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
+        return contents.split("\n").reduce((dependencies, line, index) => {
             // Ignore "replace" lines
             if (!line.includes("=>")) {
                 // skip any text after '//'
@@ -146,7 +127,7 @@ class NaiveGomodParser {
                         dependencies.push(new Dependency(entry));
 
                         // Find packages of this module.
-                        importPackages.forEach(pckg => {
+                        goImports.forEach(pckg => {
                             if (pckg != pkgName && pckg.startsWith(pkgName + "/")) {
                                 const entry: IKeyValueEntry = new KeyValueEntry(pckg, { line: 0, column: 0 });
                                 entry.value = new Variant(ValueType.String, 'v' + version[0]);
@@ -172,7 +153,22 @@ class GomodDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
     async collect(contents: string, manifestFile: string): Promise<Array<IDependency>> {
-        let parser = new NaiveGomodParser(contents, manifestFile);
+        let promiseExec = new Promise<Set<string>>((resolve, reject) => {
+            const vscodeRootpath = manifestFile.replace("file://", "").replace("/go.mod", "")
+            exec(`cd "${vscodeRootpath}" && go list -f '{{ join .Imports "\\n" }}' ./...`,
+                   { maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
+                if (error) {
+                    console.log("Fail to execute:", `cd "${vscodeRootpath}" && go list -f '{{ join .Imports "\\n" }}' ./...`)
+                    reject("'go list' command failed")
+                } else {
+                    resolve(new Set(stdout.toString().split("\n")))
+                }
+            });
+        });
+        const goImports: Set<string> = await promiseExec;
+        console.log("Processing", goImports.size, "imports from source");
+
+        let parser = new NaiveGomodParser(contents, goImports);
         return parser.parse();
     }
 
