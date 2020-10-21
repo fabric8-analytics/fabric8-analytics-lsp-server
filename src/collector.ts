@@ -32,7 +32,7 @@ interface IDependency {
 /* Dependency collector interface */
 interface IDependencyCollector {
   classes: Array<string>;
-  collect(contents: string, manifestFile: string): Promise<Array<IDependency>>;
+  collect(contents: string): Promise<Array<IDependency>>;
 }
 
 /* Dependency class that can be created from `IKeyValueEntry` */
@@ -89,7 +89,7 @@ class NaivePyParser {
 class ReqDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string, manifestFile: string): Promise<Array<IDependency>> {
+    async collect(contents: string): Promise<Array<IDependency>> {
         let parser = new NaivePyParser(contents);
         return parser.parse();
     }
@@ -150,16 +150,18 @@ class NaiveGomodParser {
 /* Process entries found in the go.mod file and collect all dependency
  * related information */
 class GomodDependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ["dependencies"]) {}
+    constructor(private manifestFile: string, public classes: Array<string> = ["dependencies"]) {
+        this.manifestFile = manifestFile
+    }
 
-    async collect(contents: string, manifestFile: string): Promise<Array<IDependency>> {
+    async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            const vscodeRootpath = manifestFile.replace("file://", "").replace("/go.mod", "")
-            exec(`cd "${vscodeRootpath}" && go list -f '{{ join .Imports "\\n" }}' ./...`,
-                   { maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
+            const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
+            exec(`go list -f '{{ join .Imports "\\n" }}' ./...`,
+                   { cwd: `${vscodeRootpath}`, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
-                    console.log("Fail to execute:", `cd "${vscodeRootpath}" && go list -f '{{ join .Imports "\\n" }}' ./...`)
-                    reject("'go list' command failed")
+                    console.log("Fail to execute: [", `go list -f '{{ join .Imports "\\n" }}' ./...`, `] at "${vscodeRootpath}"`)
+                    reject("'go list' command failed with error :: " + stderr.toString())
                 } else {
                     resolve(new Set(stdout.toString().split("\n")))
                 }
@@ -244,7 +246,7 @@ class NaivePomXmlSaxParser {
 class PomXmlDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string, manifestFile: string): Promise<Array<IDependency>> {
+    async collect(contents: string): Promise<Array<IDependency>> {
         const file = stream_from_string(contents);
         let parser = new NaivePomXmlSaxParser(file);
         let dependencies;
@@ -258,7 +260,7 @@ class PomXmlDependencyCollector implements IDependencyCollector {
 class PackageJsonCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string, manifestFile: string): Promise<Array<IDependency>> {
+    async collect(contents: string): Promise<Array<IDependency>> {
       const ast = jsonAst(contents);
       return ast.children.
               filter(c => this.classes.includes(c.key.value)).

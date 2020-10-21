@@ -262,8 +262,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
     let deps = null;
     try {
-        deps = await collector.collect(contents, diagnosticFilePath);    
-
+        deps = await collector.collect(contents);
         let validPackages = deps
         if (ecosystem != "golang") {
             validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
@@ -301,7 +300,7 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
 });
 
 files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
-    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector());
+    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector(uri));
 });
 
 let checkDelay;

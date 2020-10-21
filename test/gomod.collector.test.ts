@@ -1,10 +1,8 @@
-import * as fs from 'fs';
-import * as paths from 'path';
 import { expect } from 'chai';
 import { GomodDependencyCollector } from '../src/collector';
 
 describe('Golang go.mod parser test', () => {
-  const collector: GomodDependencyCollector = new GomodDependencyCollector();
+  const collector: GomodDependencyCollector = new GomodDependencyCollector("file://" + process.cwd() + '/test/data/sample1/go.mod');
 
   it('tests valid go.mod', async () => {
     const deps = await collector.collect(`
@@ -16,7 +14,7 @@ describe('Golang go.mod parser test', () => {
             github.com/stretchr/testify v1.2.2
           )
           go 1.13
-        `, process.cwd());
+        `);
     expect(deps.length).equal(4);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -47,7 +45,7 @@ describe('Golang go.mod parser test', () => {
           )
           go 1.13
           // Final notes.
-        `, process.cwd());
+        `);
     expect(deps.length).equal(3);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -76,7 +74,7 @@ describe('Golang go.mod parser test', () => {
           )
           go 1.13
 
-        `, process.cwd());
+        `);
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -98,7 +96,7 @@ describe('Golang go.mod parser test', () => {
              github.com/stretchr/testify    v1.2.2
           )
           go 1.13
-        `, process.cwd());
+        `);
     expect(deps.length).equal(4);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -134,7 +132,7 @@ describe('Golang go.mod parser test', () => {
         )
         
         go 1.13
-      `, process.cwd());
+      `);
     expect(deps.length).equal(8);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -183,7 +181,7 @@ describe('Golang go.mod parser test', () => {
           github.com/alecthomas/units => github.com/test-user/units v13.3.2 // Required by OLM
           github.com/pierrec/lz4 => github.com/pierrec/lz4 v3.4.2 // Required by prometheus-operator
         )
-      `, process.cwd());
+      `);
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -205,7 +203,7 @@ describe('Golang go.mod parser test', () => {
         )
         
         replace github.com/alecthomas/units => github.com/test-user/units v13.3.2
-      `, process.cwd());
+      `);
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -214,6 +212,29 @@ describe('Golang go.mod parser test', () => {
     expect(deps[1]).is.eql({
       name: { value: 'github.com/pierrec/lz4', position: { line: 0, column: 0 } },
       version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } },
+    });
+  });
+
+  it('tests go.mod with a module in import', async () => {
+    const deps = await collector.collect(`
+      module test/data/sample1
+
+      go 1.15
+
+      require github.com/google/go-cmp v0.5.2
+    `);
+    expect(deps.length).equal(3);
+    expect(deps[0]).is.eql({
+      name: { value: 'github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+    });
+    expect(deps[1]).is.eql({
+      name: { value: 'github.com/google/go-cmp/cmp', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+    });
+    expect(deps[2]).is.eql({
+      name: { value: 'github.com/google/go-cmp/cmp/cmpopts', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
     });
   });
 });
