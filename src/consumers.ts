@@ -7,6 +7,8 @@ import { IDependency } from './collector';
 import { get_range } from './utils';
 import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind } from 'vscode-languageserver'
 import compareVersions = require('compare-versions');
+import { Range } from 'vscode-languageserver';
+
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor {
@@ -50,6 +52,139 @@ interface IPipeline<T> {
 /* Diagnostics producer type */
 type DiagnosticProducer = IProducer<Diagnostic[]>;
 
+/* Package vulnerability data */
+class Package
+{
+    name: string;
+    version: string;
+    packageCount: number;
+    vulnerabilityCount: number;
+    advisoryCount: number;
+    exploitCount: number;
+    highestSeverity: string;
+    recommendedVersion: string;
+    range: Range;
+
+    constructor(
+        name: string, version: string, packageCount: number,
+        vulnerabilityCount: number, advisoryCount: number,
+        exploitCount: number, highestSeverity: string,
+        recommendedVersion: string, range: Range) {
+            this.name = name;
+            this.version = version;
+            this.packageCount = packageCount || 0;
+            this.vulnerabilityCount = vulnerabilityCount || 0;
+            this.advisoryCount = advisoryCount || 0;
+            this.exploitCount = exploitCount || 0;
+            this.highestSeverity = highestSeverity;
+            this.recommendedVersion = recommendedVersion;
+            this.range = range
+    }
+
+    getDiagnostic(): Diagnostic {
+        /* The diagnostic's severity. */
+        let diagSeverity: any;
+
+        if (this.vulnerabilityCount == 0 && this.advisoryCount > 0) {
+            diagSeverity = DiagnosticSeverity.Information;
+        } else {
+            diagSeverity = DiagnosticSeverity.Error;
+        }
+
+        const recommendedVersion = this.recommendedVersion || "N/A";
+        const exploitCount = this.exploitCount || "unavailable";
+        const msg = `${this.name}: ${this.version}
+Number of packages: ${this.packageCount}
+Known security vulnerability: ${this.vulnerabilityCount}
+Security advisory: ${this.advisoryCount}
+Exploits: ${exploitCount}
+Highest severity: ${this.highestSeverity}
+Recommendation: ${recommendedVersion}`;
+
+        return {
+            severity: diagSeverity,
+            range: this.range,
+            message: msg,
+            source: '\nDependency Analytics Plugin [Powered by Snyk]',
+        };
+    }
+}
+
+/* Package aggregator class */
+class PackageAggregator
+{
+    packages: Array<Package> = Array<Package>()
+    isNewPackage: boolean
+
+    aggregate(newPackage: Package): Package {
+        // Check if module / package exists in the list.
+        this.isNewPackage = true
+
+        for (let i = 0; i < this.packages.length; i++) {
+            // Module and package can come in any order due to parallel batch requests.
+            // Need handle use case (1) Module first followed by package and (2) Package first followed by module.
+            if (newPackage.name.startsWith(this.packages[i].name + "/") || this.packages[i].name.startsWith(newPackage.name + "/")) {
+                // Module / package exists, so aggregate the data and update Diagnostic message and code action.
+                this.mergePackage(i, newPackage)
+                this.isNewPackage = false
+                return this.packages[i]
+            }
+        }
+
+        if (this.isNewPackage) {
+            this.packages.push(newPackage)
+        }
+
+        return newPackage
+    }
+
+    private mergePackage(exitingIndex: number, newPackage: Package) {
+        // Between current name and new name, smallest will be the module name.
+        // So, assign the smallest as package name.
+        if (newPackage.name.length < this.packages[exitingIndex].name.length)
+            this.packages[exitingIndex].name = newPackage.name
+
+        // Merge other informations
+        this.packages[exitingIndex].packageCount += newPackage.packageCount
+        this.packages[exitingIndex].vulnerabilityCount += newPackage.vulnerabilityCount
+        this.packages[exitingIndex].advisoryCount += newPackage.advisoryCount
+        this.packages[exitingIndex].exploitCount += newPackage.exploitCount
+        this.packages[exitingIndex].highestSeverity = this.getAggregatedSeverity(
+            this.packages[exitingIndex].highestSeverity, newPackage.highestSeverity)
+        this.packages[exitingIndex].recommendedVersion = this.getMaxRecVersion(
+            this.packages[exitingIndex].recommendedVersion, newPackage.recommendedVersion)
+    }
+
+    private getAggregatedSeverity(oldSeverity: string, newSeverity: string): string {
+        // Compute highest severity
+        var maxSeverity = oldSeverity
+        if (oldSeverity == "critical" || newSeverity == "critical")
+            maxSeverity = "critical"
+        else if (oldSeverity == "high" || newSeverity == "high")
+            maxSeverity = "high"
+        else if (oldSeverity == "medium" || newSeverity == "medium")
+            maxSeverity = "medium"
+        else if (oldSeverity == "low" || newSeverity == "low")
+            maxSeverity = "low"
+
+        return maxSeverity
+    }
+
+    private getMaxRecVersion(oldRecVersion: string, newRecVersion: string): string {
+        // Compute maximium recommended version.
+        var maxRecVersion = oldRecVersion;
+        if (oldRecVersion == "") {
+            maxRecVersion = newRecVersion;
+        } else if (newRecVersion != "") {
+            if (compareVersions(oldRecVersion, newRecVersion) == -1) {
+                maxRecVersion = newRecVersion
+            }
+        }
+
+        return maxRecVersion
+    }
+}
+
 /* Diagnostics pipeline implementation */
 class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
 {
@@ -58,12 +193,15 @@ class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
     config: any;
     diagnostics: Array<Diagnostic>;
     uri: string;
-    constructor(classes: Array<any>, dependency: IDependency, config: any, diags: Array<Diagnostic>, uri: string) {
+    packageAggregator: PackageAggregator;
+    constructor(classes: Array<any>, dependency: IDependency, config: any, diags: Array<Diagnostic>,
+        packageAggregator: PackageAggregator, uri: string) {
         this.items = classes.map((i) => { return new i(dependency, config); });
         this.dependency = dependency;
         this.config = config;
         this.diagnostics = diags;
         this.uri = uri;
+        this.packageAggregator = packageAggregator
     }
 
     run(data: any): Diagnostic[] {
@@ -174,111 +312,19 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         this.highestSeverityBinding = { path: ['highest_severity'] };
     }
 
-    private getAggregaterExploitCount(oldExploitCount: string): string {
-        // Compute sum of exploits, taking 'unavailable' value for exploit.
-        var newExploitCount: any
-        if (oldExploitCount == "unavailable") {
-            newExploitCount = this.exploitCount || "unavailable";
-        } else {
-            newExploitCount = parseInt(oldExploitCount) + this.exploitCount
-        }
-
-        return newExploitCount.toString()
-    }
-
-    private getAggregatedSeverity(oldSeverity: string): string {
-        // Compute highest severity
-        var newSeverity = oldSeverity
-        if (this.highestSeverity == "critical" || oldSeverity == "critical")
-            newSeverity = "critical"
-        else if (this.highestSeverity == "high" || oldSeverity == "high")
-            newSeverity = "high"
-        else if (this.highestSeverity == "medium" || oldSeverity == "medium")
-            newSeverity = "medium"
-        else if (this.highestSeverity == "low" || oldSeverity == "low")
-            newSeverity = "low"
-
-        return newSeverity
-    }
-
-    private getMaxRecVersion(oldRecVersion: string): string {
-        var newRecVersion = oldRecVersion;
-
-        // Compute rec version based on max criteria
-        var newRecVersion = oldRecVersion
-        if (oldRecVersion == "N/A") {
-            newRecVersion = this.changeTo || "N/A";
-        } else if (this.changeTo) {
-            if (compareVersions(oldRecVersion, this.changeTo) == -1) {
-                newRecVersion = this.changeTo
-            }
-        }
-
-        return newRecVersion
-    }
-
     produce(ctx: any, cls: DiagnosticsPipeline): Diagnostic[] {
         if (this.item.length > 0) {
-            /* The diagnostic's severity. */
-            let diagSeverity;
-
-            if (this.vulnerabilityCount == 0 && this.advisoryCount > 0) {
-                diagSeverity = DiagnosticSeverity.Information;
-            } else {
-                diagSeverity = DiagnosticSeverity.Error;
-            }
-
-            const recommendedVersion = this.changeTo || "N/A";
-            const exploitCount = this.exploitCount || "unavailable";
-            const msg = `${this.package}: ${this.version}
-Number of packages: 1
-Known security vulnerability: ${this.vulnerabilityCount}
-Security advisory: ${this.advisoryCount}
-Exploits: ${exploitCount}
-Highest severity: ${this.highestSeverity}
-Recommendation: ${recommendedVersion}`;
-            let diagnostic = {
-                severity: diagSeverity,
-                range: get_range(this.context.version),
-                message: msg,
-                source: '\nDependency Analytics Plugin [Powered by Snyk]',
-            };
-
-            let diagnosticLinePresent = false
-            let diagnosticIndex = 0
-            for (let i = 0; i < cls.diagnostics.length; i++) {
-                if (cls.diagnostics[i].range.start.line.toString() == diagnostic.range.start.line.toString()) {
-                    diagnosticLinePresent = true
-                    diagnosticIndex = i
-                }
-            }
-
-            if (diagnosticLinePresent) {
-                // Add new counts to old one
-                const oldMessage = cls.diagnostics[diagnosticIndex].message.split("\n")
-                const packageCount = parseInt(oldMessage[1].split(":")[1].trim()) + 1
-                const securityVulnerabilityCount = parseInt(oldMessage[2].split(":")[1].trim()) + this.vulnerabilityCount
-                const securityAdvisoryCount = parseInt(oldMessage[3].split(":")[1].trim()) + this.advisoryCount
-                const newExploitCount = this.getAggregaterExploitCount(oldMessage[4].split(":")[1].trim())
-                const newSeverity = this.getAggregatedSeverity(oldMessage[5].split(":")[1].trim())
-                const newRecVersion = this.getMaxRecVersion(oldMessage[6].split(":")[1].trim())
+            const aggPackage = cls.packageAggregator.aggregate(new Package(this.package, this.version, 1,
+                this.vulnerabilityCount, this.advisoryCount, this.exploitCount, this.highestSeverity,
+                this.changeTo, get_range(this.context.version)))
+            const aggDiagnostic = aggPackage.getDiagnostic()
             
-                const newPackageMessage = `${oldMessage[0].trim()}
-Number of packages: ${packageCount}
-Known security vulnerability: ${securityVulnerabilityCount}
-Security advisory: ${securityAdvisoryCount}
-Exploits: ${newExploitCount}
-Highest severity: ${newSeverity}
-Recommendation: ${newRecVersion}`;
-                cls.diagnostics[diagnosticIndex].message = newPackageMessage
-            }
-
-            // Add quick action if not present for this range
+            // Add/Update quick action for given aggregated diangnostic
             // TODO: this can be done lazily
-            if (!diagnosticLinePresent && this.changeTo && (this.vulnerabilityCount > 0 || this.exploitCount != null)) {
+            if (aggPackage.recommendedVersion && (aggPackage.vulnerabilityCount > 0 || aggPackage.exploitCount != null)) {
                 let codeAction: CodeAction = {
-                    title: "Switch to recommended version " + this.changeTo,
-                    diagnostics: [diagnostic],
+                    title: `Switch to recommended version ${aggPackage.recommendedVersion}`,
+                    diagnostics: [aggDiagnostic],
                     kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
                     edit: {
                         changes: {
@@ -286,17 +332,27 @@ Recommendation: ${newRecVersion}`;
                     }
                 };
                 codeAction.edit.changes[ctx] = [{
-                    range: diagnostic.range,
-                    newText: this.changeTo
+                    range: aggDiagnostic.range,
+                    newText: aggPackage.recommendedVersion
                 }];
                 // We will have line|start as key instead of message
-                codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character] = codeAction
+                codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction
             }
 
-            if (!diagnosticLinePresent)
-                return [diagnostic]
-            else
-                return []
+            if (cls.packageAggregator.isNewPackage)
+                return [aggDiagnostic];
+            else {
+                // Update the existing diagnostic object based on range values
+                for (let i = 0; i < cls.diagnostics.length; i++) {
+                    if (cls.diagnostics[i].range.start.line == aggPackage.range.start.line &&
+                        cls.diagnostics[i].range.start.character == aggPackage.range.start.character) {
+                        cls.diagnostics[i] = aggDiagnostic;
+                        break;
+                    }
+                }
+
+                return [];
+            }
         } else {
             return [];
         }
@@ -305,4 +361,4 @@ Recommendation: ${newRecVersion}`;
 
 let codeActionsMap = new Map<string, CodeAction>();
 
-export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap };
+export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, PackageAggregator, codeActionsMap };

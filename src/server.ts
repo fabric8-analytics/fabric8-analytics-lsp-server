@@ -7,10 +7,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
-} from 'vscode-languageserver';
-import { IDependency, IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
-import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
+	TextDocuments, InitializeResult, CodeLens, CodeAction} from 'vscode-languageserver';
+import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
+import { SecurityEngine, DiagnosticsPipeline, codeActionsMap, PackageAggregator } from './consumers';
 import fetch from 'node-fetch';
 
 const url = require('url');
@@ -230,10 +229,10 @@ class TotalCount {
 };
 
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
-function runPipeline(response, diagnostics, diagnosticFilePath, dependencyMap, totalCount) {
+function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, dependencyMap, totalCount) {
     response.forEach(r => {
         const dependency = dependencyMap.get(r.package + r.version);
-        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, diagnosticFilePath);
+        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(r);
         for (const item of pipeline.items) {
             const secEng = item as SecurityEngine;
@@ -271,11 +270,12 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
         const batchSize = 10;
         let diagnostics = [];
+        let packageAggregator = new PackageAggregator()
         let totalCount = new TotalCount();
         const start = new Date().getTime();
         const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request =>
             fetchVulnerabilities(request).then(response =>
-                runPipeline(response, diagnostics, diagnosticFilePath, requestMapper, totalCount)));
+                runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, requestMapper, totalCount)));
     
         await Promise.allSettled(allRequests);
         const end = new Date().getTime();

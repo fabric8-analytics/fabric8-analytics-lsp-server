@@ -158,17 +158,16 @@ class GomodDependencyCollector implements IDependencyCollector {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
             const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
             exec(`go list -f '{{ join .Imports "\\n" }}' ./...`,
-                   { cwd: `${vscodeRootpath}`, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
+                   { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
-                    console.log("Fail to execute: [", `go list -f '{{ join .Imports "\\n" }}' ./...`, `] at "${vscodeRootpath}"`)
-                    reject("'go list' command failed with error :: " + stderr.toString())
+                    reject(`'go list' command failed with error :: ${stderr}`)
                 } else {
                     resolve(new Set(stdout.toString().split("\n")))
                 }
             });
         });
         const goImports: Set<string> = await promiseExec;
-        console.log("Processing", goImports.size, "imports from source");
+        console.log(`Processing ${goImports.size} imports from source`);
 
         let parser = new NaiveGomodParser(contents, goImports);
         return parser.parse();
