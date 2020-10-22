@@ -9,7 +9,7 @@ import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, InitializeResult, CodeLens, CodeAction} from 'vscode-languageserver';
 import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
-import { SecurityEngine, DiagnosticsPipeline, codeActionsMap, PackageAggregator } from './consumers';
+import { SecurityEngine, DiagnosticsPipeline, codeActionsMap, NoopPackageAggregator, GolangPackageAggregator } from './consumers';
 import fetch from 'node-fetch';
 
 const url = require('url');
@@ -262,29 +262,37 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     let deps = null;
     try {
         deps = await collector.collect(contents);
-        let validPackages = deps
-        if (ecosystem != "golang") {
-            validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-        }
-        const requestPayload = validPackages.map(d => ({ "package": d.name.value, "version": d.version.value }));
-        const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
-        const batchSize = 10;
-        let diagnostics = [];
-        let packageAggregator = new PackageAggregator()
-        let totalCount = new TotalCount();
-        const start = new Date().getTime();
-        const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request =>
-            fetchVulnerabilities(request).then(response =>
-                runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, requestMapper, totalCount)));
-    
-        await Promise.allSettled(allRequests);
-        const end = new Date().getTime();
-        console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
-        connection.sendNotification('caNotification', { 'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount': diagnostics.length > 0 ? diagnostics.length : 0 });
     } catch (error) {
-        console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error)
-        connection.sendNotification('caError', {'data': 'Unable to execute `go list` command, run `go mod tidy` to resolve dependencies issues'})
+        // Error can be raised during golang `go list ` command only.
+        if (ecosystem == "golang") {
+            console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error)
+            connection.sendNotification('caError', {'data': 'Unable to execute `go list` command, run `go mod tidy` to resolve dependencies issues'})
+            return;
+        }
     }
+
+    let validPackages = deps
+    let packageAggregator = null
+    if (ecosystem != "golang") {
+        validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
+        packageAggregator = new NoopPackageAggregator()
+    } else {
+        packageAggregator = new GolangPackageAggregator()
+    }
+    const requestPayload = validPackages.map(d => ({ "package": d.name.value, "version": d.version.value }));
+    const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
+    const batchSize = 10;
+    let diagnostics = [];
+    let totalCount = new TotalCount();
+    const start = new Date().getTime();
+    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request =>
+        fetchVulnerabilities(request).then(response =>
+            runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, requestMapper, totalCount)));
+
+    await Promise.allSettled(allRequests);
+    const end = new Date().getTime();
+    console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
+    connection.sendNotification('caNotification', { 'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount': diagnostics.length > 0 ? diagnostics.length : 0 });
 };
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {

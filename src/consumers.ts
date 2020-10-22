@@ -55,6 +55,7 @@ type DiagnosticProducer = IProducer<Diagnostic[]>;
 /* Package vulnerability data */
 class Package
 {
+    ecosystem: string;
     name: string;
     version: string;
     packageCount: number;
@@ -78,7 +79,7 @@ class Package
             this.exploitCount = exploitCount || 0;
             this.highestSeverity = highestSeverity;
             this.recommendedVersion = recommendedVersion;
-            this.range = range
+            this.range = range;
     }
 
     getDiagnostic(): Diagnostic {
@@ -93,8 +94,11 @@ class Package
 
         const recommendedVersion = this.recommendedVersion || "N/A";
         const exploitCount = this.exploitCount || "unavailable";
-        const msg = `${this.name}: ${this.version}
-Number of packages: ${this.packageCount}
+        var numberOfPackagesMsg = ""
+        if (this.ecosystem == "golang") {
+            numberOfPackagesMsg = `\nNumber of packages: ${this.packageCount}`;
+        }
+        const msg = `${this.name}: ${this.version}${numberOfPackagesMsg}
 Known security vulnerability: ${this.vulnerabilityCount}
 Security advisory: ${this.advisoryCount}
 Exploits: ${exploitCount}
@@ -110,64 +114,98 @@ Recommendation: ${recommendedVersion}`;
     }
 }
 
-/* Package aggregator class */
+/* PackageAggregator */
 class PackageAggregator
 {
-    packages: Array<Package> = Array<Package>()
-    isNewPackage: boolean
+    ecosystem: string;
+    packages: Array<Package> = Array<Package>();
+    isNewPackage: boolean;
+
+    constructor(ecosystem: string) {
+        this.ecosystem = ecosystem;
+    }
+
+    aggregate(newPackage: Package): Package {
+        return null;
+    }
+}
+
+/* Noop Package aggregator class */
+class NoopPackageAggregator extends PackageAggregator
+{
+    constructor() {
+        super("")
+    }
+
+    aggregate(newPackage: Package): Package {
+        // Make it a new package always and set ecosystem for package.
+        this.isNewPackage = true;
+        newPackage.ecosystem = this.ecosystem;
+
+        return newPackage;
+    }
+}
+
+/* Golang Package aggregator class */
+class GolangPackageAggregator extends PackageAggregator
+{
+    constructor() {
+        super("golang")
+    }
 
     aggregate(newPackage: Package): Package {
         // Check if module / package exists in the list.
-        this.isNewPackage = true
+        this.isNewPackage = true;
 
         for (let i = 0; i < this.packages.length; i++) {
             // Module and package can come in any order due to parallel batch requests.
             // Need handle use case (1) Module first followed by package and (2) Package first followed by module.
             if (newPackage.name.startsWith(this.packages[i].name + "/") || this.packages[i].name.startsWith(newPackage.name + "/")) {
                 // Module / package exists, so aggregate the data and update Diagnostic message and code action.
-                this.mergePackage(i, newPackage)
-                this.isNewPackage = false
-                return this.packages[i]
+                this.mergePackage(i, newPackage);
+                this.isNewPackage = false;
+                return this.packages[i];
             }
         }
 
         if (this.isNewPackage) {
-            this.packages.push(newPackage)
+            newPackage.ecosystem = this.ecosystem;
+            this.packages.push(newPackage);
         }
 
-        return newPackage
+        return newPackage;
     }
 
     private mergePackage(exitingIndex: number, newPackage: Package) {
         // Between current name and new name, smallest will be the module name.
         // So, assign the smallest as package name.
         if (newPackage.name.length < this.packages[exitingIndex].name.length)
-            this.packages[exitingIndex].name = newPackage.name
+            this.packages[exitingIndex].name = newPackage.name;
 
         // Merge other informations
-        this.packages[exitingIndex].packageCount += newPackage.packageCount
-        this.packages[exitingIndex].vulnerabilityCount += newPackage.vulnerabilityCount
-        this.packages[exitingIndex].advisoryCount += newPackage.advisoryCount
-        this.packages[exitingIndex].exploitCount += newPackage.exploitCount
+        this.packages[exitingIndex].packageCount += newPackage.packageCount;
+        this.packages[exitingIndex].vulnerabilityCount += newPackage.vulnerabilityCount;
+        this.packages[exitingIndex].advisoryCount += newPackage.advisoryCount;
+        this.packages[exitingIndex].exploitCount += newPackage.exploitCount;
         this.packages[exitingIndex].highestSeverity = this.getAggregatedSeverity(
-            this.packages[exitingIndex].highestSeverity, newPackage.highestSeverity)
+            this.packages[exitingIndex].highestSeverity, newPackage.highestSeverity);
         this.packages[exitingIndex].recommendedVersion = this.getMaxRecVersion(
-            this.packages[exitingIndex].recommendedVersion, newPackage.recommendedVersion)
+            this.packages[exitingIndex].recommendedVersion, newPackage.recommendedVersion);
     }
 
     private getAggregatedSeverity(oldSeverity: string, newSeverity: string): string {
         // Compute highest severity
         var maxSeverity = oldSeverity
         if (oldSeverity == "critical" || newSeverity == "critical")
-            maxSeverity = "critical"
+            maxSeverity = "critical";
         else if (oldSeverity == "high" || newSeverity == "high")
-            maxSeverity = "high"
+            maxSeverity = "high";
         else if (oldSeverity == "medium" || newSeverity == "medium")
-            maxSeverity = "medium"
+            maxSeverity = "medium";
         else if (oldSeverity == "low" || newSeverity == "low")
-            maxSeverity = "low"
+            maxSeverity = "low";
 
-        return maxSeverity
+        return maxSeverity;
     }
 
     private getMaxRecVersion(oldRecVersion: string, newRecVersion: string): string {
@@ -177,11 +215,11 @@ class PackageAggregator
             maxRecVersion = newRecVersion;
         } else if (newRecVersion != "") {
             if (compareVersions(oldRecVersion, newRecVersion) == -1) {
-                maxRecVersion = newRecVersion
+                maxRecVersion = newRecVersion;
             }
         }
 
-        return maxRecVersion
+        return maxRecVersion;
     }
 }
 
@@ -201,7 +239,7 @@ class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
         this.config = config;
         this.diagnostics = diags;
         this.uri = uri;
-        this.packageAggregator = packageAggregator
+        this.packageAggregator = packageAggregator;
     }
 
     run(data: any): Diagnostic[] {
@@ -361,4 +399,4 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
 
 let codeActionsMap = new Map<string, CodeAction>();
 
-export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, PackageAggregator, codeActionsMap };
+export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, NoopPackageAggregator, GolangPackageAggregator, codeActionsMap };

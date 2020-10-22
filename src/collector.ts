@@ -151,7 +151,7 @@ class NaiveGomodParser {
  * related information */
 class GomodDependencyCollector implements IDependencyCollector {
     constructor(private manifestFile: string, public classes: Array<string> = ["dependencies"]) {
-        this.manifestFile = manifestFile
+        this.manifestFile = manifestFile;
     }
 
     async collect(contents: string): Promise<Array<IDependency>> {
@@ -160,9 +160,9 @@ class GomodDependencyCollector implements IDependencyCollector {
             exec(`go list -f '{{ join .Imports "\\n" }}' ./...`,
                    { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
-                    reject(`'go list' command failed with error :: ${stderr}`)
+                    reject(`'go list' command failed with error :: ${stderr}`);
                 } else {
-                    resolve(new Set(stdout.toString().split("\n")))
+                    resolve(new Set(stdout.toString().split("\n")));
                 }
             });
         });

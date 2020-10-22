@@ -48,7 +48,8 @@
     "nyc": "^14.1.1",
     "semantic-release": "^17.1.0",
     "ts-node": "^8.3.0",
-    "typescript": "^3.6.3"
+    "typescript": "^3.6.3",
+    "fake-exec": "^1.1.0"
   },
   "scripts": {
     "build": "tsc -p . && cp package.json LICENSE README.md output",
