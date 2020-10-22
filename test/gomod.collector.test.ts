@@ -3,7 +3,7 @@ import { GomodDependencyCollector } from '../src/collector';
 const fake = require('fake-exec');
 
 describe('Golang go.mod parser test', () => {
-  const fakeSourceRoot = "/tmp/fake/path/to/goproject/source"
+  const fakeSourceRoot = "/tmp/fake/path/to/goproject/source";
   const collector: GomodDependencyCollector = new GomodDependencyCollector(fakeSourceRoot);
 
   it('tests valid go.mod', async () => {

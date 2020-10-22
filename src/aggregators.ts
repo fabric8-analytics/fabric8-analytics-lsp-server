@@ -24,7 +24,7 @@ class PackageAggregator {
 /* Noop Package aggregator class */
 class NoopPackageAggregator extends PackageAggregator {
     constructor() {
-        super("")
+        super("");
     }
 
     aggregate(newPackage: Package): Package {
@@ -39,7 +39,7 @@ class NoopPackageAggregator extends PackageAggregator {
 /* Golang Package aggregator class */
 class GolangPackageAggregator extends PackageAggregator {
     constructor() {
-        super("golang")
+        super("golang");
     }
 
     aggregate(newPackage: Package): Package {

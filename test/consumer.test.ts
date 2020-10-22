@@ -26,7 +26,7 @@ describe('Response consumer test', () => {
     it('Consume response for free-users', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator()
+        let packageAggregator = new NoopPackageAggregator();
         const response = {
             "package_unknown": false,
             "package": "abc",
@@ -64,7 +64,7 @@ describe('Response consumer test', () => {
     it('Consume response for registered-users', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator()
+        let packageAggregator = new NoopPackageAggregator();
         const response = {
             "package_unknown": false,
             "package": "abc",
@@ -103,7 +103,7 @@ describe('Response consumer test', () => {
     it('Consume response for multiple packages', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new GolangPackageAggregator()
+        let packageAggregator = new GolangPackageAggregator();
         var response = {
             "package_unknown": false,
             "package": "github.com/abc",
@@ -172,7 +172,7 @@ describe('Response consumer test', () => {
     it('Consume response for free-users with only security advisories', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator()
+        let packageAggregator = new NoopPackageAggregator();
         const response = {
             "package_unknown": false,
             "package": "abc",
@@ -210,7 +210,7 @@ describe('Response consumer test', () => {
     it('Consume response without vulnerability', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator()
+        let packageAggregator = new NoopPackageAggregator();
         const response = {
             "package": "lodash",
             "version": "4.17.20",
@@ -231,7 +231,7 @@ describe('Response consumer test', () => {
     it('Consume invalid response', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator()
+        let packageAggregator = new NoopPackageAggregator();
         const response = {
             "package_unknown": false,
             "package": "abc",
@@ -247,7 +247,6 @@ describe('Response consumer test', () => {
 
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(response);
-        const secEng = pipeline.items[0] as SecurityEngine;
 
         expect(diagnostics.length).equal(0);
     });

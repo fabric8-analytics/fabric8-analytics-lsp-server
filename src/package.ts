@@ -47,7 +47,7 @@ class Package {
 
         const recommendedVersion = this.recommendedVersion || "N/A";
         const exploitCount = this.exploitCount || "unavailable";
-        var numberOfPackagesMsg = ""
+        var numberOfPackagesMsg = "";
         if (this.ecosystem == "golang") {
             numberOfPackagesMsg = `\nNumber of packages: ${this.packageCount}`;
         }

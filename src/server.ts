@@ -279,7 +279,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     } else {
         packageAggregator = new GolangPackageAggregator();
     }
-    const requestPayload = validPackages.map(d => ({ "package": d.name.value, "version": d.version.value }));
+    const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
     const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
     const batchSize = 10;
     let diagnostics = [];
@@ -291,8 +291,8 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
 
     await Promise.allSettled(allRequests);
     const end = new Date().getTime();
-    console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
-    connection.sendNotification('caNotification', { 'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount': diagnostics.length > 0 ? diagnostics.length : 0 });
+    connection.console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
+    connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
 };
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {

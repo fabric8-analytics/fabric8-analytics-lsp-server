@@ -72,7 +72,7 @@ describe('Package tests', () => {
 
     it('Test package for golang ecosystem', async () => {
         let pckg = new Package("abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        pckg.ecosystem = "golang"
+        pckg.ecosystem = "golang";
 
         const msg = "abc: 1.4.3\nNumber of packages: 1\nKnown security vulnerability: 2\nSecurity advisory: 1\nExploits: 1\nHighest severity: high\nRecommendation: 2.3.1";
         let expectedDiagnostic: Diagnostic = {
@@ -87,7 +87,7 @@ describe('Package tests', () => {
 
     it('Test package for golang ecosystem with multiple packages', async () => {
         let pckg = new Package("abc", "1.4.3", 4, 2, 1, 1, "high", "2.3.1", dummyRange);
-        pckg.ecosystem = "golang"
+        pckg.ecosystem = "golang";
 
         const msg = "abc: 1.4.3\nNumber of packages: 4\nKnown security vulnerability: 2\nSecurity advisory: 1\nExploits: 1\nHighest severity: high\nRecommendation: 2.3.1";
         let expectedDiagnostic: Diagnostic = {

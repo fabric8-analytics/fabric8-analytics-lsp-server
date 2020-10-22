@@ -182,8 +182,8 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         if (this.item.length > 0) {
             const aggPackage = cls.packageAggregator.aggregate(new Package(this.package, this.version, 1,
                 this.vulnerabilityCount, this.advisoryCount, this.exploitCount, this.highestSeverity,
-                this.changeTo, get_range(this.context.version)))
-            const aggDiagnostic = aggPackage.getDiagnostic()
+                this.changeTo, get_range(this.context.version)));
+            const aggDiagnostic = aggPackage.getDiagnostic();
             
             // Add/Update quick action for given aggregated diangnostic
             // TODO: this can be done lazily
@@ -202,20 +202,20 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
                     newText: aggPackage.recommendedVersion
                 }];
                 // We will have line|start as key instead of message
-                codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction
+                codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
             }
 
             if (cls.packageAggregator.isNewPackage)
                 return [aggDiagnostic];
             else {
                 // Update the existing diagnostic object based on range values
-                for (let i = 0; i < cls.diagnostics.length; i++) {
-                    if (cls.diagnostics[i].range.start.line == aggPackage.range.start.line &&
-                        cls.diagnostics[i].range.start.character == aggPackage.range.start.character) {
-                        cls.diagnostics[i] = aggDiagnostic;
-                        break;
+                cls.diagnostics.forEach((diag, index) => {
+                    if (diag.range.start.line == aggPackage.range.start.line &&
+                        diag.range.start.character == aggPackage.range.start.character) {
+                        cls.diagnostics[index] = aggDiagnostic;
+                        return;
                     }
-                }
+                });
 
                 return [];
             }
