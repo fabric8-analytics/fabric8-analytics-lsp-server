@@ -9,11 +9,11 @@ import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, InitializeResult, CodeLens, CodeAction} from 'vscode-languageserver';
 import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
-import { SecurityEngine, DiagnosticsPipeline, codeActionsMap, NoopPackageAggregator, GolangPackageAggregator } from './consumers';
+import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
+import { NoopPackageAggregator, GolangPackageAggregator } from './aggregators';
 import fetch from 'node-fetch';
 
 const url = require('url');
-const https = require('https');
 const winston = require('winston');
 
 let transport;

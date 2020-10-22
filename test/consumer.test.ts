@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { SecurityEngine, DiagnosticsPipeline, codeActionsMap, NoopPackageAggregator, GolangPackageAggregator } from '../src/consumers';
+import { SecurityEngine, DiagnosticsPipeline } from '../src/consumers';
+import { NoopPackageAggregator, GolangPackageAggregator } from '../src/aggregators';
 
 const config = {};
 const diagnosticFilePath = "a/b/c/d";

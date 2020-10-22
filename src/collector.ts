@@ -167,8 +167,6 @@ class GomodDependencyCollector implements IDependencyCollector {
             });
         });
         const goImports: Set<string> = await promiseExec;
-        console.log(`Processing ${goImports.size} imports from source`);
-
         let parser = new NaiveGomodParser(contents, goImports);
         return parser.parse();
     }

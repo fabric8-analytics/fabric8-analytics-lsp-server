@@ -5,10 +5,9 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
+import { Package } from './package';
+import { PackageAggregator } from './aggregators';
 import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind } from 'vscode-languageserver'
-import compareVersions = require('compare-versions');
-import { Range } from 'vscode-languageserver';
-
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor {
@@ -51,177 +50,6 @@ interface IPipeline<T> {
 
 /* Diagnostics producer type */
 type DiagnosticProducer = IProducer<Diagnostic[]>;
-
-/* Package vulnerability data */
-class Package
-{
-    ecosystem: string;
-    name: string;
-    version: string;
-    packageCount: number;
-    vulnerabilityCount: number;
-    advisoryCount: number;
-    exploitCount: number;
-    highestSeverity: string;
-    recommendedVersion: string;
-    range: Range;
-
-    constructor(
-        name: string, version: string, packageCount: number,
-        vulnerabilityCount: number, advisoryCount: number,
-        exploitCount: number, highestSeverity: string,
-        recommendedVersion: string, range: Range) {
-            this.name = name;
-            this.version = version;
-            this.packageCount = packageCount || 0;
-            this.vulnerabilityCount = vulnerabilityCount || 0;
-            this.advisoryCount = advisoryCount || 0;
-            this.exploitCount = exploitCount || 0;
-            this.highestSeverity = highestSeverity;
-            this.recommendedVersion = recommendedVersion;
-            this.range = range;
-    }
-
-    getDiagnostic(): Diagnostic {
-        /* The diagnostic's severity. */
-        let diagSeverity: any;
-
-        if (this.vulnerabilityCount == 0 && this.advisoryCount > 0) {
-            diagSeverity = DiagnosticSeverity.Information;
-        } else {
-            diagSeverity = DiagnosticSeverity.Error;
-        }
-
-        const recommendedVersion = this.recommendedVersion || "N/A";
-        const exploitCount = this.exploitCount || "unavailable";
-        var numberOfPackagesMsg = ""
-        if (this.ecosystem == "golang") {
-            numberOfPackagesMsg = `\nNumber of packages: ${this.packageCount}`;
-        }
-        const msg = `${this.name}: ${this.version}${numberOfPackagesMsg}
-Known security vulnerability: ${this.vulnerabilityCount}
-Security advisory: ${this.advisoryCount}
-Exploits: ${exploitCount}
-Highest severity: ${this.highestSeverity}
-Recommendation: ${recommendedVersion}`;
-
-        return {
-            severity: diagSeverity,
-            range: this.range,
-            message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
-        };
-    }
-}
-
-/* PackageAggregator */
-class PackageAggregator
-{
-    ecosystem: string;
-    packages: Array<Package> = Array<Package>();
-    isNewPackage: boolean;
-
-    constructor(ecosystem: string) {
-        this.ecosystem = ecosystem;
-    }
-
-    aggregate(newPackage: Package): Package {
-        return null;
-    }
-}
-
-/* Noop Package aggregator class */
-class NoopPackageAggregator extends PackageAggregator
-{
-    constructor() {
-        super("")
-    }
-
-    aggregate(newPackage: Package): Package {
-        // Make it a new package always and set ecosystem for package.
-        this.isNewPackage = true;
-        newPackage.ecosystem = this.ecosystem;
-
-        return newPackage;
-    }
-}
-
-/* Golang Package aggregator class */
-class GolangPackageAggregator extends PackageAggregator
-{
-    constructor() {
-        super("golang")
-    }
-
-    aggregate(newPackage: Package): Package {
-        // Check if module / package exists in the list.
-        this.isNewPackage = true;
-
-        for (let i = 0; i < this.packages.length; i++) {
-            // Module and package can come in any order due to parallel batch requests.
-            // Need handle use case (1) Module first followed by package and (2) Package first followed by module.
-            if (newPackage.name.startsWith(this.packages[i].name + "/") || this.packages[i].name.startsWith(newPackage.name + "/")) {
-                // Module / package exists, so aggregate the data and update Diagnostic message and code action.
-                this.mergePackage(i, newPackage);
-                this.isNewPackage = false;
-                return this.packages[i];
-            }
-        }
-
-        if (this.isNewPackage) {
-            newPackage.ecosystem = this.ecosystem;
-            this.packages.push(newPackage);
-        }
-
-        return newPackage;
-    }
-
-    private mergePackage(exitingIndex: number, newPackage: Package) {
-        // Between current name and new name, smallest will be the module name.
-        // So, assign the smallest as package name.
-        if (newPackage.name.length < this.packages[exitingIndex].name.length)
-            this.packages[exitingIndex].name = newPackage.name;
-
-        // Merge other informations
-        this.packages[exitingIndex].packageCount += newPackage.packageCount;
-        this.packages[exitingIndex].vulnerabilityCount += newPackage.vulnerabilityCount;
-        this.packages[exitingIndex].advisoryCount += newPackage.advisoryCount;
-        this.packages[exitingIndex].exploitCount += newPackage.exploitCount;
-        this.packages[exitingIndex].highestSeverity = this.getAggregatedSeverity(
-            this.packages[exitingIndex].highestSeverity, newPackage.highestSeverity);
-        this.packages[exitingIndex].recommendedVersion = this.getMaxRecVersion(
-            this.packages[exitingIndex].recommendedVersion, newPackage.recommendedVersion);
-    }
-
-    private getAggregatedSeverity(oldSeverity: string, newSeverity: string): string {
-        // Compute highest severity
-        var maxSeverity = oldSeverity
-        if (oldSeverity == "critical" || newSeverity == "critical")
-            maxSeverity = "critical";
-        else if (oldSeverity == "high" || newSeverity == "high")
-            maxSeverity = "high";
-        else if (oldSeverity == "medium" || newSeverity == "medium")
-            maxSeverity = "medium";
-        else if (oldSeverity == "low" || newSeverity == "low")
-            maxSeverity = "low";
-
-        return maxSeverity;
-    }
-
-    private getMaxRecVersion(oldRecVersion: string, newRecVersion: string): string {
-        // Compute maximium recommended version.
-        var maxRecVersion = oldRecVersion;
-        if (oldRecVersion == "") {
-            maxRecVersion = newRecVersion;
-        } else if (newRecVersion != "") {
-            if (compareVersions(oldRecVersion, newRecVersion) == -1) {
-                maxRecVersion = newRecVersion;
-            }
-        }
-
-        return maxRecVersion;
-    }
-}
 
 /* Diagnostics pipeline implementation */
 class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
@@ -399,4 +227,4 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
 
 let codeActionsMap = new Map<string, CodeAction>();
 
-export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, NoopPackageAggregator, GolangPackageAggregator, codeActionsMap };
+export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap };
