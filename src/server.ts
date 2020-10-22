@@ -265,19 +265,19 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     } catch (error) {
         // Error can be raised during golang `go list ` command only.
         if (ecosystem == "golang") {
-            console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error)
-            connection.sendNotification('caError', {'data': 'Unable to execute `go list` command, run `go mod tidy` to resolve dependencies issues'})
+            console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error);
+            connection.sendNotification('caError', {'data': 'Unable to execute `go list` command, run `go mod tidy` to resolve dependencies issues'});
             return;
         }
     }
 
-    let validPackages = deps
-    let packageAggregator = null
+    let validPackages = deps;
+    let packageAggregator = null;
     if (ecosystem != "golang") {
         validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-        packageAggregator = new NoopPackageAggregator()
+        packageAggregator = new NoopPackageAggregator();
     } else {
-        packageAggregator = new GolangPackageAggregator()
+        packageAggregator = new GolangPackageAggregator();
     }
     const requestPayload = validPackages.map(d => ({ "package": d.name.value, "version": d.version.value }));
     const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
