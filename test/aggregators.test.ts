@@ -17,11 +17,10 @@ const dummyRange: Range = {
 describe('Package aggregator tests', () => {
     it('Base aggregator test', async () => {
         let pckg = new Package("abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        let packageAggregator = new PackageAggregator("cool");
+        let packageAggregator = new PackageAggregator();
         pckg = packageAggregator.aggregate(pckg);
 
         expect(pckg).is.eql(null);
-        expect(packageAggregator.ecosystem).is.eql("cool");
     });
 });
 

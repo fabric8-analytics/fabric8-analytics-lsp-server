@@ -8,13 +8,8 @@ import compareVersions = require('compare-versions');
 
 /* PackageAggregator */
 class PackageAggregator {
-    ecosystem: string;
     packages: Array<Package> = Array<Package>();
     isNewPackage: boolean;
-
-    constructor(ecosystem: string) {
-        this.ecosystem = ecosystem;
-    }
 
     aggregate(newPackage: Package): Package {
         return null;
@@ -23,14 +18,11 @@ class PackageAggregator {
 
 /* Noop Package aggregator class */
 class NoopPackageAggregator extends PackageAggregator {
-    constructor() {
-        super("");
-    }
 
     aggregate(newPackage: Package): Package {
         // Make it a new package always and set ecosystem for package.
         this.isNewPackage = true;
-        newPackage.ecosystem = this.ecosystem;
+        newPackage.ecosystem = "";
 
         return newPackage;
     }
@@ -38,13 +30,10 @@ class NoopPackageAggregator extends PackageAggregator {
 
 /* Golang Package aggregator class */
 class GolangPackageAggregator extends PackageAggregator {
-    constructor() {
-        super("golang");
-    }
 
     aggregate(newPackage: Package): Package {
         // Set ecosystem for new package from aggregator
-        newPackage.ecosystem = this.ecosystem;
+        newPackage.ecosystem = "golang";
 
         // Check if module / package exists in the list.
         this.isNewPackage = true;
