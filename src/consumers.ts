@@ -202,7 +202,18 @@ Recommendation: ${recommendedVersion}`;
                     range: diagnostic.range,
                     newText: this.changeTo
                 }];
+                let fullStackReport: CodeAction = {
+                    title: "Detailed Vulnerability Report",
+                    diagnostics: [diagnostic],
+                    kind: CodeActionKind.QuickFix,
+                };
+                fullStackReport.command = {
+                  command: "extension.fabric8AnalyticsWidgetFullStack",
+                  title: "Analytics Report",
+                  // arguments: args,
+                };
                 codeActionsMap[diagnostic.message] = codeAction
+                codeActionsMap[diagnostic.message + "1"] = fullStackReport
             }
             return [diagnostic]
         } else {

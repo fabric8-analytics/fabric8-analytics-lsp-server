@@ -324,6 +324,10 @@ connection.onCodeAction((params, token): CodeAction[] => {
         if (codeAction != null) {
             codeActions.push(codeAction)
         }
+        codeAction = codeActionsMap[diagnostic.message + "1"];
+        if (codeAction != null) {
+            codeActions.push(codeAction)
+        }
     }
     return codeActions;
 });
