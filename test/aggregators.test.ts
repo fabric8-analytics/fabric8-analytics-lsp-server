@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { Diagnostic, DiagnosticSeverity, Range } from 'vscode-languageserver';
-import { VulnerabilityAggregator, GolangVulnerabilityAggregator, NoopVulnerabilityAggregator } from '../src/aggregators';
+import { GolangVulnerabilityAggregator, NoopVulnerabilityAggregator } from '../src/aggregators';
 import { Vulnerability } from '../src/vulnerability';
 
 const dummyRange: Range = {
@@ -13,16 +13,6 @@ const dummyRange: Range = {
         character: 10
     }
 };
-
-describe('Vulnerability aggregator tests', () => {
-    it('Base aggregator test', async () => {
-        let pckg = new Vulnerability("abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        let vulnerabilityAggregator = new VulnerabilityAggregator();
-        pckg = vulnerabilityAggregator.aggregate(pckg);
-
-        expect(pckg).is.eql(null);
-    });
-});
 
 describe('Noop vulnerability aggregator tests', () => {
 

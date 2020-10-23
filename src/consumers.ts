@@ -7,7 +7,7 @@ import { IDependency } from './collector';
 import { get_range } from './utils';
 import { Vulnerability } from './vulnerability';
 import { VulnerabilityAggregator } from './aggregators';
-import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind } from 'vscode-languageserver'
+import { Diagnostic, CodeAction, CodeActionKind } from 'vscode-languageserver'
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor {
@@ -36,7 +36,7 @@ interface IConsumer {
 
 /* Generic `T` producer */
 interface IProducer<T> {
-    produce(ctx: any, cls: DiagnosticsPipeline): T;
+    produce(): T;
 };
 
 /* Each pipeline item is defined as a single consumer and producer pair */
@@ -49,12 +49,12 @@ interface IPipeline<T> {
 };
 
 /* Diagnostics producer type */
-type DiagnosticProducer = IProducer<Diagnostic[]>;
+type DiagnosticProducer = IProducer<Vulnerability[]>;
 
 /* Diagnostics pipeline implementation */
-class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
+class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
 {
-    items: Array<IPipelineItem<Diagnostic[]>>;
+    items: Array<IPipelineItem<Vulnerability[]>>;
     dependency: IDependency;
     config: any;
     diagnostics: Array<Diagnostic>;
@@ -70,14 +70,50 @@ class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
         this.vulnerabilityAggregator = vulnerabilityAggregator;
     }
 
-    run(data: any): Diagnostic[] {
+    run(data: any): Vulnerability[] {
         for (let item of this.items) {
             if (item.consume(data)) {
-                for (let d of item.produce(this.uri, this))
-                    this.diagnostics.push(d);
+                for (let d of item.produce()) {
+                    const aggVulnerability = this.vulnerabilityAggregator.aggregate(d);
+                    const aggDiagnostic = aggVulnerability.getDiagnostic();
+
+                    // Add/Update quick action for given aggregated diangnostic
+                    // TODO: this can be done lazily
+                    if (aggVulnerability.recommendedVersion && (aggVulnerability.vulnerabilityCount > 0 || aggVulnerability.exploitCount != null)) {
+                        let codeAction: CodeAction = {
+                            title: `Switch to recommended version ${aggVulnerability.recommendedVersion}`,
+                            diagnostics: [aggDiagnostic],
+                            kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
+                            edit: {
+                                changes: {
+                                }
+                            }
+                        };
+                        codeAction.edit.changes[this.uri] = [{
+                            range: aggDiagnostic.range,
+                            newText: aggVulnerability.recommendedVersion
+                        }];
+                        // We will have line|start as key instead of message
+                        codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
+                    }
+
+                    if (this.vulnerabilityAggregator.isNewVulnerability) {
+                        this.diagnostics.push(aggDiagnostic);
+                    } else {
+                        // Update the existing diagnostic object based on range values
+                        this.diagnostics.forEach((diag, index) => {
+                            if (diag.range.start.line == aggVulnerability.range.start.line &&
+                                diag.range.start.character == aggVulnerability.range.start.character) {
+                                this.diagnostics[index] = aggDiagnostic;
+                                return;
+                            }
+                        });
+                    }
+                }
             }
         }
-        return this.diagnostics;
+        // This is not used by any one.
+        return [];
     }
 };
 
@@ -136,27 +172,6 @@ class AnalysisConsumer implements IConsumer {
     }
 };
 
-/* We've received an empty/unfinished result, display that analysis is pending */
-class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer {
-    constructor(public context: IDependency, config: any) {
-        super(config);
-    }
-
-    produce(): Diagnostic[] {
-        if (this.item == {} && (this.item.finished_at === undefined ||
-            this.item.finished_at == null)) {
-            return [{
-                severity: DiagnosticSeverity.Information,
-                range: get_range(this.context.version),
-                message: `Application dependency ${this.context.name.value}-${this.context.version.value} - analysis is pending`,
-                source: 'Dependency Analytics Plugin [Powered by Snyk]'
-            }]
-        } else {
-            return [];
-        }
-    }
-}
-
 /* Report CVEs in found dependencies */
 class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
     constructor(public context: IDependency, config: any) {
@@ -178,47 +193,11 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         this.highestSeverityBinding = { path: ['highest_severity'] };
     }
 
-    produce(ctx: any, cls: DiagnosticsPipeline): Diagnostic[] {
+    produce(): Vulnerability[] {
         if (this.item.length > 0) {
-            const aggVulnerability = cls.vulnerabilityAggregator.aggregate(new Vulnerability(this.package, this.version, 1,
+            return [new Vulnerability(this.package, this.version, 1,
                 this.vulnerabilityCount, this.advisoryCount, this.exploitCount, this.highestSeverity,
-                this.changeTo, get_range(this.context.version)));
-            const aggDiagnostic = aggVulnerability.getDiagnostic();
-            
-            // Add/Update quick action for given aggregated diangnostic
-            // TODO: this can be done lazily
-            if (aggVulnerability.recommendedVersion && (aggVulnerability.vulnerabilityCount > 0 || aggVulnerability.exploitCount != null)) {
-                let codeAction: CodeAction = {
-                    title: `Switch to recommended version ${aggVulnerability.recommendedVersion}`,
-                    diagnostics: [aggDiagnostic],
-                    kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
-                    edit: {
-                        changes: {
-                        }
-                    }
-                };
-                codeAction.edit.changes[ctx] = [{
-                    range: aggDiagnostic.range,
-                    newText: aggVulnerability.recommendedVersion
-                }];
-                // We will have line|start as key instead of message
-                codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
-            }
-
-            if (cls.vulnerabilityAggregator.isNewVulnerability)
-                return [aggDiagnostic];
-            else {
-                // Update the existing diagnostic object based on range values
-                cls.diagnostics.forEach((diag, index) => {
-                    if (diag.range.start.line == aggVulnerability.range.start.line &&
-                        diag.range.start.character == aggVulnerability.range.start.character) {
-                        cls.diagnostics[index] = aggDiagnostic;
-                        return;
-                    }
-                });
-
-                return [];
-            }
+                this.changeTo, get_range(this.context.version))];
         } else {
             return [];
         }
@@ -227,4 +206,4 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
 
 let codeActionsMap = new Map<string, CodeAction>();
 
-export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap };
+export { DiagnosticsPipeline, SecurityEngine, codeActionsMap };

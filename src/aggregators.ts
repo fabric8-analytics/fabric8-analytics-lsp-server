@@ -6,18 +6,17 @@
 import { Vulnerability } from './vulnerability';
 import compareVersions = require('compare-versions');
 
-/* VulnerabilityAggregator */
-class VulnerabilityAggregator {
-    vulnerabilities: Array<Vulnerability> = Array<Vulnerability>();
-    isNewVulnerability: boolean;
+const severity = ["low", "medium", "high", "critical"];
 
-    aggregate(newVulnerability: Vulnerability): Vulnerability {
-        return null;
-    }
+/* VulnerabilityAggregator */
+interface VulnerabilityAggregator {
+    isNewVulnerability: boolean;
+    aggregate(newVulnerability: Vulnerability): Vulnerability;
 }
 
 /* Noop Vulnerability aggregator class */
-class NoopVulnerabilityAggregator extends VulnerabilityAggregator {
+class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
+    isNewVulnerability: boolean;
 
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Make it a new vulnerability always and set ecosystem for vulnerability.
@@ -29,7 +28,9 @@ class NoopVulnerabilityAggregator extends VulnerabilityAggregator {
 }
 
 /* Golang Vulnerability aggregator class */
-class GolangVulnerabilityAggregator extends VulnerabilityAggregator {
+class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
+    vulnerabilities: Array<Vulnerability> = Array<Vulnerability>();
+    isNewVulnerability: boolean;
 
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Set ecosystem for new vulnerability from aggregator
@@ -76,7 +77,6 @@ class GolangVulnerabilityAggregator extends VulnerabilityAggregator {
     }
 
     private getMaxSeverity(oldSeverity: string, newSeverity: string): string {
-        const severity = ["low", "medium", "high", "critical"];
         const newSeverityIndex = Math.max(severity.indexOf(oldSeverity), severity.indexOf(newSeverity));
         return severity[newSeverityIndex];
     }
