@@ -10,7 +10,7 @@ import {
 	TextDocuments, InitializeResult, CodeLens, CodeAction} from 'vscode-languageserver';
 import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
-import { NoopPackageAggregator, GolangPackageAggregator } from './aggregators';
+import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import fetch from 'node-fetch';
 
 const url = require('url');
@@ -275,9 +275,9 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     let packageAggregator = null;
     if (ecosystem != "golang") {
         validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-        packageAggregator = new NoopPackageAggregator();
+        packageAggregator = new NoopVulnerabilityAggregator();
     } else {
-        packageAggregator = new GolangPackageAggregator();
+        packageAggregator = new GolangVulnerabilityAggregator();
     }
     const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
     const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));

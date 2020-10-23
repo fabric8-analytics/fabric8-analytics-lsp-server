@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { SecurityEngine, DiagnosticsPipeline } from '../src/consumers';
-import { NoopPackageAggregator, GolangPackageAggregator } from '../src/aggregators';
+import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from '../src/aggregators';
 
 const config = {};
 const diagnosticFilePath = "a/b/c/d";
@@ -26,7 +26,7 @@ describe('Response consumer test', () => {
     it('Consume response for free-users', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator();
+        let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package_unknown": false,
             "package": "abc",
@@ -64,7 +64,7 @@ describe('Response consumer test', () => {
     it('Consume response for registered-users', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator();
+        let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package_unknown": false,
             "package": "abc",
@@ -103,7 +103,7 @@ describe('Response consumer test', () => {
     it('Consume response for multiple packages', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new GolangPackageAggregator();
+        let packageAggregator = new GolangVulnerabilityAggregator();
         var response = {
             "package_unknown": false,
             "package": "github.com/abc",
@@ -172,7 +172,7 @@ describe('Response consumer test', () => {
     it('Consume response for free-users with only security advisories', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator();
+        let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package_unknown": false,
             "package": "abc",
@@ -210,7 +210,7 @@ describe('Response consumer test', () => {
     it('Consume response without vulnerability', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator();
+        let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package": "lodash",
             "version": "4.17.20",
@@ -231,7 +231,7 @@ describe('Response consumer test', () => {
     it('Consume invalid response', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new NoopPackageAggregator();
+        let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package_unknown": false,
             "package": "abc",

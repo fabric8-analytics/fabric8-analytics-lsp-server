@@ -5,8 +5,8 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { Package } from './package';
-import { PackageAggregator } from './aggregators';
+import { Vulnerability } from './vulnerability';
+import { VulnerabilityAggregator } from './aggregators';
 import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind } from 'vscode-languageserver'
 
 /* Descriptor describing what key-path to extract from the document */
@@ -59,15 +59,15 @@ class DiagnosticsPipeline implements IPipeline<Diagnostic[]>
     config: any;
     diagnostics: Array<Diagnostic>;
     uri: string;
-    packageAggregator: PackageAggregator;
+    vulnerabilityAggregator: VulnerabilityAggregator;
     constructor(classes: Array<any>, dependency: IDependency, config: any, diags: Array<Diagnostic>,
-        packageAggregator: PackageAggregator, uri: string) {
+        vulnerabilityAggregator: VulnerabilityAggregator, uri: string) {
         this.items = classes.map((i) => { return new i(dependency, config); });
         this.dependency = dependency;
         this.config = config;
         this.diagnostics = diags;
         this.uri = uri;
-        this.packageAggregator = packageAggregator;
+        this.vulnerabilityAggregator = vulnerabilityAggregator;
     }
 
     run(data: any): Diagnostic[] {
@@ -180,16 +180,16 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
 
     produce(ctx: any, cls: DiagnosticsPipeline): Diagnostic[] {
         if (this.item.length > 0) {
-            const aggPackage = cls.packageAggregator.aggregate(new Package(this.package, this.version, 1,
+            const aggVulnerability = cls.vulnerabilityAggregator.aggregate(new Vulnerability(this.package, this.version, 1,
                 this.vulnerabilityCount, this.advisoryCount, this.exploitCount, this.highestSeverity,
                 this.changeTo, get_range(this.context.version)));
-            const aggDiagnostic = aggPackage.getDiagnostic();
+            const aggDiagnostic = aggVulnerability.getDiagnostic();
             
             // Add/Update quick action for given aggregated diangnostic
             // TODO: this can be done lazily
-            if (aggPackage.recommendedVersion && (aggPackage.vulnerabilityCount > 0 || aggPackage.exploitCount != null)) {
+            if (aggVulnerability.recommendedVersion && (aggVulnerability.vulnerabilityCount > 0 || aggVulnerability.exploitCount != null)) {
                 let codeAction: CodeAction = {
-                    title: `Switch to recommended version ${aggPackage.recommendedVersion}`,
+                    title: `Switch to recommended version ${aggVulnerability.recommendedVersion}`,
                     diagnostics: [aggDiagnostic],
                     kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
                     edit: {
@@ -199,19 +199,19 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
                 };
                 codeAction.edit.changes[ctx] = [{
                     range: aggDiagnostic.range,
-                    newText: aggPackage.recommendedVersion
+                    newText: aggVulnerability.recommendedVersion
                 }];
                 // We will have line|start as key instead of message
                 codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
             }
 
-            if (cls.packageAggregator.isNewPackage)
+            if (cls.vulnerabilityAggregator.isNewVulnerability)
                 return [aggDiagnostic];
             else {
                 // Update the existing diagnostic object based on range values
                 cls.diagnostics.forEach((diag, index) => {
-                    if (diag.range.start.line == aggPackage.range.start.line &&
-                        diag.range.start.character == aggPackage.range.start.character) {
+                    if (diag.range.start.line == aggVulnerability.range.start.line &&
+                        diag.range.start.character == aggVulnerability.range.start.character) {
                         cls.diagnostics[index] = aggDiagnostic;
                         return;
                     }

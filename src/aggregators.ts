@@ -3,76 +3,76 @@
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
-import { Package } from './package';
+import { Vulnerability } from './vulnerability';
 import compareVersions = require('compare-versions');
 
-/* PackageAggregator */
-class PackageAggregator {
-    packages: Array<Package> = Array<Package>();
-    isNewPackage: boolean;
+/* VulnerabilityAggregator */
+class VulnerabilityAggregator {
+    vulnerabilities: Array<Vulnerability> = Array<Vulnerability>();
+    isNewVulnerability: boolean;
 
-    aggregate(newPackage: Package): Package {
+    aggregate(newVulnerability: Vulnerability): Vulnerability {
         return null;
     }
 }
 
-/* Noop Package aggregator class */
-class NoopPackageAggregator extends PackageAggregator {
+/* Noop Vulnerability aggregator class */
+class NoopVulnerabilityAggregator extends VulnerabilityAggregator {
 
-    aggregate(newPackage: Package): Package {
-        // Make it a new package always and set ecosystem for package.
-        this.isNewPackage = true;
-        newPackage.ecosystem = "";
+    aggregate(newVulnerability: Vulnerability): Vulnerability {
+        // Make it a new vulnerability always and set ecosystem for vulnerability.
+        this.isNewVulnerability = true;
+        newVulnerability.ecosystem = "";
 
-        return newPackage;
+        return newVulnerability;
     }
 }
 
-/* Golang Package aggregator class */
-class GolangPackageAggregator extends PackageAggregator {
+/* Golang Vulnerability aggregator class */
+class GolangVulnerabilityAggregator extends VulnerabilityAggregator {
 
-    aggregate(newPackage: Package): Package {
-        // Set ecosystem for new package from aggregator
-        newPackage.ecosystem = "golang";
+    aggregate(newVulnerability: Vulnerability): Vulnerability {
+        // Set ecosystem for new vulnerability from aggregator
+        newVulnerability.ecosystem = "golang";
 
         // Check if module / package exists in the list.
-        this.isNewPackage = true;
+        this.isNewVulnerability = true;
 
-        var existingPackageIndex = 0
-        this.packages.forEach((pckg, index) => {
+        var existingVulnerabilityIndex = 0
+        this.vulnerabilities.forEach((pckg, index) => {
             // Module and package can come in any order due to parallel batch requests.
-            // Need handle use case (1) Module first followed by package and (2) Package first followed by module.
-            if (newPackage.name.startsWith(pckg.name + "/") || pckg.name.startsWith(newPackage.name + "/")) {
+            // Need handle use case (1) Module first followed by package and (2) Vulnerability first followed by module.
+            if (newVulnerability.name.startsWith(pckg.name + "/") || pckg.name.startsWith(newVulnerability.name + "/")) {
                 // Module / package exists, so aggregate the data and update Diagnostic message and code action.
-                this.mergePackage(index, newPackage);
-                this.isNewPackage = false;
-                existingPackageIndex = index;
+                this.mergeVulnerability(index, newVulnerability);
+                this.isNewVulnerability = false;
+                existingVulnerabilityIndex = index;
             }
         });
 
-        if (this.isNewPackage) {
-            this.packages.push(newPackage);
-            return newPackage;
+        if (this.isNewVulnerability) {
+            this.vulnerabilities.push(newVulnerability);
+            return newVulnerability;
         }
 
-        return this.packages[existingPackageIndex];
+        return this.vulnerabilities[existingVulnerabilityIndex];
     }
 
-    private mergePackage(existingIndex: number, newPackage: Package) {
+    private mergeVulnerability(existingIndex: number, newVulnerability: Vulnerability) {
         // Between current name and new name, smallest will be the module name.
         // So, assign the smallest as package name.
-        if (newPackage.name.length < this.packages[existingIndex].name.length)
-            this.packages[existingIndex].name = newPackage.name;
+        if (newVulnerability.name.length < this.vulnerabilities[existingIndex].name.length)
+            this.vulnerabilities[existingIndex].name = newVulnerability.name;
 
         // Merge other informations
-        this.packages[existingIndex].packageCount += newPackage.packageCount;
-        this.packages[existingIndex].vulnerabilityCount += newPackage.vulnerabilityCount;
-        this.packages[existingIndex].advisoryCount += newPackage.advisoryCount;
-        this.packages[existingIndex].exploitCount += newPackage.exploitCount;
-        this.packages[existingIndex].highestSeverity = this.getMaxSeverity(
-            this.packages[existingIndex].highestSeverity, newPackage.highestSeverity);
-        this.packages[existingIndex].recommendedVersion = this.getMaxRecVersion(
-            this.packages[existingIndex].recommendedVersion, newPackage.recommendedVersion);
+        this.vulnerabilities[existingIndex].packageCount += newVulnerability.packageCount;
+        this.vulnerabilities[existingIndex].vulnerabilityCount += newVulnerability.vulnerabilityCount;
+        this.vulnerabilities[existingIndex].advisoryCount += newVulnerability.advisoryCount;
+        this.vulnerabilities[existingIndex].exploitCount += newVulnerability.exploitCount;
+        this.vulnerabilities[existingIndex].highestSeverity = this.getMaxSeverity(
+            this.vulnerabilities[existingIndex].highestSeverity, newVulnerability.highestSeverity);
+        this.vulnerabilities[existingIndex].recommendedVersion = this.getMaxRecVersion(
+            this.vulnerabilities[existingIndex].recommendedVersion, newVulnerability.recommendedVersion);
     }
 
     private getMaxSeverity(oldSeverity: string, newSeverity: string): string {
@@ -96,4 +96,4 @@ class GolangPackageAggregator extends PackageAggregator {
     }
 }
 
-export { PackageAggregator, NoopPackageAggregator, GolangPackageAggregator };
+export { VulnerabilityAggregator, NoopVulnerabilityAggregator, GolangVulnerabilityAggregator };
