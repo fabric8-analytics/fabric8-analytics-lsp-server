@@ -18,7 +18,6 @@ describe('npm package.json parser test', () => {
           "dependencies": {}
         }
         `);
-        console.log(deps);
         expect(deps.length).equal(0);
     });
 

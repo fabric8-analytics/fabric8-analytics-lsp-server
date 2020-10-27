@@ -8,6 +8,7 @@ import * as Xml2Object from 'xml2object';
 import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string } from './utils';
+import { exec } from 'child_process';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
@@ -96,15 +97,14 @@ class ReqDependencyCollector implements IDependencyCollector {
 }
 
 class NaiveGomodParser {
-    constructor(contents: string) {
-        this.dependencies = NaiveGomodParser.parseDependencies(contents);
+    constructor(contents: string, goImports: Set<string>) {
+        this.dependencies = NaiveGomodParser.parseDependencies(contents, goImports);
     }
 
     dependencies: Array<IDependency>;
 
-    static parseDependencies(contents:string): Array<IDependency> {
-        const gomod = contents.split("\n");
-        return gomod.reduce((dependencies, line, index) => {
+    static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
+        return contents.split("\n").reduce((dependencies, line, index) => {
             // Ignore "replace" lines
             if (!line.includes("=>")) {
                 // skip any text after '//'
@@ -115,16 +115,26 @@ class NaiveGomodParser {
                 //const version = semverRegex().exec(line)
                 regExp.lastIndex = 0;
                 const version = regExp.exec(line);
-      	        // Skip lines without version string
+                // Skip lines without version string
                 if (version && version.length > 0) {
-                    const parts: Array<string>  = line.replace('require', '').replace('(', '').replace(')', '').trim().split(' ');
-                    const pkgName:string = (parts[0] || '').trim();
+                    const parts: Array<string> = line.replace('require', '').replace('(', '').replace(')', '').trim().split(' ');
+                    const pkgName: string = (parts[0] || '').trim();
                     // Ignore line starting with replace clause and empty package
                     if (pkgName.length > 0) {
                         const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                         entry.value = new Variant(ValueType.String, 'v' + version[0]);
                         entry.value_position = { line: index + 1, column: version.index };
                         dependencies.push(new Dependency(entry));
+
+                        // Find packages of this module.
+                        goImports.forEach(pckg => {
+                            if (pckg != pkgName && pckg.startsWith(pkgName + "/")) {
+                                const entry: IKeyValueEntry = new KeyValueEntry(pckg, { line: 0, column: 0 });
+                                entry.value = new Variant(ValueType.String, 'v' + version[0]);
+                                entry.value_position = { line: index + 1, column: version.index };
+                                dependencies.push(new Dependency(entry));
+                            }
+                        })
                     }
                 }
             }
@@ -140,10 +150,24 @@ class NaiveGomodParser {
 /* Process entries found in the go.mod file and collect all dependency
  * related information */
 class GomodDependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ["dependencies"]) {}
+    constructor(private manifestFile: string, public classes: Array<string> = ["dependencies"]) {
+        this.manifestFile = manifestFile;
+    }
 
     async collect(contents: string): Promise<Array<IDependency>> {
-        let parser = new NaiveGomodParser(contents);
+        let promiseExec = new Promise<Set<string>>((resolve, reject) => {
+            const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
+            exec(`go list -f '{{ join .Imports "\\n" }}' ./...`,
+                   { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
+                if (error) {
+                    reject(`'go list' command failed with error :: ${stderr}`);
+                } else {
+                    resolve(new Set(stdout.toString().split("\n")));
+                }
+            });
+        });
+        const goImports: Set<string> = await promiseExec;
+        let parser = new NaiveGomodParser(contents, goImports);
         return parser.parse();
     }
 
