@@ -7,14 +7,13 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
-} from 'vscode-languageserver';
-import { IDependency, IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
-import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
+	TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
+import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
+import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
+import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import fetch from 'node-fetch';
 
 const url = require('url');
-const https = require('https');
 const winston = require('winston');
 
 let transport;
@@ -133,19 +132,21 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
 
 class AnalysisConfig
 {
-    server_url:         string;
-    api_token:          string;
-    three_scale_user_token:          string;
-    forbidden_licenses: Array<string>;
-    no_crypto:          boolean;
-    home_dir:           string;
-    uuid:               string;
+    server_url:               string;
+    api_token:                string;
+    three_scale_user_token:   string;
+    provide_fullstack_action: boolean;
+    forbidden_licenses:       Array<string>;
+    no_crypto:                boolean;
+    home_dir:                 string;
+    uuid:                     string;
 
     constructor() {
         // TODO: this needs to be configurable
         this.server_url = process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
         this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
         this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || "";
+        this.provide_fullstack_action = (process.env.PROVIDE_FULLSTACK_ACTION || "") === "true";
         this.forbidden_licenses = [];
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
@@ -163,6 +164,14 @@ if (fs.existsSync(rc_file)) {
         config.server_url = `${rc.server}/api/v2`;
     }
 }
+const fullStackReportAction: CodeAction = {
+  title: "Detailed Vulnerability Report",
+  kind: CodeActionKind.QuickFix,
+  command: {
+    command: "extension.fabric8AnalyticsWidgetFullStack",
+    title: "Analytics Report",
+  }
+};
 
 let DiagnosticsEngines = [SecurityEngine];
 
@@ -230,10 +239,10 @@ class TotalCount {
 };
 
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
-function runPipeline(response, diagnostics, diagnosticFilePath, dependencyMap, totalCount) {
+function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, dependencyMap, totalCount) {
     response.forEach(r => {
         const dependency = dependencyMap.get(r.package + r.version);
-        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, diagnosticFilePath);
+        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(r);
         for (const item of pipeline.items) {
             const secEng = item as SecurityEngine;
@@ -260,10 +269,25 @@ function slicePayload(payload, batchSize, ecosystem): any {
 const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
-    const deps = await collector.collect(contents);
-    let validPackages = deps
+    let deps = null;
+    try {
+        deps = await collector.collect(contents);
+    } catch (error) {
+        // Error can be raised during golang `go list ` command only.
+        if (ecosystem == "golang") {
+            console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error);
+            connection.sendNotification('caError', {'data': 'Unable to execute `go list` command, run `go mod tidy` to resolve dependencies issues'});
+            return;
+        }
+    }
+
+    let validPackages = deps;
+    let packageAggregator = null;
     if (ecosystem != "golang") {
         validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
+        packageAggregator = new NoopVulnerabilityAggregator();
+    } else {
+        packageAggregator = new GolangVulnerabilityAggregator();
     }
     const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
     const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
@@ -273,7 +297,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const start = new Date().getTime();
     const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request =>
         fetchVulnerabilities(request).then(response =>
-        runPipeline(response, diagnostics, diagnosticFilePath, requestMapper, totalCount)));
+            runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, requestMapper, totalCount)));
 
     await Promise.allSettled(allRequests);
     const end = new Date().getTime();
@@ -294,7 +318,7 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
 });
 
 files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
-    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector());
+    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector(uri));
 });
 
 let checkDelay;
@@ -320,13 +344,12 @@ connection.onCodeAction((params, token): CodeAction[] => {
     clearTimeout(checkDelay);
     let codeActions: CodeAction[] = [];
     for (let diagnostic of params.context.diagnostics) {
-        let codeAction = codeActionsMap[diagnostic.message];
+        let codeAction = codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character];
         if (codeAction != null) {
-            codeActions.push(codeAction)
-        }
-        codeAction = codeActionsMap[diagnostic.message + "1"];
-        if (codeAction != null) {
-            codeActions.push(codeAction)
+            codeActions.push(codeAction);
+            if (config.provide_fullstack_action) {
+                codeActions.push(fullStackReportAction);
+            }
         }
     }
     return codeActions;
