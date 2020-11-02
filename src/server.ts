@@ -7,7 +7,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-	TextDocuments, InitializeResult, CodeLens, CodeAction} from 'vscode-languageserver';
+	TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
 import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
@@ -132,19 +132,21 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
 
 class AnalysisConfig
 {
-    server_url:         string;
-    api_token:          string;
-    three_scale_user_token:          string;
-    forbidden_licenses: Array<string>;
-    no_crypto:          boolean;
-    home_dir:           string;
-    uuid:               string;
+    server_url:               string;
+    api_token:                string;
+    three_scale_user_token:   string;
+    provide_fullstack_action: boolean;
+    forbidden_licenses:       Array<string>;
+    no_crypto:                boolean;
+    home_dir:                 string;
+    uuid:                     string;
 
     constructor() {
         // TODO: this needs to be configurable
         this.server_url = process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
         this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
         this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || "";
+        this.provide_fullstack_action = (process.env.PROVIDE_FULLSTACK_ACTION || "") === "true";
         this.forbidden_licenses = [];
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
@@ -162,6 +164,14 @@ if (fs.existsSync(rc_file)) {
         config.server_url = `${rc.server}/api/v2`;
     }
 }
+const fullStackReportAction: CodeAction = {
+  title: "Detailed Vulnerability Report",
+  kind: CodeActionKind.QuickFix,
+  command: {
+    command: "extension.fabric8AnalyticsWidgetFullStack",
+    title: "Analytics Report",
+  }
+};
 
 let DiagnosticsEngines = [SecurityEngine];
 
@@ -336,7 +346,10 @@ connection.onCodeAction((params, token): CodeAction[] => {
     for (let diagnostic of params.context.diagnostics) {
         let codeAction = codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character];
         if (codeAction != null) {
-            codeActions.push(codeAction)
+            codeActions.push(codeAction);
+            if (config.provide_fullstack_action) {
+                codeActions.push(fullStackReportAction);
+            }
         }
     }
     return codeActions;
