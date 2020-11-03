@@ -5,7 +5,6 @@ const fetch = require('node-fetch');
 class PerformanceComparision
 {
     batchSize = 10;
-
     fetchBatchVulnerabilities = async (reqData) => {
         try {
             let url = "https://f8a-analytics-preview-2445582058137.staging.gw.apicast.io/api/v2/component-analyses/?user_key=3e42fa66f65124e6b1266a23431e3d08";
