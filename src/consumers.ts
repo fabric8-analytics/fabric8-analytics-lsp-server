@@ -51,6 +51,15 @@ interface IPipeline<T> {
 /* Diagnostics producer type */
 type DiagnosticProducer = IProducer<Vulnerability[]>;
 
+const fullStackReportAction: CodeAction = {
+    title: "Detailed Vulnerability Report",
+    kind: CodeActionKind.QuickFix,
+    command: {
+      command: "extension.fabric8AnalyticsWidgetFullStack",
+      title: "Analytics Report",
+    }
+  };
+
 /* Diagnostics pipeline implementation */
 class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
 {
@@ -94,7 +103,11 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                             newText: aggVulnerability.recommendedVersion
                         }];
                         // We will have line|start as key instead of message
-                        codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
+                        codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = {fix: codeAction, report: fullStackReportAction};
+                    } else if (aggVulnerability.vulnerabilityCount > 0 || aggVulnerability.advisoryCount > 0) {
+                        let onlyFullStackReportAction = fullStackReportAction;
+                        onlyFullStackReportAction.diagnostics = [aggDiagnostic];
+                        codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = {fix: "", report: onlyFullStackReportAction}; 
                     }
 
                     if (this.vulnerabilityAggregator.isNewVulnerability) {
@@ -204,6 +217,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
     }
 };
 
-let codeActionsMap = new Map<string, CodeAction>();
+let codeActionsMap = new Map<string, any>();
 
 export { DiagnosticsPipeline, SecurityEngine, codeActionsMap };

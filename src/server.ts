@@ -164,14 +164,6 @@ if (fs.existsSync(rc_file)) {
         config.server_url = `${rc.server}/api/v2`;
     }
 }
-const fullStackReportAction: CodeAction = {
-  title: "Detailed Vulnerability Report",
-  kind: CodeActionKind.QuickFix,
-  command: {
-    command: "extension.fabric8AnalyticsWidgetFullStack",
-    title: "Analytics Report",
-  }
-};
 
 let DiagnosticsEngines = [SecurityEngine];
 
@@ -346,10 +338,14 @@ connection.onCodeAction((params, token): CodeAction[] => {
     for (let diagnostic of params.context.diagnostics) {
         let codeAction = codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character];
         if (codeAction != null) {
-            codeActions.push(codeAction);
-        }
-        if (config.provide_fullstack_action) {
-            codeActions.push(fullStackReportAction);
+            if (codeAction.fix == "" && config.provide_fullstack_action) {
+                codeActions.push(codeAction.report);
+            } else {
+                codeActions.push(codeAction.fix);
+                if (config.provide_fullstack_action) {
+                    codeActions.push(codeAction.report)
+                }
+            }
         }
     }
     return codeActions;
