@@ -68,7 +68,8 @@
     ],
     "reporter": [
       "text",
-      "html"
+      "html",
+      "json"
     ],
     "sourceMap": true,
     "instrument": true
