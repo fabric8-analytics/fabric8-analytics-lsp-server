@@ -11,6 +11,7 @@ import {
 import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
+import { AnalyticsSource } from "./vulnerability";
 import fetch from 'node-fetch';
 
 const url = require('url');
@@ -343,14 +344,19 @@ connection.onDidOpenTextDocument((params) => {
 connection.onCodeAction((params, token): CodeAction[] => {
     clearTimeout(checkDelay);
     let codeActions: CodeAction[] = [];
+    let hasAnalyticsDiagonostic: boolean = false;
     for (let diagnostic of params.context.diagnostics) {
         let codeAction = codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character];
         if (codeAction != null) {
             codeActions.push(codeAction);
-            if (config.provide_fullstack_action) {
-                codeActions.push(fullStackReportAction);
-            }
+   
         }
+        if (!hasAnalyticsDiagonostic) {
+            hasAnalyticsDiagonostic = diagnostic.source === AnalyticsSource;
+        }
+    }
+    if (config.provide_fullstack_action && hasAnalyticsDiagonostic) {
+        codeActions.push(fullStackReportAction);
     }
     return codeActions;
 });
