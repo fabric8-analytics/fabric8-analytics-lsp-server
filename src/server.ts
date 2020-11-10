@@ -210,8 +210,10 @@ const fetchVulnerabilities = async (reqData) => {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + config.api_token,
-        'uuid': config.uuid,
     };
+    if (config.uuid) {
+        headers['uuid'] = config.uuid;
+    }
     try {
         const response = await fetch(url , {
             method: 'post',
