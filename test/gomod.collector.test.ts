@@ -317,4 +317,33 @@ github.com/google/go-cmp/cmp/cmpopts`);
       parent: 'github.com/google/go-cmp',
     });
   });
+
+  it('tests go.mod with a module and package of different version', async () => {
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+github.com/googleapis/gax-go
+fmt
+github.com/googleapis/gax-go/v2`);
+
+    const deps = await collector.collect(`
+      module test/data/sample1
+
+      go 1.15
+
+      require (
+        github.com/googleapis/gax-go v1.0.3
+        github.com/googleapis/gax-go/v2 v2.0.5
+      )
+    `);
+    expect(deps.length).equal(2);
+    expect(deps[0]).is.eql({
+      name: { value: 'github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
+      version: { value: 'v1.0.3', position: { line: 7, column: 38 } },
+      parent: 'github.com/googleapis/gax-go',
+    });
+    expect(deps[1]).is.eql({
+      name: { value: 'github.com/googleapis/gax-go/v2', position: { line: 0, column: 0 } },
+      version: { value: 'v2.0.5', position: { line: 8, column: 41 } },
+      parent: 'github.com/googleapis/gax-go/v2',
+    });
+  });
 });

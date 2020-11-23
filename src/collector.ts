@@ -9,6 +9,7 @@ import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string } from './utils';
 import { exec } from 'child_process';
+import { deepStrictEqual } from 'assert';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
@@ -106,7 +107,7 @@ class NaiveGomodParser {
     dependencies: Array<IDependency>;
 
     static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
-        return contents.split("\n").reduce((dependencies, line, index) => {
+        let dependencies = contents.split("\n").reduce((dependencies, line, index) => {
             // Ignore "replace" lines
             if (!line.includes("=>")) {
                 // skip any text after '//'
@@ -127,21 +128,34 @@ class NaiveGomodParser {
                         entry.value = new Variant(ValueType.String, 'v' + version[0]);
                         entry.value_position = { line: index + 1, column: version.index };
                         dependencies.push(new Dependency(entry, pkgName));
-
-                        // Find packages of this module.
-                        goImports.forEach(pckg => {
-                            if (pckg != pkgName && pckg.startsWith(pkgName + "/")) {
-                                const entry: IKeyValueEntry = new KeyValueEntry(pckg, { line: 0, column: 0 });
-                                entry.value = new Variant(ValueType.String, 'v' + version[0]);
-                                entry.value_position = { line: index + 1, column: version.index };
-                                dependencies.push(new Dependency(entry, pkgName));
-                            }
-                        })
                     }
                 }
             }
             return dependencies;
         }, []);
+
+        const totalDirectDeps = dependencies.length
+        goImports.forEach(pckg => {
+            let exactMatchDep: Dependency = null;
+            let moduleMatchDep: Dependency = null;
+            for (let i = 0; i < totalDirectDeps; i++) {
+                let dep: Dependency = dependencies[i];
+                if (pckg == dep.name.value) {
+                    exactMatchDep = dep;
+                } else if (pckg.startsWith(dep.name.value + "/")) {
+                    moduleMatchDep = dep;
+                }
+            }
+
+            if (exactMatchDep == null && moduleMatchDep != null) {
+                const entry: IKeyValueEntry = new KeyValueEntry(pckg, moduleMatchDep.name.position);
+                entry.value = new Variant(ValueType.String, moduleMatchDep.version.value);
+                entry.value_position = moduleMatchDep.version.position;
+                dependencies.push(new Dependency(entry, moduleMatchDep.name.value));
+            }
+        });
+
+        return dependencies;
     }
 
     parse(): Array<IDependency> {
