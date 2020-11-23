@@ -290,7 +290,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
         packageAggregator = new NoopVulnerabilityAggregator();
     } else {
-        packageAggregator = new GolangVulnerabilityAggregator();
+        packageAggregator = new GolangVulnerabilityAggregator(validPackages);
     }
     const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
     const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));

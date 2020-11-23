@@ -39,7 +39,8 @@ interface IDependencyCollector {
 class Dependency implements IDependency {
   name:    IPositionedString;
   version: IPositionedString;
-  constructor(dependency: IKeyValueEntry) {
+  parent:  string;
+  constructor(dependency: IKeyValueEntry, parent: string = null) {
     this.name = {
         value: dependency.key,
         position: dependency.key_position
@@ -48,6 +49,7 @@ class Dependency implements IDependency {
         value: dependency.value.object,
         position: dependency.value_position
     }
+    this.parent = parent
   }
 }
 
@@ -124,7 +126,7 @@ class NaiveGomodParser {
                         const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                         entry.value = new Variant(ValueType.String, 'v' + version[0]);
                         entry.value_position = { line: index + 1, column: version.index };
-                        dependencies.push(new Dependency(entry));
+                        dependencies.push(new Dependency(entry, pkgName));
 
                         // Find packages of this module.
                         goImports.forEach(pckg => {
@@ -132,7 +134,7 @@ class NaiveGomodParser {
                                 const entry: IKeyValueEntry = new KeyValueEntry(pckg, { line: 0, column: 0 });
                                 entry.value = new Variant(ValueType.String, 'v' + version[0]);
                                 entry.value_position = { line: index + 1, column: version.index };
-                                dependencies.push(new Dependency(entry));
+                                dependencies.push(new Dependency(entry, pkgName));
                             }
                         })
                     }
