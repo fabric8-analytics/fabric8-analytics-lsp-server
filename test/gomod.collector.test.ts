@@ -280,4 +280,41 @@ github.com/google/go-cmp/cmp/cmpopts`);
       parent: 'github.com/google/go-cmp',
     });
   });
+
+  it('tests go.mod with a module and two package import', async () => {
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+github.com/google/go-cmp/cmp
+fmt
+github.com/google/go-cmp/cmp/version
+github.com/google/go-cmp/cmp/cmpopts`);
+
+    const deps = await collector.collect(`
+      module test/data/sample1
+
+      go 1.15
+
+      require github.com/google/go-cmp v0.5.2
+    `);
+    expect(deps.length).equal(4);
+    expect(deps[0]).is.eql({
+      name: { value: 'github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+      parent: 'github.com/google/go-cmp',
+    });
+    expect(deps[1]).is.eql({
+      name: { value: 'github.com/google/go-cmp/cmp', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+      parent: 'github.com/google/go-cmp',
+    });
+    expect(deps[2]).is.eql({
+      name: { value: 'github.com/google/go-cmp/cmp/version', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+      parent: 'github.com/google/go-cmp',
+    });
+    expect(deps[3]).is.eql({
+      name: { value: 'github.com/google/go-cmp/cmp/cmpopts', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+      parent: 'github.com/google/go-cmp',
+    });
+  });
 });
