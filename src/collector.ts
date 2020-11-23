@@ -273,4 +273,4 @@ class PackageJsonCollector implements IDependencyCollector {
     }
 }
 
-export { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };
+export { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, Dependency, IDependency };
