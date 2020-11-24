@@ -32,7 +32,7 @@ describe('npm package.json parser test', () => {
         expect(deps[0]).is.eql({
           name: {value: "hello", position: {line: 4, column: 14}},
           version: {value: "1.0", position: {line: 4, column: 23}},
-          parent: null,
+          module: null,
         });
     });
 
@@ -50,7 +50,7 @@ describe('npm package.json parser test', () => {
         expect(deps[0]).is.eql({
           name: {value: "hello", position: {line: 3, column: 14}},
           version: {value: "1.0", position: {line: 3, column: 23}},
-          parent: null,
+          module: null,
         });
 
         collector = new PackageJsonCollector(["devDependencies", "dependencies"]);
@@ -66,12 +66,12 @@ describe('npm package.json parser test', () => {
         expect(deps[0]).is.eql({
           name: {value: "hello", position: {line: 3, column: 14}},
           version: {value: "1.0", position: {line: 3, column: 23}},
-          parent: null,
+          module: null,
         });
         expect(deps[1]).is.eql({
           name: {value: "foo", position: {line: 6, column: 14}},
           version: {value: "10.1.1", position: {line: 6, column: 21}},
-          parent: null,
+          module: null,
         });
     });
 
@@ -88,7 +88,7 @@ describe('npm package.json parser test', () => {
         expect(deps[0]).is.eql({
           name: {value: "hello", position: {line: 4, column: 14}},
           version: {value: "1.0", position: {line: 5, column: 16}},
-          parent: null,
+          module: null,
         });
     });
 
@@ -109,17 +109,17 @@ describe('npm package.json parser test', () => {
         expect(deps[0]).is.eql({
           name: {value: "hello", position: {line: 4, column: 13}},
           version: {value: "1.0", position: {line: 4, column: 37}},
-          parent: null,
+          module: null,
         });
         expect(deps[1]).is.eql({
           name: {value: "world", position: {line: 5, column: 16}},
           version: {value: "^1.0", position: {line: 5, column: 24}},
-          parent: null,
+          module: null,
         });
         expect(deps[2]).is.eql({
           name: {value: "foo", position: {line: 8, column: 10}},
           version: {value: "     10.0.1", position: {line: 10, column: 12}},
-          parent: null,
+          module: null,
         });
     });
 });

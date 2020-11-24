@@ -41,7 +41,7 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
         // Update parent value for new vulnerability
         this.deps.forEach(dep => {
             if (dep.name.value == newVulnerability.name) {
-                newVulnerability.parent = dep.parent
+                newVulnerability.module = dep.module
             }
         });
 
@@ -53,8 +53,8 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
 
         var existingVulnerabilityIndex = 0
         this.vulnerabilities.forEach((pckg, index) => {
-            // Merge vulnerabilities for same parents.
-            if (newVulnerability.parent == pckg.parent) {
+            // Merge vulnerabilities for same modules.
+            if (newVulnerability.module == pckg.module) {
                 // Module / package exists, so aggregate the data and update Diagnostic message and code action.
                 this.mergeVulnerability(index, newVulnerability);
                 this.isNewVulnerability = false;

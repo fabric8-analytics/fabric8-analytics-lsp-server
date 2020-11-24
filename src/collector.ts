@@ -9,7 +9,6 @@ import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string } from './utils';
 import { exec } from 'child_process';
-import { deepStrictEqual } from 'assert';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
@@ -40,8 +39,8 @@ interface IDependencyCollector {
 class Dependency implements IDependency {
   name:    IPositionedString;
   version: IPositionedString;
-  parent:  string;
-  constructor(dependency: IKeyValueEntry, parent: string = null) {
+  module:  string;
+  constructor(dependency: IKeyValueEntry, module: string = null) {
     this.name = {
         value: dependency.key,
         position: dependency.key_position
@@ -50,7 +49,7 @@ class Dependency implements IDependency {
         value: dependency.value.object,
         position: dependency.value_position
     }
-    this.parent = parent
+    this.module = module
   }
 }
 
@@ -134,7 +133,7 @@ class NaiveGomodParser {
             return dependencies;
         }, []);
 
-        const totalDirectDeps = dependencies.length
+        const totalDirectDeps = dependencies.length;
         goImports.forEach(pckg => {
             let exactMatchDep: Dependency = null;
             let moduleMatchDep: Dependency = null;
