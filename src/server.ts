@@ -14,8 +14,6 @@ import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './ag
 import { AnalyticsSource } from "./vulnerability";
 import { get_golang_executable } from "./utils"
 import fetch from 'node-fetch';
-import { util } from 'chai';
-import { utils } from 'mocha';
 
 const url = require('url');
 const winston = require('winston');
@@ -282,7 +280,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         // Error can be raised during golang `go list ` command only.
         if (ecosystem == "golang") {
             console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error);
-            connection.sendNotification('caError', {'data': `Unable to execute '${get_golang_executable} list' command, run '${get_golang_executable} mod tidy' to resolve dependencies issues`});
+            connection.sendNotification('caError', {'data': `Unable to execute '${get_golang_executable()} list' command, run '${get_golang_executable()} mod tidy' to resolve dependencies issues`});
             return;
         }
     }
@@ -324,7 +322,7 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
 });
 
 files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
-    connection.console.log("Using golang executable: " + get_golang_executable);
+    connection.console.log("Using golang executable: " + get_golang_executable());
     sendDiagnostics('golang', uri, contents, new GomodDependencyCollector(uri));
 });
 

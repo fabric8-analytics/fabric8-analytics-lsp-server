@@ -158,10 +158,10 @@ class GomodDependencyCollector implements IDependencyCollector {
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
             const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
-            exec(`${get_golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`,
+            exec(`${get_golang_executable()} list -f '{{ join .Imports "\\n" }}' ./...`,
                    { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
-                    reject(`'${get_golang_executable} list' command failed with error :: ${stderr}`);
+                    reject(`'${get_golang_executable()} list' command failed with error :: ${stderr}`);
                 } else {
                     resolve(new Set(stdout.toString().split("\n")));
                 }
