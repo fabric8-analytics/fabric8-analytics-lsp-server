@@ -50,7 +50,3 @@ export let to_lsp_position = (pos: IPosition): Position => {
 export let get_range = (ps: IPositionedString): Range => {
   return _get_range_che(ps);
 };
-
-export let get_golang_executable = (): string => {
-  return process.env.GOLANG_EXECUTABLE || 'go';
-}
