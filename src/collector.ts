@@ -8,7 +8,6 @@ import * as Xml2Object from 'xml2object';
 import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string } from './utils';
-import { exec } from 'child_process';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
@@ -32,7 +31,7 @@ interface IDependency {
 /* Dependency collector interface */
 interface IDependencyCollector {
   classes: Array<string>;
-  collect(contents: string): Promise<Array<IDependency>>;
+  collect(contents: string, imports: Set<string>): Promise<Array<IDependency>>;
 }
 
 /* Dependency class that can be created from `IKeyValueEntry` */
@@ -89,7 +88,7 @@ class NaivePyParser {
 class ReqDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string): Promise<Array<IDependency>> {
+    async collect(contents: string, imports: Set<string> = null): Promise<Array<IDependency>> {
         let parser = new NaivePyParser(contents);
         return parser.parse();
     }
@@ -150,24 +149,10 @@ class NaiveGomodParser {
 /* Process entries found in the go.mod file and collect all dependency
  * related information */
 class GomodDependencyCollector implements IDependencyCollector {
-    constructor(private manifestFile: string, public classes: Array<string> = ["dependencies"]) {
-        this.manifestFile = manifestFile;
-    }
+    constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string): Promise<Array<IDependency>> {
-        let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
-            exec(`go list -f '{{ join .Imports "\\n" }}' ./...`,
-                   { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
-                if (error) {
-                    reject(`'go list' command failed with error :: ${stderr}`);
-                } else {
-                    resolve(new Set(stdout.toString().split("\n")));
-                }
-            });
-        });
-        const goImports: Set<string> = await promiseExec;
-        let parser = new NaiveGomodParser(contents, goImports);
+    async collect(contents: string, imports: Set<string>): Promise<Array<IDependency>> {
+        let parser = new NaiveGomodParser(contents, imports);
         return parser.parse();
     }
 
@@ -243,7 +228,7 @@ class NaivePomXmlSaxParser {
 class PomXmlDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string): Promise<Array<IDependency>> {
+    async collect(contents: string, imports: Set<string> = null): Promise<Array<IDependency>> {
         const file = stream_from_string(contents);
         let parser = new NaivePomXmlSaxParser(file);
         let dependencies;
@@ -257,7 +242,7 @@ class PomXmlDependencyCollector implements IDependencyCollector {
 class PackageJsonCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
-    async collect(contents: string): Promise<Array<IDependency>> {
+    async collect(contents: string, imports: Set<string> = null): Promise<Array<IDependency>> {
       const ast = jsonAst(contents);
       return ast.children.
               filter(c => this.classes.includes(c.key.value)).

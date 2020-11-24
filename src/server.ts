@@ -13,6 +13,7 @@ import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from "./vulnerability";
 import fetch from 'node-fetch';
+import { exec } from 'child_process';
 
 const url = require('url');
 const winston = require('winston');
@@ -273,8 +274,23 @@ const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
     let deps = null;
+    let imports: Set<string> = null;
+    if (ecosystem == "golang") {
+        let promiseExec = new Promise<Set<string>>((resolve, reject) => {
+            const vscodeRootpath = diagnosticFilePath.replace("file://", "").replace("/go.mod", "")
+            exec(`go list -f '{{ join .Imports "\\n" }}' ./...`,
+                   { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
+                if (error) {
+                    reject(`'go list' command failed with error :: ${stderr}`);
+                } else {
+                    resolve(new Set(stdout.toString().split("\n")));
+                }
+            });
+        });
+        imports = await promiseExec;
+    }
     try {
-        deps = await collector.collect(contents);
+        deps = await collector.collect(contents, imports);
     } catch (error) {
         // Error can be raised during golang `go list ` command only.
         if (ecosystem == "golang") {
@@ -290,7 +306,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
         packageAggregator = new NoopVulnerabilityAggregator();
     } else {
-        packageAggregator = new GolangVulnerabilityAggregator();
+        packageAggregator = new GolangVulnerabilityAggregator(imports);
     }
     const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
     const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
@@ -321,7 +337,7 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
 });
 
 files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
-    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector(uri));
+    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector());
 });
 
 let checkDelay;

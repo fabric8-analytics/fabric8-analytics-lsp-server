@@ -103,7 +103,7 @@ describe('Response consumer test', () => {
     it('Consume response for multiple packages', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new GolangVulnerabilityAggregator();
+        let packageAggregator = new GolangVulnerabilityAggregator(new Set(['github.com/abc', 'github.com/abc/pkg/auth']));
         var response = {
             "package_unknown": false,
             "package": "github.com/abc",

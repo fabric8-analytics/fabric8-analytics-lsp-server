@@ -56,7 +56,7 @@ describe('Noop vulnerability aggregator tests', () => {
 describe('Golang vulnerability aggregator tests', () => {
     it('Test golang aggregator with one vulnerability', async () => {
         let pckg = new Vulnerability("abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
+        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator(new Set(['abc']));
         pckg = golangVulnerabilityAggregator.aggregate(pckg);
 
         const msg = "abc: 1.4.3\nNumber of packages: 1\nKnown security vulnerability: 2\nSecurity advisory: 1\nExploits: 1\nHighest severity: high\nRecommendation: 2.3.1";
@@ -72,7 +72,7 @@ describe('Golang vulnerability aggregator tests', () => {
 
     it('Test golang aggregator with two vulnerability', async () => {
         let pckg1 = new Vulnerability("abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
+        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator(new Set(['abc', 'abc/pck1']));
         var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
 
         let pckg2 = new Vulnerability("abc/pck1", "1.4.3", 1, 3, 2, 2, "low", "3.3.1", dummyRange);
@@ -92,7 +92,7 @@ describe('Golang vulnerability aggregator tests', () => {
 
     it('Test golang aggregator with empty old rec version', async () => {
         let pckg1 = new Vulnerability("abc", "1.4.3", 1, 2, 1, 1, "low", "", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
+        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator(new Set(['abc', 'abc/pck1']));
         var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
 
         let pckg2 = new Vulnerability("abc/pck1", "1.4.3", 1, 3, 2, 2, "low", "3.3.1", dummyRange);
@@ -112,7 +112,7 @@ describe('Golang vulnerability aggregator tests', () => {
 
     it('Test golang aggregator with null old rec version', async () => {
         let pckg1 = new Vulnerability("abc", "1.4.3", 1, 2, 1, 1, "medium", null, dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
+        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator(new Set(['abc', 'abc/pck1']));
         var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
 
         let pckg2 = new Vulnerability("abc/pck1", "1.4.3", 1, 3, 2, 2, "low", "3.3.1", dummyRange);
@@ -131,8 +131,8 @@ describe('Golang vulnerability aggregator tests', () => {
     });
 
     it('Test golang aggregator for vulnerability and module response out of order', async () => {
-        let pckg1 = new Vulnerability("abc/pck3", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
+        let pckg1 = new Vulnerability("abc/pck1", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
+        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator(new Set(['abc', 'abc/pck1']));
         var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
 
         let pckg2 = new Vulnerability("abc", "1.4.3", 1, 3, 2, 2, "critical", "3.3.1", dummyRange);
@@ -152,7 +152,7 @@ describe('Golang vulnerability aggregator tests', () => {
 
     it('Test golang aggregator with first package has null values', async () => {
         let pckg1 = new Vulnerability("abc", "1.4.3", 1, null, null, null, "high", null, dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
+        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator(new Set(['abc', 'abc/pck1']));
         var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
 
         let pckg2 = new Vulnerability("abc/pck1", "1.4.3", 1, 3, 2, 2, "low", "1.6.1", dummyRange);
@@ -172,7 +172,7 @@ describe('Golang vulnerability aggregator tests', () => {
 
     it('Test golang aggregator with second package has null values', async () => {
         let pckg1 = new Vulnerability("abc", "1.4.3", 1, 3, 2, 2, "low", "1.6.1", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
+        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator(new Set(['abc', 'abc/pck1']));
         var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
 
         let pckg2 = new Vulnerability("abc/pck1", "1.4.3", 1, null, null, null, "high", null, dummyRange);

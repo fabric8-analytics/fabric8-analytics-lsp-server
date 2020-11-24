@@ -31,8 +31,18 @@ class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
 class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
     vulnerabilities: Array<Vulnerability> = Array<Vulnerability>();
     isNewVulnerability: boolean;
+    imports: Set<string> = null;
+
+    constructor(imports: Set<string>) {
+        this.imports = imports
+    }
 
     aggregate(newVulnerability: Vulnerability): Vulnerability {
+        // Check if given package/module is used in source, otherwise return null.
+        if (!this.imports.has(newVulnerability.name)) {
+            return null
+        }
+
         // Set ecosystem for new vulnerability from aggregator
         newVulnerability.ecosystem = "golang";
 

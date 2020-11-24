@@ -75,6 +75,11 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
             if (item.consume(data)) {
                 for (let d of item.produce()) {
                     const aggVulnerability = this.vulnerabilityAggregator.aggregate(d);
+                    // Skip null vulnerabilities.
+                    if (!aggVulnerability) {
+                        continue
+                    }
+
                     const aggDiagnostic = aggVulnerability.getDiagnostic();
 
                     // Add/Update quick action for given aggregated diangnostic

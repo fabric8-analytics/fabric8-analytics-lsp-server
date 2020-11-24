@@ -1,13 +1,10 @@
 import { expect } from 'chai';
 import { GomodDependencyCollector } from '../src/collector';
-const fake = require('fake-exec');
 
 describe('Golang go.mod parser test', () => {
-  const fakeSourceRoot = "/tmp/fake/path/to/goproject/source";
-  const collector: GomodDependencyCollector = new GomodDependencyCollector(fakeSourceRoot);
+  const collector: GomodDependencyCollector = new GomodDependencyCollector();
 
   it('tests valid go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
           require (
@@ -17,7 +14,7 @@ describe('Golang go.mod parser test', () => {
             github.com/stretchr/testify v1.2.2
           )
           go 1.13
-        `);
+        `, new Set([]));
     expect(deps.length).equal(4);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -38,7 +35,6 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests go.mod with comments', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`// This is start point.
           module github.com/alecthomas/kingpin
           require (
@@ -49,7 +45,7 @@ describe('Golang go.mod parser test', () => {
           )
           go 1.13
           // Final notes.
-        `);
+        `, new Set([]));
     expect(deps.length).equal(3);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -66,7 +62,6 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests empty lines in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
 
@@ -79,7 +74,7 @@ describe('Golang go.mod parser test', () => {
           )
           go 1.13
 
-        `);
+        `, new Set([]));
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -92,7 +87,6 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests deps with spaces before and after comparators', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
           require (
@@ -102,7 +96,7 @@ describe('Golang go.mod parser test', () => {
              github.com/stretchr/testify    v1.2.2
           )
           go 1.13
-        `);
+        `, new Set([]));
     expect(deps.length).equal(4);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -123,7 +117,6 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests alpha beta and extra for version in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
 
@@ -139,7 +132,7 @@ describe('Golang go.mod parser test', () => {
         )
         
         go 1.13
-      `);
+      `, new Set([]));
     expect(deps.length).equal(8);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -176,7 +169,6 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests replace statements in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -189,7 +181,7 @@ describe('Golang go.mod parser test', () => {
           github.com/alecthomas/units => github.com/test-user/units v13.3.2 // Required by OLM
           github.com/pierrec/lz4 => github.com/pierrec/lz4 v3.4.2 // Required by prometheus-operator
         )
-      `);
+      `, new Set([]));
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -202,7 +194,6 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests single line replace statement in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -212,7 +203,7 @@ describe('Golang go.mod parser test', () => {
         )
         
         replace github.com/alecthomas/units => github.com/test-user/units v13.3.2
-      `);
+      `, new Set([]));
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
@@ -225,19 +216,13 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests go.mod with a module in import', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `fmt
-github.com/google/go-cmp/cmp
-fmt
-github.com/google/go-cmp/cmp
-github.com/google/go-cmp/cmp/cmpopts`);
-
     const deps = await collector.collect(`
       module test/data/sample1
 
       go 1.15
 
       require github.com/google/go-cmp v0.5.2
-    `);
+    `, new Set(['fmt', 'github.com/google/go-cmp/cmp', 'github.com/google/go-cmp/cmp/cmpopts']));
     expect(deps.length).equal(3);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/google/go-cmp', position: { line: 0, column: 0 } },
