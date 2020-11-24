@@ -14,6 +14,8 @@ import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './ag
 import { AnalyticsSource } from "./vulnerability";
 import { get_golang_executable } from "./utils"
 import fetch from 'node-fetch';
+import { util } from 'chai';
+import { utils } from 'mocha';
 
 const url = require('url');
 const winston = require('winston');
@@ -322,6 +324,7 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
 });
 
 files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
+    connection.console.log("Using golang executable: " + get_golang_executable);
     sendDiagnostics('golang', uri, contents, new GomodDependencyCollector(uri));
 });
 

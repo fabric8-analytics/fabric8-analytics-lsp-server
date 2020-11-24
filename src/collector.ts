@@ -9,6 +9,7 @@ import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string, get_golang_executable } from './utils';
 import { exec } from 'child_process';
+import { ConnectionStrategy } from 'vscode-languageserver';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
