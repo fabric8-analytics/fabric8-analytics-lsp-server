@@ -12,6 +12,7 @@ import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, 
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from "./vulnerability";
+import { get_golang_executable } from "./utils"
 import fetch from 'node-fetch';
 
 const url = require('url');
@@ -279,7 +280,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         // Error can be raised during golang `go list ` command only.
         if (ecosystem == "golang") {
             console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error);
-            connection.sendNotification('caError', {'data': 'Unable to execute `go list` command, run `go mod tidy` to resolve dependencies issues'});
+            connection.sendNotification('caError', {'data': `Unable to execute '${get_golang_executable} list' command, run '${get_golang_executable} mod tidy' to resolve dependencies issues`});
             return;
         }
     }
