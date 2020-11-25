@@ -8,6 +8,7 @@ import * as Xml2Object from 'xml2object';
 import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string } from './utils';
+import { config } from './config';
 import { exec } from 'child_process';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
@@ -157,10 +158,10 @@ class GomodDependencyCollector implements IDependencyCollector {
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
             const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
-            exec(`go list -f '{{ join .Imports "\\n" }}' ./...`,
+            exec(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`,
                    { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
-                    reject(`'go list' command failed with error :: ${stderr}`);
+                    reject(`'${config.golang_executable} list' command failed with error :: ${stderr}`);
                 } else {
                     resolve(new Set(stdout.toString().split("\n")));
                 }

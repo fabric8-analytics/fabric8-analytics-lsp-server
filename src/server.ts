@@ -11,7 +11,8 @@ import {
 import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
-import { AnalyticsSource } from "./vulnerability";
+import { AnalyticsSource } from './vulnerability';
+import { config } from './config';
 import fetch from 'node-fetch';
 
 const url = require('url');
@@ -131,31 +132,6 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
     }
 };
 
-class AnalysisConfig
-{
-    server_url:               string;
-    api_token:                string;
-    three_scale_user_token:   string;
-    provide_fullstack_action: boolean;
-    forbidden_licenses:       Array<string>;
-    no_crypto:                boolean;
-    home_dir:                 string;
-    uuid:                     string;
-
-    constructor() {
-        // TODO: this needs to be configurable
-        this.server_url = process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
-        this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
-        this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || "";
-        this.provide_fullstack_action = (process.env.PROVIDE_FULLSTACK_ACTION || "") === "true";
-        this.forbidden_licenses = [];
-        this.no_crypto = false;
-        this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
-        this.uuid = process.env.UUID || "";
-    }
-};
-
-let config: AnalysisConfig = new AnalysisConfig();
 let files: IAnalysisFiles = new AnalysisFiles();
 let server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
 let rc_file = path.join(config.home_dir, '.analysis_rc');
@@ -279,7 +255,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         // Error can be raised during golang `go list ` command only.
         if (ecosystem == "golang") {
             console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error);
-            connection.sendNotification('caError', {'data': 'Unable to execute `go list` command, run `go mod tidy` to resolve dependencies issues'});
+            connection.sendNotification('caError', {'data': `Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to resolve dependencies issues`});
             return;
         }
     }
@@ -321,6 +297,7 @@ files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) 
 });
 
 files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
+    connection.console.log("Using golang executable: " + config.golang_executable);
     sendDiagnostics('golang', uri, contents, new GomodDependencyCollector(uri));
 });
 

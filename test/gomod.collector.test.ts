@@ -1,5 +1,7 @@
 import { expect } from 'chai';
 import { GomodDependencyCollector } from '../src/collector';
+import { config } from '../src/config';
+
 const fake = require('fake-exec');
 
 describe('Golang go.mod parser test', () => {
@@ -7,7 +9,7 @@ describe('Golang go.mod parser test', () => {
   const collector: GomodDependencyCollector = new GomodDependencyCollector(fakeSourceRoot);
 
   it('tests valid go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
           require (
@@ -38,7 +40,7 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests go.mod with comments', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`// This is start point.
           module github.com/alecthomas/kingpin
           require (
@@ -66,7 +68,7 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests empty lines in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
 
@@ -92,7 +94,7 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests deps with spaces before and after comparators', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
           require (
@@ -123,7 +125,7 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests alpha beta and extra for version in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
 
@@ -176,7 +178,7 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests replace statements in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -202,7 +204,7 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests single line replace statement in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`, "");
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -225,7 +227,7 @@ describe('Golang go.mod parser test', () => {
   });
 
   it('tests go.mod with a module in import', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+    fake(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`, `fmt
 github.com/google/go-cmp/cmp
 fmt
 github.com/google/go-cmp/cmp
