@@ -13,7 +13,7 @@ export let stream_from_string = (s: string): Stream => {
   stream.push(s);
   stream.push(null);
   return stream;
-}
+};
 
 /* VSCode and Che transmit the file buffer in a different manner,
  * so we have to use different functions for computing the
@@ -29,7 +29,7 @@ let _get_range_vscode = (ps: IPositionedString): Range => {
       start: to_lsp_position(ps.position), 
       end: {line: ps.position.line/2, character: ps.position.column + length - 1}
   };
-}
+};
 
 let _to_lsp_position_che = (pos: IPosition): Position => {
   return {line: pos.line - 1, character: pos.column - 1};
@@ -41,7 +41,7 @@ let _get_range_che = (ps: IPositionedString): Range => {
       start: to_lsp_position(ps.position), 
       end: {line: ps.position.line - 1, character: ps.position.column + length - 1}
   };
-}
+};
 
 export let to_lsp_position = (pos: IPosition): Position => {
   return _to_lsp_position_che(pos);

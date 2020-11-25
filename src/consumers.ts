@@ -7,15 +7,15 @@ import { IDependency } from './collector';
 import { get_range } from './utils';
 import { Vulnerability } from './vulnerability';
 import { VulnerabilityAggregator } from './aggregators';
-import { Diagnostic, CodeAction, CodeActionKind } from 'vscode-languageserver'
+import { Diagnostic, CodeAction, CodeActionKind } from 'vscode-languageserver';
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor {
-    path: Array<string>;
+    path: Array<string>
 };
 
 /* Bind & return the part of `obj` as described by `desc` */
-let bind_object = (obj: any, desc: IBindingDescriptor) => {
+let bindObject = (obj: any, desc: IBindingDescriptor) => {
     let bind = obj;
     for (let elem of desc.path) {
         if (elem in bind) {
@@ -29,14 +29,14 @@ let bind_object = (obj: any, desc: IBindingDescriptor) => {
 
 /* Arbitrary metadata consumer interface */
 interface IConsumer {
-    binding: IBindingDescriptor;
-    item: any;
-    consume(data: any): boolean;
+    binding: IBindingDescriptor
+    item: any
+    consume(data: any): boolean
 };
 
 /* Generic `T` producer */
 interface IProducer<T> {
-    produce(): T;
+    produce(): T
 };
 
 /* Each pipeline item is defined as a single consumer and producer pair */
@@ -44,8 +44,8 @@ interface IPipelineItem<T> extends IConsumer, IProducer<T> { };
 
 /* House bunches of `IPipelineItem`'s */
 interface IPipeline<T> {
-    items: Array<IPipelineItem<T>>;
-    run(data: any): T;
+    items: Array<IPipelineItem<T>>
+    run(data: any): T
 };
 
 /* Diagnostics producer type */
@@ -94,7 +94,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                             newText: aggVulnerability.recommendedVersion
                         }];
                         // We will have line|start as key instead of message
-                        codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
+                        codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
                     }
 
                     if (this.vulnerabilityAggregator.isNewVulnerability) {
@@ -140,33 +140,33 @@ class AnalysisConsumer implements IConsumer {
     constructor(public config: any) { }
     consume(data: any): boolean {
         if (this.binding != null) {
-            this.item = bind_object(data, this.binding);
+            this.item = bindObject(data, this.binding);
         } else {
             this.item = data;
         }
         if (this.packageBinding != null) {
-            this.package = bind_object(data, this.packageBinding);
+            this.package = bindObject(data, this.packageBinding);
         }
         if (this.versionBinding != null) {
-            this.version = bind_object(data, this.versionBinding);
+            this.version = bindObject(data, this.versionBinding);
         }
         if (this.changeToBinding != null) {
-            this.changeTo = bind_object(data, this.changeToBinding);
+            this.changeTo = bindObject(data, this.changeToBinding);
         }
         if (this.messageBinding != null) {
-            this.message = bind_object(data, this.messageBinding);
+            this.message = bindObject(data, this.messageBinding);
         }
         if (this.vulnerabilityCountBinding != null) {
-            this.vulnerabilityCount = bind_object(data, this.vulnerabilityCountBinding);
+            this.vulnerabilityCount = bindObject(data, this.vulnerabilityCountBinding);
         }
         if (this.advisoryCountBinding != null) {
-            this.advisoryCount = bind_object(data, this.advisoryCountBinding);
+            this.advisoryCount = bindObject(data, this.advisoryCountBinding);
         }
         if (this.exploitCountBinding != null) {
-            this.exploitCount = bind_object(data, this.exploitCountBinding);
+            this.exploitCount = bindObject(data, this.exploitCountBinding);
         }
         if (this.highestSeverityBinding != null) {
-            this.highestSeverity = bind_object(data, this.highestSeverityBinding);
+            this.highestSeverity = bindObject(data, this.highestSeverityBinding);
         }
         return this.item != null;
     }

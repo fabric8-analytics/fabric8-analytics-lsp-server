@@ -12,29 +12,29 @@ enum ValueType {
 
 /* Generic token interface, although currently we're going to use only IToken<string> */
 interface IToken<T> {
-    value: T;
-    line:  number;
-    pos:   number;
+    value: T
+    line:  number
+    pos:   number
 }
 
 /* Value variant */
 interface IVariant {
-  type:   ValueType;
-  object: any;
+  type:   ValueType
+  object: any
 }
 
 /* Line and column inside the JSON file */
 interface IPosition {
-  line:   number;
-  column: number;
+  line:   number
+  column: number
 };
 
 /* Key/Value entry with positions */
 interface IKeyValueEntry {
-  key:            string;
-  value:          IVariant;
-  key_position:   IPosition;
-  value_position: IPosition;
+  key:            string
+  value:          IVariant
+  key_position:   IPosition
+  value_position: IPosition
 };
 
 class KeyValueEntry implements IKeyValueEntry {

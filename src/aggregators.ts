@@ -4,14 +4,14 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { Vulnerability } from './vulnerability';
-import compareVersions = require('compare-versions');
+import compareVersions = require('compare-versions'); // eslint-disable-line
 
-const severity = ["low", "medium", "high", "critical"];
+const severity = ['low', 'medium', 'high', 'critical'];
 
 /* VulnerabilityAggregator */
 interface VulnerabilityAggregator {
-    isNewVulnerability: boolean;
-    aggregate(newVulnerability: Vulnerability): Vulnerability;
+    isNewVulnerability: boolean
+    aggregate(newVulnerability: Vulnerability): Vulnerability
 }
 
 /* Noop Vulnerability aggregator class */
@@ -21,7 +21,7 @@ class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Make it a new vulnerability always and set ecosystem for vulnerability.
         this.isNewVulnerability = true;
-        newVulnerability.ecosystem = "";
+        newVulnerability.ecosystem = '';
 
         return newVulnerability;
     }
@@ -34,16 +34,16 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
 
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Set ecosystem for new vulnerability from aggregator
-        newVulnerability.ecosystem = "golang";
+        newVulnerability.ecosystem = 'golang';
 
         // Check if module / package exists in the list.
         this.isNewVulnerability = true;
 
-        var existingVulnerabilityIndex = 0
+        let existingVulnerabilityIndex = 0;
         this.vulnerabilities.forEach((pckg, index) => {
             // Module and package can come in any order due to parallel batch requests.
             // Need handle use case (1) Module first followed by package and (2) Vulnerability first followed by module.
-            if (newVulnerability.name.startsWith(pckg.name + "/") || pckg.name.startsWith(newVulnerability.name + "/")) {
+            if (newVulnerability.name.startsWith(pckg.name + '/') || pckg.name.startsWith(newVulnerability.name + '/')) {
                 // Module / package exists, so aggregate the data and update Diagnostic message and code action.
                 this.mergeVulnerability(index, newVulnerability);
                 this.isNewVulnerability = false;
@@ -63,7 +63,7 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
         // Between current name and new name, smallest will be the module name.
         // So, assign the smallest as package name.
         if (newVulnerability.name.length < this.vulnerabilities[existingIndex].name.length)
-            this.vulnerabilities[existingIndex].name = newVulnerability.name;
+            {this.vulnerabilities[existingIndex].name = newVulnerability.name;}
 
         // Merge other informations
         this.vulnerabilities[existingIndex].packageCount += newVulnerability.packageCount;
@@ -83,11 +83,11 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
 
     private getMaxRecVersion(oldRecVersion: string, newRecVersion: string): string {
         // Compute maximium recommended version.
-        var maxRecVersion = oldRecVersion;
-        if (oldRecVersion == "" || oldRecVersion == null) {
+        let maxRecVersion = oldRecVersion;
+        if (oldRecVersion === '' || oldRecVersion === null) {
             maxRecVersion = newRecVersion;
-        } else if (newRecVersion != "" && newRecVersion != null) {
-            if (compareVersions(oldRecVersion, newRecVersion) == -1) {
+        } else if (newRecVersion !== '' && newRecVersion !== null) {
+            if (compareVersions(oldRecVersion, newRecVersion) === -1) {
                 maxRecVersion = newRecVersion;
             }
         }
