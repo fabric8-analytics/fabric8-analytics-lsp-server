@@ -254,8 +254,8 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     } catch (error) {
         // Error can be raised during golang `go list ` command only.
         if (ecosystem == "golang") {
-            console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error);
-            connection.sendNotification('caError', {'data': `Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to resolve dependencies issues`});
+            connection.console.error(`Command execution failed with error: ${error}`);
+            connection.sendNotification('caError', {'data': error});
             return;
         }
     }

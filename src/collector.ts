@@ -161,7 +161,11 @@ class GomodDependencyCollector implements IDependencyCollector {
             exec(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`,
                    { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
-                    reject(`'${config.golang_executable} list' command failed with error :: ${stderr}`);
+                    if (error.code == 127) { // Invalid command, go executable not found
+                        reject(`Unable to locate '${config.golang_executable}'`);
+                    } else {
+                        reject(`Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to know more`);
+                    }
                 } else {
                     resolve(new Set(stdout.toString().split("\n")));
                 }
