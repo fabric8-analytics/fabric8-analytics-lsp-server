@@ -31,20 +31,8 @@ class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
 class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
     vulnerabilities: Array<Vulnerability> = Array<Vulnerability>();
     isNewVulnerability: boolean;
-    deps: any = null;
-
-    constructor(deps: any) {
-        this.deps = deps;
-    }
 
     aggregate(newVulnerability: Vulnerability): Vulnerability {
-        // Update parent value for new vulnerability
-        this.deps.forEach(dep => {
-            if (dep.name.value == newVulnerability.name) {
-                newVulnerability.module = dep.module
-            }
-        });
-
         // Set ecosystem for new vulnerability from aggregator
         newVulnerability.ecosystem = "golang";
 
@@ -54,7 +42,7 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
         var existingVulnerabilityIndex = 0
         this.vulnerabilities.forEach((pckg, index) => {
             // Merge vulnerabilities for same modules.
-            if (newVulnerability.module == pckg.module) {
+            if (this.getModuleName(newVulnerability.name) == this.getModuleName(pckg.name)) {
                 // Module / package exists, so aggregate the data and update Diagnostic message and code action.
                 this.mergeVulnerability(index, newVulnerability);
                 this.isNewVulnerability = false;
@@ -68,6 +56,11 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
         }
 
         return this.vulnerabilities[existingVulnerabilityIndex];
+    }
+
+    private getModuleName(vulnerabilityName: string): string {
+        const parts = vulnerabilityName.split('@');
+        return parts.length == 2 ? parts[1] : vulnerabilityName;
     }
 
     private mergeVulnerability(existingIndex: number, newVulnerability: Vulnerability) {

@@ -7,7 +7,10 @@ describe('Golang go.mod parser test', () => {
   const collector: GomodDependencyCollector = new GomodDependencyCollector(fakeSourceRoot);
 
   it('tests valid go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+github.com/davecgh/go-spew
+github.com/pmezard/go-difflib
+github.com/stretchr/testify`);
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
           require (
@@ -22,27 +25,25 @@ describe('Golang go.mod parser test', () => {
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
       version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 4, column: 41 } },
-      module: 'github.com/alecthomas/units',
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/davecgh/go-spew', position: { line: 0, column: 0 } },
       version: { value: 'v1.1.1', position: { line: 5, column: 40 } },
-      module: 'github.com/davecgh/go-spew',
     });
     expect(deps[2]).is.eql({
       name: { value: 'github.com/pmezard/go-difflib', position: { line: 0, column: 0 } },
       version: { value: 'v1.0.0', position: { line: 6, column: 43 } },
-      module: 'github.com/pmezard/go-difflib',
     });
     expect(deps[3]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
       version: { value: 'v1.2.2', position: { line: 7, column: 41 } },
-      module: 'github.com/stretchr/testify',
     });
   });
 
   it('tests go.mod with comments', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+github.com/pmezard/go-difflib
+github.com/stretchr/testify`);
     const deps = await collector.collect(`// This is start point.
           module github.com/alecthomas/kingpin
           require (
@@ -58,22 +59,20 @@ describe('Golang go.mod parser test', () => {
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
       version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 4, column: 41 } },
-      module: 'github.com/alecthomas/units',
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/pmezard/go-difflib', position: { line: 0, column: 0 } },
       version: { value: 'v1.0.0', position: { line: 6, column: 43 } },
-      module: 'github.com/pmezard/go-difflib',
     });
     expect(deps[2]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
       version: { value: 'v1.2.2', position: { line: 7, column: 41 } },
-      module: 'github.com/stretchr/testify',
     });
   });
 
   it('tests empty lines in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+github.com/stretchr/testify`);
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
 
@@ -91,17 +90,18 @@ describe('Golang go.mod parser test', () => {
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
       version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 6, column: 41 } },
-      module: 'github.com/alecthomas/units',
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
       version: { value: 'v1.2.2', position: { line: 8, column: 41 } },
-      module: 'github.com/stretchr/testify',
     });
   });
 
   it('tests deps with spaces before and after comparators', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+github.com/davecgh/go-spew
+github.com/pmezard/go-difflib
+github.com/stretchr/testify`);
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
           require (
@@ -116,27 +116,30 @@ describe('Golang go.mod parser test', () => {
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
       version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 4, column: 44 } },
-      module: 'github.com/alecthomas/units',
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/davecgh/go-spew', position: { line: 0, column: 0 } },
       version: { value: 'v1.1.1', position: { line: 5, column: 49 } },
-      module: 'github.com/davecgh/go-spew',
     });
     expect(deps[2]).is.eql({
       name: { value: 'github.com/pmezard/go-difflib', position: { line: 0, column: 0 } },
       version: { value: 'v1.0.0', position: { line: 6, column: 51 } },
-      module: 'github.com/pmezard/go-difflib',
     });
     expect(deps[3]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
       version: { value: 'v1.2.2', position: { line: 7, column: 45 } },
-      module: 'github.com/stretchr/testify',
     });
   });
 
   it('tests alpha beta and extra for version in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+github.com/pierrec/lz4
+github.com/davecgh/go-spew
+github.com/pmezard/go-difflib
+github.com/stretchr/testify
+github.com/regen-network/protobuf
+github.com/vmihailenco/msgpack/v5
+github.com/btcsuite/btcd`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
 
@@ -157,47 +160,40 @@ describe('Golang go.mod parser test', () => {
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
       version: { value: 'v0.1.3-alpha', position: { line: 5, column: 39 } },
-      module: 'github.com/alecthomas/units',
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/pierrec/lz4', position: { line: 0, column: 0 } },
       version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } },
-      module: 'github.com/pierrec/lz4',
     });
     expect(deps[2]).is.eql({
       name: { value: 'github.com/davecgh/go-spew', position: { line: 0, column: 0 } },
       version: { value: 'v1.1.1+incompatible', position: { line: 7, column: 38 } },
-      module: 'github.com/davecgh/go-spew',
     });
     expect(deps[3]).is.eql({
       name: { value: 'github.com/pmezard/go-difflib', position: { line: 0, column: 0 } },
       version: { value: 'v1.3.0+version', position: { line: 8, column: 41 } },
-      module: 'github.com/pmezard/go-difflib',
     });
     expect(deps[4]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
       version: { value: 'v1.2.2+incompatible-version', position: { line: 9, column: 39 } },
-      module: 'github.com/stretchr/testify',
     });
     expect(deps[5]).is.eql({
       name: { value: 'github.com/regen-network/protobuf', position: { line: 0, column: 0 } },
       version: { value: 'v1.3.2-alpha.regen.4', position: { line: 10, column: 45 } },
-      module: 'github.com/regen-network/protobuf',
     });
     expect(deps[6]).is.eql({
       name: { value: 'github.com/vmihailenco/msgpack/v5', position: { line: 0, column: 0 } },
       version: { value: 'v5.0.0-beta.1', position: { line: 11, column: 45 } },
-      module: 'github.com/vmihailenco/msgpack/v5'
     });
     expect(deps[7]).is.eql({
       name: { value: 'github.com/btcsuite/btcd', position: { line: 0, column: 0 } },
       version: { value: 'v0.20.1-beta', position: { line: 12, column: 36 } },
-      module: 'github.com/btcsuite/btcd',
     });
   });
 
   it('tests replace statements in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+github.com/pierrec/lz4`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -215,17 +211,16 @@ describe('Golang go.mod parser test', () => {
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
       version: { value: 'v0.1.3-alpha', position: { line: 5, column: 39 } },
-      module: 'github.com/alecthomas/units',
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/pierrec/lz4', position: { line: 0, column: 0 } },
       version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } },
-      module: 'github.com/pierrec/lz4',
     });
   });
 
   it('tests single line replace statement in go.mod', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, "");
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+github.com/pierrec/lz4`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -240,12 +235,10 @@ describe('Golang go.mod parser test', () => {
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
       version: { value: 'v0.1.3-alpha', position: { line: 5, column: 39 } },
-      module: 'github.com/alecthomas/units',
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/pierrec/lz4', position: { line: 0, column: 0 } },
       version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } },
-      module: 'github.com/pierrec/lz4',
     });
   });
 
@@ -263,21 +256,14 @@ github.com/google/go-cmp/cmp/cmpopts`);
 
       require github.com/google/go-cmp v0.5.2
     `);
-    expect(deps.length).equal(3);
+    expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
-      name: { value: 'github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/google/go-cmp/cmp@github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
-      module: 'github.com/google/go-cmp',
     });
     expect(deps[1]).is.eql({
-      name: { value: 'github.com/google/go-cmp/cmp', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/google/go-cmp/cmp/cmpopts@github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
-      module: 'github.com/google/go-cmp',
-    });
-    expect(deps[2]).is.eql({
-      name: { value: 'github.com/google/go-cmp/cmp/cmpopts', position: { line: 0, column: 0 } },
-      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
-      module: 'github.com/google/go-cmp',
     });
   });
 
@@ -295,26 +281,18 @@ github.com/google/go-cmp/cmp/cmpopts`);
 
       require github.com/google/go-cmp v0.5.2
     `);
-    expect(deps.length).equal(4);
+    expect(deps.length).equal(3);
     expect(deps[0]).is.eql({
-      name: { value: 'github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/google/go-cmp/cmp@github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
-      module: 'github.com/google/go-cmp',
     });
     expect(deps[1]).is.eql({
-      name: { value: 'github.com/google/go-cmp/cmp', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/google/go-cmp/cmp/version@github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
-      module: 'github.com/google/go-cmp',
     });
     expect(deps[2]).is.eql({
-      name: { value: 'github.com/google/go-cmp/cmp/version', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/google/go-cmp/cmp/cmpopts@github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
-      module: 'github.com/google/go-cmp',
-    });
-    expect(deps[3]).is.eql({
-      name: { value: 'github.com/google/go-cmp/cmp/cmpopts', position: { line: 0, column: 0 } },
-      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
-      module: 'github.com/google/go-cmp',
     });
   });
 
@@ -338,12 +316,10 @@ github.com/googleapis/gax-go/v2`);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
       version: { value: 'v1.0.3', position: { line: 7, column: 38 } },
-      module: 'github.com/googleapis/gax-go',
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/googleapis/gax-go/v2', position: { line: 0, column: 0 } },
       version: { value: 'v2.0.5', position: { line: 8, column: 41 } },
-      module: 'github.com/googleapis/gax-go/v2',
     });
   });
 
@@ -363,21 +339,14 @@ github.com/googleapis/gax-go/v2`);
         github.com/googleapis/gax-go/v2 v2.0.5
       )
     `);
-    expect(deps.length).equal(3);
+    expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
-      name: { value: 'github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/googleapis/gax-go/abc@github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
       version: { value: 'v1.0.3', position: { line: 7, column: 38 } },
-      module: 'github.com/googleapis/gax-go',
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/googleapis/gax-go/v2', position: { line: 0, column: 0 } },
       version: { value: 'v2.0.5', position: { line: 8, column: 41 } },
-      module: 'github.com/googleapis/gax-go/v2',
-    });
-    expect(deps[2]).is.eql({
-      name: { value: 'github.com/googleapis/gax-go/abc', position: { line: 0, column: 0 } },
-      version: { value: 'v1.0.3', position: { line: 7, column: 38 } },
-      module: 'github.com/googleapis/gax-go',
     });
   });
 });

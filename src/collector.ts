@@ -8,6 +8,7 @@ import * as Xml2Object from 'xml2object';
 import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string } from './utils';
+import { config } from './config';
 import { exec } from 'child_process';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
@@ -39,8 +40,7 @@ interface IDependencyCollector {
 class Dependency implements IDependency {
   name:    IPositionedString;
   version: IPositionedString;
-  module:  string;
-  constructor(dependency: IKeyValueEntry, module: string = null) {
+  constructor(dependency: IKeyValueEntry) {
     this.name = {
         value: dependency.key,
         position: dependency.key_position
@@ -48,8 +48,7 @@ class Dependency implements IDependency {
     this.version = {
         value: dependency.value.object,
         position: dependency.value_position
-    }
-    this.module = module
+    };
   }
 }
 
@@ -106,7 +105,7 @@ class NaiveGomodParser {
     dependencies: Array<IDependency>;
 
     static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
-        let dependencies = contents.split("\n").reduce((dependencies, line, index) => {
+        let goModDeps = contents.split("\n").reduce((dependencies, line, index) => {
             // Ignore "replace" lines
             if (!line.includes("=>")) {
                 // skip any text after '//'
@@ -126,31 +125,38 @@ class NaiveGomodParser {
                         const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                         entry.value = new Variant(ValueType.String, 'v' + version[0]);
                         entry.value_position = { line: index + 1, column: version.index };
-                        dependencies.push(new Dependency(entry, pkgName));
+                        dependencies.push(new Dependency(entry));
                     }
                 }
             }
             return dependencies;
         }, []);
 
-        const totalDirectDeps = dependencies.length;
-        goImports.forEach(pckg => {
+        let dependencies = []
+        goImports.forEach(importStatement => {
             let exactMatchDep: Dependency = null;
             let moduleMatchDep: Dependency = null;
-            for (let i = 0; i < totalDirectDeps; i++) {
-                let dep: Dependency = dependencies[i];
-                if (pckg == dep.name.value) {
-                    exactMatchDep = dep;
-                } else if (pckg.startsWith(dep.name.value + "/")) {
-                    moduleMatchDep = dep;
+            goModDeps.forEach(goModDep => {
+                if (importStatement == goModDep.name.value) {
+                    // Software stack uses module
+                    exactMatchDep = goModDep;
+                    dependencies.push(goModDep);
+                } else if (importStatement.startsWith(goModDep.name.value + "/")) {
+                    // Find longest module name that matches the import statement
+                    if (moduleMatchDep == null) {
+                        moduleMatchDep = goModDep;
+                    } else if (moduleMatchDep.name.value.length < goModDep.name.value.length) {
+                        moduleMatchDep = goModDep;
+                    }
                 }
-            }
+            });
 
             if (exactMatchDep == null && moduleMatchDep != null) {
-                const entry: IKeyValueEntry = new KeyValueEntry(pckg, moduleMatchDep.name.position);
+                // Software stack uses a package from a module
+                const entry: IKeyValueEntry = new KeyValueEntry(importStatement + '@' + moduleMatchDep.name.value, moduleMatchDep.name.position);
                 entry.value = new Variant(ValueType.String, moduleMatchDep.version.value);
                 entry.value_position = moduleMatchDep.version.position;
-                dependencies.push(new Dependency(entry, moduleMatchDep.name.value));
+                dependencies.push(new Dependency(entry));
             }
         });
 
@@ -172,10 +178,14 @@ class GomodDependencyCollector implements IDependencyCollector {
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
             const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
-            exec(`go list -f '{{ join .Imports "\\n" }}' ./...`,
+            exec(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`,
                    { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
-                    reject(`'go list' command failed with error :: ${stderr}`);
+                    if (error.code == 127) { // Invalid command, go executable not found
+                        reject(`Unable to locate '${config.golang_executable}'`);
+                    } else {
+                        reject(`Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to know more`);
+                    }
                 } else {
                     resolve(new Set(stdout.toString().split("\n")));
                 }

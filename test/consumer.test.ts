@@ -1,8 +1,6 @@
 import { expect } from 'chai';
 import { SecurityEngine, DiagnosticsPipeline } from '../src/consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from '../src/aggregators';
-import { Dependency } from '../src/collector';
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType } from '../src/types';
 
 const config = {};
 const diagnosticFilePath = "a/b/c/d";
@@ -22,19 +20,6 @@ const dependency = {
         }
     }
 }
-
-const moduleEntry: IKeyValueEntry = new KeyValueEntry('github.com/abc', {line: 5, column: 4});
-moduleEntry.value = new Variant(ValueType.String, "1.4.3");
-moduleEntry.value_position = {line: 5, column: 8};
-
-const packageEntry: IKeyValueEntry = new KeyValueEntry('github.com/abc/pck1', {line: 4, column: 4});
-packageEntry.value = new Variant(ValueType.String, "1.4.3");
-packageEntry.value_position = {line: 6, column: 13};
-
-const testDeps = [
-    new Dependency(moduleEntry, 'github.com/abc'),
-    new Dependency(packageEntry, 'github.com/abc'),
-]
 
 describe('Response consumer test', () => {
     
@@ -118,7 +103,7 @@ describe('Response consumer test', () => {
     it('Consume response for multiple packages', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];
-        let packageAggregator = new GolangVulnerabilityAggregator(testDeps);
+        let packageAggregator = new GolangVulnerabilityAggregator();
         var response = {
             "package_unknown": false,
             "package": "github.com/abc",
@@ -155,7 +140,7 @@ describe('Response consumer test', () => {
 
         response = {
             "package_unknown": false,
-            "package": "github.com/abc/pck1",
+            "package": "github.com/abc/pck1@github.com/abc",
             "version": "1.2.3",
             "recommended_versions": "2.6.4",
             "registration_link": "https://abc.io/login",
