@@ -14,6 +14,7 @@ import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './ag
 import { AnalyticsSource } from './vulnerability';
 import { config } from './config';
 import fetch from 'node-fetch';
+import { exec } from 'child_process';
 
 const url = require('url');
 const winston = require('winston');
@@ -245,16 +246,36 @@ function slicePayload(payload, batchSize, ecosystem): any {
     return reqData;
 }
 
+const golangExecExists = new Promise<Boolean>(resolve => {
+    exec(`which ${config.golang_executable}`, { maxBuffer: 1024 * 1200 }, error => {
+        if (error) {
+            resolve(false);
+        } else {
+            resolve(true);
+        }
+    });
+});
+
 const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     connection.sendNotification('caNotification', {'data': caDefaultMsg});
+
+    if (ecosystem == "golang") {
+        const golangExists = await golangExecExists;
+        if (!golangExists) {
+            connection.console.error(`Golang executable '${config.golang_executable}' not found`);
+            connection.sendNotification('caError', {'data': `Unable to locate '${config.golang_executable}' executable, Restart all instances of visual code editor and try again`});
+            return;
+        }
+    }
+
     let deps = null;
     try {
         deps = await collector.collect(contents);
     } catch (error) {
         // Error can be raised during golang `go list ` command only.
         if (ecosystem == "golang") {
-            console.error("Command execution failed, something wrong with manifest file go.mod\n%s", error);
+            connection.console.error(`Command execution failed, something wrong with manifest file go.mod. Error: ${error}`);
             connection.sendNotification('caError', {'data': `Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to resolve dependencies issues`});
             return;
         }
