@@ -8,7 +8,7 @@ enum ValueType {
   Object,
   Boolean,
   Null
-};
+}
 
 /* Generic token interface, although currently we're going to use only IToken<string> */
 interface IToken<T> {
@@ -27,7 +27,7 @@ interface IVariant {
 interface IPosition {
   line:   number
   column: number
-};
+}
 
 /* Key/Value entry with positions */
 interface IKeyValueEntry {
@@ -35,7 +35,7 @@ interface IKeyValueEntry {
   value:          IVariant
   key_position:   IPosition
   value_position: IPosition
-};
+}
 
 class KeyValueEntry implements IKeyValueEntry {
   key:            string;

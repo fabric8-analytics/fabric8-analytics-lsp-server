@@ -12,12 +12,12 @@ import { Diagnostic, CodeAction, CodeActionKind } from 'vscode-languageserver';
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor {
     path: Array<string>
-};
+}
 
 /* Bind & return the part of `obj` as described by `desc` */
-let bindObject = (obj: any, desc: IBindingDescriptor) => {
+const bindObject = (obj: any, desc: IBindingDescriptor) => {
     let bind = obj;
-    for (let elem of desc.path) {
+    for (const elem of desc.path) {
         if (elem in bind) {
             bind = bind[elem];
         } else {
@@ -32,21 +32,21 @@ interface IConsumer {
     binding: IBindingDescriptor
     item: any
     consume(data: any): boolean
-};
+}
 
 /* Generic `T` producer */
 interface IProducer<T> {
     produce(): T
-};
+}
 
 /* Each pipeline item is defined as a single consumer and producer pair */
-interface IPipelineItem<T> extends IConsumer, IProducer<T> { };
+interface IPipelineItem<T> extends IConsumer, IProducer<T> { }
 
 /* House bunches of `IPipelineItem`'s */
 interface IPipeline<T> {
     items: Array<IPipelineItem<T>>
     run(data: any): T
-};
+}
 
 /* Diagnostics producer type */
 type DiagnosticProducer = IProducer<Vulnerability[]>;
@@ -71,16 +71,16 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
     }
 
     run(data: any): Vulnerability[] {
-        for (let item of this.items) {
+        for (const item of this.items) {
             if (item.consume(data)) {
-                for (let d of item.produce()) {
+                for (const d of item.produce()) {
                     const aggVulnerability = this.vulnerabilityAggregator.aggregate(d);
                     const aggDiagnostic = aggVulnerability.getDiagnostic();
 
                     // Add/Update quick action for given aggregated diangnostic
                     // TODO: this can be done lazily
                     if (aggVulnerability.recommendedVersion && (aggVulnerability.vulnerabilityCount > 0 || aggVulnerability.exploitCount != null)) {
-                        let codeAction: CodeAction = {
+                        const codeAction: CodeAction = {
                             title: `Switch to recommended version ${aggVulnerability.recommendedVersion}`,
                             diagnostics: [aggDiagnostic],
                             kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
@@ -115,7 +115,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
         // This is not used by any one.
         return [];
     }
-};
+}
 
 /* A consumer that uses the binding interface to consume a metadata object */
 class AnalysisConsumer implements IConsumer {
@@ -133,8 +133,8 @@ class AnalysisConsumer implements IConsumer {
     version: string = null;
     changeTo: string = null;
     message: string = null;
-    vulnerabilityCount: number = 0;
-    advisoryCount: number = 0;
+    vulnerabilityCount = 0;
+    advisoryCount = 0;
     exploitCount: number | null;
     highestSeverity: string = null;
     constructor(public config: any) { }
@@ -170,7 +170,7 @@ class AnalysisConsumer implements IConsumer {
         }
         return this.item != null;
     }
-};
+}
 
 /* Report CVEs in found dependencies */
 class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
@@ -202,8 +202,8 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
             return [];
         }
     }
-};
+}
 
-let codeActionsMap = new Map<string, CodeAction>();
+const codeActionsMap = new Map<string, CodeAction>();
 
 export { DiagnosticsPipeline, SecurityEngine, codeActionsMap };

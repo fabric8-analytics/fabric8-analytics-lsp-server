@@ -34,7 +34,7 @@ enum EventStream {
   Invalid,
   Diagnostics,
   CodeLens
-};
+}
 
 let connection: IConnection = null;
 /* use stdio for transfer if applicable */
@@ -43,7 +43,7 @@ if (process.argv.indexOf('--stdio') == -1)
 else
     {connection = createConnection();}
 
-let documents: TextDocuments = new TextDocuments();
+const documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
 
 let workspaceRoot: string;
@@ -59,27 +59,27 @@ connection.onInitialize((params): InitializeResult => {
 
 interface IFileHandlerCallback {
     (uri: string, name: string, contents: string): void
-};
+}
 
 interface IAnalysisFileHandler {
     matcher:  RegExp
     stream: EventStream
     callback: IFileHandlerCallback
-};
+}
 
 interface IAnalysisFiles {
     handlers: Array<IAnalysisFileHandler>
     file_data: Map<string, string>
     on(stream: EventStream, matcher: string, cb: IFileHandlerCallback): IAnalysisFiles
     run(stream: EventStream, uri: string, file: string, contents: string): any
-};
+}
 
 class AnalysisFileHandler implements IAnalysisFileHandler {
     matcher: RegExp;
     constructor(matcher: string, public stream: EventStream, public callback: IFileHandlerCallback) {
         this.matcher = new RegExp(matcher);
     }
-};
+}
 
 class AnalysisFiles implements IAnalysisFiles {
     handlers: Array<IAnalysisFileHandler>;
@@ -93,13 +93,13 @@ class AnalysisFiles implements IAnalysisFiles {
         return this;
     }
     run(stream: EventStream, uri: string, file: string, contents: string): any {
-        for (let handler of this.handlers) {
+        for (const handler of this.handlers) {
             if (handler.stream == stream && handler.matcher.test(file)) {
                 return handler.callback(uri, file, contents);
             }
         }
     }
-};
+}
 
 interface IAnalysisLSPServer
 {
@@ -108,14 +108,14 @@ interface IAnalysisLSPServer
 
     handle_file_event(uri: string, contents: string): void
     handle_code_lens_event(uri: string): CodeLens[]
-};
+}
 
 class AnalysisLSPServer implements IAnalysisLSPServer {
     constructor(public connection: IConnection, public files: IAnalysisFiles) {}
 
     handle_file_event(uri: string, contents: string): void {
-        let path_name = url.parse(uri).pathname;
-        let file_name = path.basename(path_name);
+        const path_name = url.parse(uri).pathname;
+        const file_name = path.basename(path_name);
 
         this.files.file_data[uri] = contents;
 
@@ -123,13 +123,13 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
     }
 
     handle_code_lens_event(uri: string): CodeLens[] {
-        let path_name = url.parse(uri).pathname;
-        let file_name = path.basename(path_name);
-        let lenses = [];
-        let contents = this.files.file_data[uri];
+        const path_name = url.parse(uri).pathname;
+        const file_name = path.basename(path_name);
+        const lenses = [];
+        const contents = this.files.file_data[uri];
         return this.files.run(EventStream.CodeLens, uri, file_name, contents);
     }
-};
+}
 
 class AnalysisConfig
 {
@@ -153,14 +153,14 @@ class AnalysisConfig
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
         this.uuid = process.env.UUID || '';
     }
-};
+}
 
-let config: AnalysisConfig = new AnalysisConfig();
-let files: IAnalysisFiles = new AnalysisFiles();
-let server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
-let rc_file = path.join(config.home_dir, '.analysis_rc');
+const config: AnalysisConfig = new AnalysisConfig();
+const files: IAnalysisFiles = new AnalysisFiles();
+const server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
+const rc_file = path.join(config.home_dir, '.analysis_rc');
 if (fs.existsSync(rc_file)) {
-    let rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
+    const rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
     if ('server' in rc) {
         config.server_url = `${rc.server}/api/v2`;
     }
@@ -174,7 +174,7 @@ const fullStackReportAction: CodeAction = {
   }
 };
 
-let DiagnosticsEngines = [SecurityEngine];
+const DiagnosticsEngines = [SecurityEngine];
 
 /* Generate summarized notification message for vulnerability analysis */
 const getCAmsg = (deps, diagnostics, totalCount): string => {
@@ -236,16 +236,16 @@ const fetchVulnerabilities = async (reqData) => {
 
 /* Total Counts of #Known Security Vulnerability and #Security Advisory */
 class TotalCount {
-    vulnerabilityCount: number = 0;
-    advisoryCount: number = 0;
-    exploitCount: number = 0;
-};
+    vulnerabilityCount = 0;
+    advisoryCount = 0;
+    exploitCount = 0;
+}
 
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
 function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, dependencyMap, totalCount) {
     response.forEach(r => {
         const dependency = dependencyMap.get(r.package + r.version);
-        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
+        const pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(r);
         for (const item of pipeline.items) {
             const secEng = item as SecurityEngine;
@@ -259,7 +259,7 @@ function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePat
 
 /* Slice payload in each chunk size of @batchSize */
 function slicePayload(payload, batchSize, ecosystem): any {
-    let reqData = [];
+    const reqData = [];
     for (let i = 0; i < payload.length; i += batchSize) {
         reqData.push({
             'ecosystem': ecosystem,
@@ -295,8 +295,8 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const requestPayload = validPackages.map(d => ({'package': d.name.value, 'version': d.version.value}));
     const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
     const batchSize = 10;
-    let diagnostics = [];
-    let totalCount = new TotalCount();
+    const diagnostics = [];
+    const totalCount = new TotalCount();
     const start = new Date().getTime();
     const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request =>
         fetchVulnerabilities(request).then(response =>
@@ -345,10 +345,10 @@ connection.onDidOpenTextDocument((params) => {
 
 connection.onCodeAction((params, token): CodeAction[] => {
     clearTimeout(checkDelay);
-    let codeActions: CodeAction[] = [];
-    let hasAnalyticsDiagonostic: boolean = false;
-    for (let diagnostic of params.context.diagnostics) {
-        let codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
+    const codeActions: CodeAction[] = [];
+    let hasAnalyticsDiagonostic = false;
+    for (const diagnostic of params.context.diagnostics) {
+        const codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
         if (codeAction != null) {
             codeActions.push(codeAction);
    

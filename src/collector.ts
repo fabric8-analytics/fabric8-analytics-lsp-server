@@ -90,7 +90,7 @@ class ReqDependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ['dependencies']) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
-        let parser = new NaivePyParser(contents);
+        const parser = new NaivePyParser(contents);
         return parser.parse();
     }
 
@@ -155,7 +155,7 @@ class GomodDependencyCollector implements IDependencyCollector {
     }
 
     async collect(contents: string): Promise<Array<IDependency>> {
-        let promiseExec = new Promise<Set<string>>((resolve, reject) => {
+        const promiseExec = new Promise<Set<string>>((resolve, reject) => {
             const vscodeRootpath = this.manifestFile.replace('file://', '').replace('/go.mod', '');
             exec('go list -f \'{{ join .Imports "\\n" }}\' ./...',
                    { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
@@ -167,7 +167,7 @@ class GomodDependencyCollector implements IDependencyCollector {
             });
         });
         const goImports: Set<string> = await promiseExec;
-        let parser = new NaiveGomodParser(contents, goImports);
+        const parser = new NaiveGomodParser(contents, goImports);
         return parser.parse();
     }
 
@@ -182,24 +182,24 @@ class NaivePomXmlSaxParser {
     stream: Stream;
     parser: Xml2Object;
     dependencies: Array<IDependency> = [];
-    isDependency: boolean = false;
-    versionStartLine: number = 0;
-    versionStartColumn: number = 0;
+    isDependency = false;
+    versionStartLine = 0;
+    versionStartColumn = 0;
 
     createParser(): Xml2Object {
-        let parser = new Xml2Object([ 'dependency' ], {strict: true, trackPosition: true});
-        let deps = this.dependencies;
+        const parser = new Xml2Object([ 'dependency' ], {strict: true, trackPosition: true});
+        const deps = this.dependencies;
         let versionLine = this.versionStartLine;
         let versionColumn = this.versionStartColumn;
 
         parser.on('object', function (name, obj) {
             if (obj.hasOwnProperty('groupId') && obj.hasOwnProperty('artifactId') && obj.hasOwnProperty('version') && 
                 (!obj.hasOwnProperty('scope') || (obj.hasOwnProperty('scope') && obj['scope'] !== 'test'))) {
-                let ga = `${obj['groupId']}:${obj['artifactId']}`;
-                let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
+                const ga = `${obj['groupId']}:${obj['artifactId']}`;
+                const entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
                 entry.value = new Variant(ValueType.String, obj['version']);
                 entry.value_position = {line: versionLine, column: versionColumn};
-                let dep: IDependency = new Dependency(entry);
+                const dep: IDependency = new Dependency(entry);
                 deps.push(dep);
             }
         });
@@ -245,7 +245,7 @@ class PomXmlDependencyCollector implements IDependencyCollector {
 
     async collect(contents: string): Promise<Array<IDependency>> {
         const file = stream_from_string(contents);
-        let parser = new NaivePomXmlSaxParser(file);
+        const parser = new NaivePomXmlSaxParser(file);
         let dependencies;
          await parser.parse().then(data => {
             dependencies = data;
@@ -263,7 +263,7 @@ class PackageJsonCollector implements IDependencyCollector {
               filter(c => this.classes.includes(c.key.value)).
               flatMap(c => c.value.children).
               map(c => {
-                  let entry: IKeyValueEntry = new KeyValueEntry(c.key.value, {line: c.key.loc.start.line, column: c.key.loc.start.column + 1});
+                  const entry: IKeyValueEntry = new KeyValueEntry(c.key.value, {line: c.key.loc.start.line, column: c.key.loc.start.column + 1});
                   entry.value = new Variant(ValueType.String, c.value.value);
                   entry.value_position = {line: c.value.loc.start.line, column: c.value.loc.start.column + 1};
                   return new Dependency(entry);
