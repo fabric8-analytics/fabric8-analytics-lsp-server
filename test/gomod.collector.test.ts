@@ -24,19 +24,19 @@ github.com/stretchr/testify`);
     expect(deps.length).equal(4);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
-      version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 4, column: 41 } },
+      version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 4, column: 41 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/davecgh/go-spew', position: { line: 0, column: 0 } },
-      version: { value: 'v1.1.1', position: { line: 5, column: 40 } },
+      version: { value: 'v1.1.1', position: { line: 5, column: 40 } }
     });
     expect(deps[2]).is.eql({
       name: { value: 'github.com/pmezard/go-difflib', position: { line: 0, column: 0 } },
-      version: { value: 'v1.0.0', position: { line: 6, column: 43 } },
+      version: { value: 'v1.0.0', position: { line: 6, column: 43 } }
     });
     expect(deps[3]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
-      version: { value: 'v1.2.2', position: { line: 7, column: 41 } },
+      version: { value: 'v1.2.2', position: { line: 7, column: 41 } }
     });
   });
 
@@ -58,15 +58,15 @@ github.com/stretchr/testify`);
     expect(deps.length).equal(3);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
-      version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 4, column: 41 } },
+      version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 4, column: 41 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/pmezard/go-difflib', position: { line: 0, column: 0 } },
-      version: { value: 'v1.0.0', position: { line: 6, column: 43 } },
+      version: { value: 'v1.0.0', position: { line: 6, column: 43 } }
     });
     expect(deps[2]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
-      version: { value: 'v1.2.2', position: { line: 7, column: 41 } },
+      version: { value: 'v1.2.2', position: { line: 7, column: 41 } }
     });
   });
 
@@ -89,11 +89,11 @@ github.com/stretchr/testify`);
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
-      version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 6, column: 41 } },
+      version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 6, column: 41 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
-      version: { value: 'v1.2.2', position: { line: 8, column: 41 } },
+      version: { value: 'v1.2.2', position: { line: 8, column: 41 } }
     });
   });
 
@@ -115,19 +115,19 @@ github.com/stretchr/testify`);
     expect(deps.length).equal(4);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
-      version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 4, column: 44 } },
+      version: { value: 'v0.0.0-20151022065526-2efee857e7cf', position: { line: 4, column: 44 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/davecgh/go-spew', position: { line: 0, column: 0 } },
-      version: { value: 'v1.1.1', position: { line: 5, column: 49 } },
+      version: { value: 'v1.1.1', position: { line: 5, column: 49 } }
     });
     expect(deps[2]).is.eql({
       name: { value: 'github.com/pmezard/go-difflib', position: { line: 0, column: 0 } },
-      version: { value: 'v1.0.0', position: { line: 6, column: 51 } },
+      version: { value: 'v1.0.0', position: { line: 6, column: 51 } }
     });
     expect(deps[3]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
-      version: { value: 'v1.2.2', position: { line: 7, column: 45 } },
+      version: { value: 'v1.2.2', position: { line: 7, column: 45 } }
     });
   });
 
@@ -159,35 +159,35 @@ github.com/btcsuite/btcd`);
     expect(deps.length).equal(8);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
-      version: { value: 'v0.1.3-alpha', position: { line: 5, column: 39 } },
+      version: { value: 'v0.1.3-alpha', position: { line: 5, column: 39 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/pierrec/lz4', position: { line: 0, column: 0 } },
-      version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } },
+      version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } }
     });
     expect(deps[2]).is.eql({
       name: { value: 'github.com/davecgh/go-spew', position: { line: 0, column: 0 } },
-      version: { value: 'v1.1.1+incompatible', position: { line: 7, column: 38 } },
+      version: { value: 'v1.1.1+incompatible', position: { line: 7, column: 38 } }
     });
     expect(deps[3]).is.eql({
       name: { value: 'github.com/pmezard/go-difflib', position: { line: 0, column: 0 } },
-      version: { value: 'v1.3.0+version', position: { line: 8, column: 41 } },
+      version: { value: 'v1.3.0+version', position: { line: 8, column: 41 } }
     });
     expect(deps[4]).is.eql({
       name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
-      version: { value: 'v1.2.2+incompatible-version', position: { line: 9, column: 39 } },
+      version: { value: 'v1.2.2+incompatible-version', position: { line: 9, column: 39 } }
     });
     expect(deps[5]).is.eql({
       name: { value: 'github.com/regen-network/protobuf', position: { line: 0, column: 0 } },
-      version: { value: 'v1.3.2-alpha.regen.4', position: { line: 10, column: 45 } },
+      version: { value: 'v1.3.2-alpha.regen.4', position: { line: 10, column: 45 } }
     });
     expect(deps[6]).is.eql({
       name: { value: 'github.com/vmihailenco/msgpack/v5', position: { line: 0, column: 0 } },
-      version: { value: 'v5.0.0-beta.1', position: { line: 11, column: 45 } },
+      version: { value: 'v5.0.0-beta.1', position: { line: 11, column: 45 } }
     });
     expect(deps[7]).is.eql({
       name: { value: 'github.com/btcsuite/btcd', position: { line: 0, column: 0 } },
-      version: { value: 'v0.20.1-beta', position: { line: 12, column: 36 } },
+      version: { value: 'v0.20.1-beta', position: { line: 12, column: 36 } }
     });
   });
 
@@ -210,11 +210,11 @@ github.com/pierrec/lz4`);
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
-      version: { value: 'v0.1.3-alpha', position: { line: 5, column: 39 } },
+      version: { value: 'v0.1.3-alpha', position: { line: 5, column: 39 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/pierrec/lz4', position: { line: 0, column: 0 } },
-      version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } },
+      version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } }
     });
   });
 
@@ -234,11 +234,11 @@ github.com/pierrec/lz4`);
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
-      version: { value: 'v0.1.3-alpha', position: { line: 5, column: 39 } },
+      version: { value: 'v0.1.3-alpha', position: { line: 5, column: 39 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/pierrec/lz4', position: { line: 0, column: 0 } },
-      version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } },
+      version: { value: 'v2.5.2-alpha+incompatible', position: { line: 6, column: 34 } }
     });
   });
 
@@ -259,11 +259,11 @@ github.com/google/go-cmp/cmp/cmpopts`);
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/google/go-cmp/cmp@github.com/google/go-cmp', position: { line: 0, column: 0 } },
-      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/google/go-cmp/cmp/cmpopts@github.com/google/go-cmp', position: { line: 0, column: 0 } },
-      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
   });
 
@@ -284,15 +284,15 @@ github.com/google/go-cmp/cmp/cmpopts`);
     expect(deps.length).equal(3);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/google/go-cmp/cmp@github.com/google/go-cmp', position: { line: 0, column: 0 } },
-      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/google/go-cmp/cmp/version@github.com/google/go-cmp', position: { line: 0, column: 0 } },
-      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
     expect(deps[2]).is.eql({
       name: { value: 'github.com/google/go-cmp/cmp/cmpopts@github.com/google/go-cmp', position: { line: 0, column: 0 } },
-      version: { value: 'v0.5.2', position: { line: 6, column: 40 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
   });
 
@@ -315,11 +315,11 @@ github.com/googleapis/gax-go/v2`);
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
-      version: { value: 'v1.0.3', position: { line: 7, column: 38 } },
+      version: { value: 'v1.0.3', position: { line: 7, column: 38 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/googleapis/gax-go/v2', position: { line: 0, column: 0 } },
-      version: { value: 'v2.0.5', position: { line: 8, column: 41 } },
+      version: { value: 'v2.0.5', position: { line: 8, column: 41 } }
     });
   });
 
@@ -342,11 +342,11 @@ github.com/googleapis/gax-go/v2`);
     expect(deps.length).equal(2);
     expect(deps[0]).is.eql({
       name: { value: 'github.com/googleapis/gax-go/abc@github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
-      version: { value: 'v1.0.3', position: { line: 7, column: 38 } },
+      version: { value: 'v1.0.3', position: { line: 7, column: 38 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/googleapis/gax-go/v2', position: { line: 0, column: 0 } },
-      version: { value: 'v2.0.5', position: { line: 8, column: 41 } },
+      version: { value: 'v2.0.5', position: { line: 8, column: 41 } }
     });
   });
 });

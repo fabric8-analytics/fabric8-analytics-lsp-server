@@ -138,7 +138,7 @@ class NaiveGomodParser {
             let moduleMatchDep: Dependency = null;
             goModDeps.forEach(goModDep => {
                 if (importStatement == goModDep.name.value) {
-                    // Software stack uses module
+                    // Stack uses module directly
                     exactMatchDep = goModDep;
                     dependencies.push(goModDep);
                 } else if (importStatement.startsWith(goModDep.name.value + "/")) {
@@ -152,7 +152,7 @@ class NaiveGomodParser {
             });
 
             if (exactMatchDep == null && moduleMatchDep != null) {
-                // Software stack uses a package from a module
+                // Stack uses a package from a module
                 const entry: IKeyValueEntry = new KeyValueEntry(importStatement + '@' + moduleMatchDep.name.value, moduleMatchDep.name.position);
                 entry.value = new Variant(ValueType.String, moduleMatchDep.version.value);
                 entry.value_position = moduleMatchDep.version.position;
@@ -296,4 +296,4 @@ class PackageJsonCollector implements IDependencyCollector {
     }
 }
 
-export { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, Dependency, IDependency };
+export { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };

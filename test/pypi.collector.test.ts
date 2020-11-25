@@ -13,19 +13,19 @@ describe('PyPi requirements.txt parser test', () => {
         expect(deps.length).equal(4);
         expect(deps[0]).is.eql({
           name: {value: 'a', position: {line: 0, column: 0}},
-          version: {value: '1', position: {line: 1, column: 4}},
+          version: {value: '1', position: {line: 1, column: 4}}
         });
         expect(deps[1]).is.eql({
           name: {value: 'b', position: {line: 0, column: 0}},
-          version: {value: '2.1.1', position: {line: 2, column: 16}},
+          version: {value: '2.1.1', position: {line: 2, column: 16}}
         });
         expect(deps[2]).is.eql({
           name: {value: 'c', position: {line: 0, column: 0}},
-          version: {value: '10.1', position: {line: 3, column: 16}},
+          version: {value: '10.1', position: {line: 3, column: 16}}
         });
         expect(deps[3]).is.eql({
           name: {value: 'd', position: {line: 0, column: 0}},
-          version: {value: '20.1.2.3.4.5.6.7.8', position: {line: 4, column: 16}},
+          version: {value: '20.1.2.3.4.5.6.7.8', position: {line: 4, column: 16}}
         });
     });
 
@@ -40,15 +40,15 @@ describe('PyPi requirements.txt parser test', () => {
         expect(deps.length).equal(3);
         expect(deps[0]).is.eql({
           name: {value: 'a', position: {line: 0, column: 0}},
-          version: {value: '1', position: {line: 2, column: 16}},
+          version: {value: '1', position: {line: 2, column: 16}}
         });
         expect(deps[1]).is.eql({
           name: {value: 'c', position: {line: 0, column: 0}},
-          version: {value: '', position: {line: 4, column: 1}}, // column shouldn't matter for empty versions
+          version: {value: '', position: {line: 4, column: 1}} // column shouldn't matter for empty versions
         });
         expect(deps[2]).is.eql({
           name: {value: 'd', position: {line: 0, column: 0}},
-          version: {value: '20.1.2.3.4.5.6.7.8', position: {line: 5, column: 16}},
+          version: {value: '20.1.2.3.4.5.6.7.8', position: {line: 5, column: 16}}
         });
     });
 
@@ -61,7 +61,7 @@ describe('PyPi requirements.txt parser test', () => {
         expect(deps.length).equal(1);
         expect(deps[0]).is.eql({
           name: {value: 'a', position: {line: 0, column: 0}},
-          version: {value: '1', position: {line: 3, column: 16}},
+          version: {value: '1', position: {line: 3, column: 16}}
         });
     });
 
@@ -75,11 +75,11 @@ describe('PyPi requirements.txt parser test', () => {
         expect(deps.length).equal(2);
         expect(deps[0]).is.eql({
           name: {value: 'a', position: {line: 0, column: 0}},
-          version: {value: '1', position: {line: 2, column: 24}},
+          version: {value: '1', position: {line: 2, column: 24}}
         });
         expect(deps[1]).is.eql({
           name: {value: 'b', position: {line: 0, column: 0}},
-          version: {value: '10.1', position: {line: 4, column: 35}},
+          version: {value: '10.1', position: {line: 4, column: 35}}
         });
     });
 });

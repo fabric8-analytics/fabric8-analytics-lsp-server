@@ -17,11 +17,11 @@ const dummyRange: Range = {
 describe('Noop vulnerability aggregator tests', () => {
 
     it('Test noop aggregator with one vulnerability', async () => {
-        let pckg = new Vulnerability("github.com/abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
+        let pckg = new Vulnerability("abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
         let noopVulnerabilityAggregator = new NoopVulnerabilityAggregator();
         pckg = noopVulnerabilityAggregator.aggregate(pckg);
 
-        const msg = "github.com/abc: 1.4.3\nKnown security vulnerability: 2\nSecurity advisory: 1\nExploits: 1\nHighest severity: high\nRecommendation: 2.3.1";
+        const msg = "abc: 1.4.3\nKnown security vulnerability: 2\nSecurity advisory: 1\nExploits: 1\nHighest severity: high\nRecommendation: 2.3.1";
         let expectedDiagnostic: Diagnostic = {
             severity: DiagnosticSeverity.Error,
             range: dummyRange,
@@ -33,14 +33,14 @@ describe('Noop vulnerability aggregator tests', () => {
     });
 
     it('Test noop aggregator with two vulnerability', async () => {
-        let pckg1 = new Vulnerability("github.com/abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
+        let pckg1 = new Vulnerability("abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
         let noopVulnerabilityAggregator = new NoopVulnerabilityAggregator();
         var pckg = noopVulnerabilityAggregator.aggregate(pckg1);
 
-        let pckg2 = new Vulnerability("github.com/abc/pck@github.com/abc", "2.4.3", 1, 3, 2, 2, "low", "3.3.1", dummyRange);
+        let pckg2 = new Vulnerability("abc/pck", "2.4.3", 1, 3, 2, 2, "low", "3.3.1", dummyRange);
         pckg = noopVulnerabilityAggregator.aggregate(pckg2);
 
-        const msg = "github.com/abc/pck@github.com/abc: 2.4.3\nKnown security vulnerability: 3\nSecurity advisory: 2\nExploits: 2\nHighest severity: low\nRecommendation: 3.3.1";
+        const msg = "abc/pck: 2.4.3\nKnown security vulnerability: 3\nSecurity advisory: 2\nExploits: 2\nHighest severity: low\nRecommendation: 3.3.1";
         let expectedDiagnostic: Diagnostic = {
             severity: DiagnosticSeverity.Error,
             range: dummyRange,
