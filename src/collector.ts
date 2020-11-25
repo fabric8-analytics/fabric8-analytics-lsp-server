@@ -162,7 +162,7 @@ class GomodDependencyCollector implements IDependencyCollector {
                    { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
                     if (error.code == 127) { // Invalid command, go executable not found
-                        reject(`Unable to execute '${config.golang_executable}'`);
+                        reject(`Unable to locate '${config.golang_executable}'`);
                     } else {
                         reject(`Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to know more`);
                     }
