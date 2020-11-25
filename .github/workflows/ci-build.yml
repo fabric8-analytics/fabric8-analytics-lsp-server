@@ -25,6 +25,8 @@ jobs:
       run: npm install
     - name: Build
       run: npm run build
+    - name: Run the linter
+      run: npm run lint
     - name: Run the unit tests
       run: npm test -- --coverage
     - name: Upload coverage to Codecov
