@@ -1,5 +1,7 @@
 import { expect } from 'chai';
 import { GomodDependencyCollector } from '../src/collector';
+import { config } from '../src/config';
+
 const fake = require('fake-exec');
 
 describe('Golang go.mod parser test', () => {
@@ -243,7 +245,7 @@ github.com/pierrec/lz4`);
   });
 
   it('tests go.mod with a module in import', async () => {
-    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+    fake(`${config.golang_executable} list -f '{{ join .Imports "\\n" }}' ./...`, `fmt
 github.com/google/go-cmp/cmp
 fmt
 github.com/google/go-cmp/cmp
