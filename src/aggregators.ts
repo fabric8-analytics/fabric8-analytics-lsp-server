@@ -41,9 +41,8 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
 
         var existingVulnerabilityIndex = 0
         this.vulnerabilities.forEach((pckg, index) => {
-            // Module and package can come in any order due to parallel batch requests.
-            // Need handle use case (1) Module first followed by package and (2) Vulnerability first followed by module.
-            if (newVulnerability.name.startsWith(pckg.name + "/") || pckg.name.startsWith(newVulnerability.name + "/")) {
+            // Merge vulnerabilities for same modules.
+            if (this.getModuleName(newVulnerability.name) == this.getModuleName(pckg.name)) {
                 // Module / package exists, so aggregate the data and update Diagnostic message and code action.
                 this.mergeVulnerability(index, newVulnerability);
                 this.isNewVulnerability = false;
@@ -57,6 +56,11 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
         }
 
         return this.vulnerabilities[existingVulnerabilityIndex];
+    }
+
+    private getModuleName(vulnerabilityName: string): string {
+        const parts = vulnerabilityName.split('@');
+        return parts.length == 2 ? parts[1] : vulnerabilityName;
     }
 
     private mergeVulnerability(existingIndex: number, newVulnerability: Vulnerability) {

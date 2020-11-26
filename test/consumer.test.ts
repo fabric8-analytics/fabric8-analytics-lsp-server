@@ -140,7 +140,7 @@ describe('Response consumer test', () => {
 
         response = {
             "package_unknown": false,
-            "package": "github.com/abc/pkg/auth",
+            "package": "github.com/abc/pck1@github.com/abc",
             "version": "1.2.3",
             "recommended_versions": "2.6.4",
             "registration_link": "https://abc.io/login",
@@ -154,7 +154,7 @@ describe('Response consumer test', () => {
                     ]
                 }
             ],
-            "message": "github.com/abc/pkg/auth - 1.2.3 has 1 known security vulnerability and 1 security advisory with 1 exploitable vulnerability. Recommendation: use version 2.3.4. ",
+            "message": "github.com/abc/pck1 - 1.2.3 has 1 known security vulnerability and 1 security advisory with 1 exploitable vulnerability. Recommendation: use version 2.3.4. ",
             "highest_severity": "high",
             "known_security_vulnerability_count": 3,
             "security_advisory_count": 2,

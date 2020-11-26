@@ -48,7 +48,7 @@ class Dependency implements IDependency {
     this.version = {
         value: dependency.value.object,
         position: dependency.value_position
-    }
+    };
   }
 }
 
@@ -105,7 +105,7 @@ class NaiveGomodParser {
     dependencies: Array<IDependency>;
 
     static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
-        return contents.split("\n").reduce((dependencies, line, index) => {
+        let goModDeps = contents.split("\n").reduce((dependencies, line, index) => {
             // Ignore "replace" lines
             if (!line.includes("=>")) {
                 // skip any text after '//'
@@ -126,21 +126,43 @@ class NaiveGomodParser {
                         entry.value = new Variant(ValueType.String, 'v' + version[0]);
                         entry.value_position = { line: index + 1, column: version.index };
                         dependencies.push(new Dependency(entry));
-
-                        // Find packages of this module.
-                        goImports.forEach(pckg => {
-                            if (pckg != pkgName && pckg.startsWith(pkgName + "/")) {
-                                const entry: IKeyValueEntry = new KeyValueEntry(pckg, { line: 0, column: 0 });
-                                entry.value = new Variant(ValueType.String, 'v' + version[0]);
-                                entry.value_position = { line: index + 1, column: version.index };
-                                dependencies.push(new Dependency(entry));
-                            }
-                        })
                     }
                 }
             }
             return dependencies;
         }, []);
+
+        let dependencies = []
+        goImports.forEach(importStatement => {
+            let exactMatchDep: Dependency = null;
+            let moduleMatchDep: Dependency = null;
+            goModDeps.forEach(goModDep => {
+                if (importStatement == goModDep.name.value) {
+                    // Software stack uses the module
+                    exactMatchDep = goModDep;
+                } else if (importStatement.startsWith(goModDep.name.value + "/")) {
+                    // Find longest module name that matches the import statement
+                    if (moduleMatchDep == null) {
+                        moduleMatchDep = goModDep;
+                    } else if (moduleMatchDep.name.value.length < goModDep.name.value.length) {
+                        moduleMatchDep = goModDep;
+                    }
+                }
+            });
+
+            if (exactMatchDep) {
+                // Software stack uses the module
+                dependencies.push(exactMatchDep);
+            } else if (moduleMatchDep != null) {
+                // Software stack uses a package from the module
+                const entry: IKeyValueEntry = new KeyValueEntry(importStatement + '@' + moduleMatchDep.name.value, moduleMatchDep.name.position);
+                entry.value = new Variant(ValueType.String, moduleMatchDep.version.value);
+                entry.value_position = moduleMatchDep.version.position;
+                dependencies.push(new Dependency(entry));
+            }
+        });
+
+        return dependencies;
     }
 
     parse(): Array<IDependency> {
