@@ -351,4 +351,37 @@ github.com/googleapis/gax-go/v2`);
       version: { value: 'v2.0.5', position: { line: 8, column: 41 } }
     });
   });
+
+  it('tests go.mod with more module then imports in source', async () => {
+    fake(`go list -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+github.com/googleapis/gax-go/abc
+github.com/alecthomas/units`);
+
+    const deps = await collector.collect(`
+      module test/data/sample1
+
+      go 1.15
+
+      require (
+        github.com/googleapis/gax-go v1.0.3
+        github.com/google/go-cmp v0.5.2
+        github.com/googleapis/gax-go/v2 v2.0.5
+        github.com/alecthomas/units v0.1.3-alpha
+        github.com/pierrec/lz4 v2.5.2-alpha+incompatible
+        github.com/davecgh/go-spew v1.1.1+incompatible
+        github.com/pmezard/go-difflib v1.3.0+version
+        github.com/stretchr/testify v1.2.2+incompatible-version
+        github.com/regen-network/protobuf v1.3.2-alpha.regen.4
+      )
+    `);
+    expect(deps.length).equal(2);
+    expect(deps[0]).is.eql({
+      name: { value: 'github.com/googleapis/gax-go/abc@github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
+      version: { value: 'v1.0.3', position: { line: 7, column: 38 } }
+    });
+    expect(deps[1]).is.eql({
+      name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
+      version: { value: 'v0.1.3-alpha', position: { line: 10, column: 37 } }
+    });
+  });
 });
