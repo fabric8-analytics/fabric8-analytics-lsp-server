@@ -15,8 +15,10 @@ import { exec } from 'child_process';
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
  * At the moment, using regex directly to extract version information without 'v' prefix. */
 //import semverRegex = require('semver-regex');
-const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig
-
+function semVerRegExp(line: string): RegExpExecArray {
+    const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig
+    return regExp.exec(line);
+}
 
 /* String value with position */
 interface IPositionedString {
@@ -104,18 +106,54 @@ class NaiveGomodParser {
 
     dependencies: Array<IDependency>;
 
+    static getReplaceMap(line: string, index: number): any{
+        // split the replace statements by '=>'
+        const parts: Array<string> = line.replace('replace', '').replace('(', '').replace(')', '').trim().split('=>');
+        const replaceWithVersion = semVerRegExp(parts[1]);
+
+        // Skip lines without final version string
+        if (replaceWithVersion && replaceWithVersion.length > 0) {
+            const replaceTo: Array<string> = (parts[0] || '').trim().split(' ');
+            const replaceToVersion = semVerRegExp(replaceTo[1]);
+            const replaceWith: Array<string> = (parts[1] || '').trim().split(' ');
+            const replaceWithIndex = line.lastIndexOf(parts[1]);
+            const replaceEntry: IKeyValueEntry = new KeyValueEntry(replaceWith[0].trim(), { line: 0, column: 0 });
+            replaceEntry.value = new Variant(ValueType.String, 'v' + replaceWithVersion[0]);
+            replaceEntry.value_position = { line: index + 1, column: (replaceWithIndex + replaceWithVersion.index) };
+            const replaceDependency = new Dependency(replaceEntry);
+            const isReplaceToVersion: boolean = replaceToVersion && replaceToVersion.length > 0;
+            return {key: replaceTo[0].trim() + (isReplaceToVersion ? ('@v' + replaceToVersion[0]) : ''), value: replaceDependency};
+        }
+        return null;
+    }
+
+    static  applyReplaceMap(dep: IDependency, replaceMap: Map<string, IDependency>): IDependency {
+        let replaceDependency = replaceMap.get(dep.name.value + "@" + dep.version.value);
+        if (replaceDependency === undefined) {
+            replaceDependency = replaceMap.get(dep.name.value);
+            if(replaceDependency === undefined) {
+                return dep;
+            }
+        }
+        return replaceDependency;
+    }
+
     static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
+        let replaceMap = new Map<string, IDependency>();
         let goModDeps = contents.split("\n").reduce((dependencies, line, index) => {
-            // Ignore "replace" lines
-            if (!line.includes("=>")) {
-                // skip any text after '//'
-                if (line.includes("//")) {
-                    line = line.split("//")[0];
+            // skip any text after '//'
+            if (line.includes("//")) {
+                line = line.split("//")[0];
+            }
+            if (line.includes("=>")) {
+                let replaceEntry = NaiveGomodParser.getReplaceMap(line, index);
+                if (replaceEntry) {
+                    replaceMap.set(replaceEntry.key, replaceEntry.value);
                 }
+            } else {
                 // Not using semver directly, look at comment on import statement.
                 //const version = semverRegex().exec(line)
-                regExp.lastIndex = 0;
-                const version = regExp.exec(line);
+                const version = semVerRegExp(line);
                 // Skip lines without version string
                 if (version && version.length > 0) {
                     const parts: Array<string> = line.replace('require', '').replace('(', '').replace(')', '').trim().split(' ');
@@ -133,7 +171,8 @@ class NaiveGomodParser {
             return dependencies;
         }, []);
 
-        let goPackageDeps = []
+        let goPackageDeps = [];
+
         goImports.forEach(importStatement => {
             let exactMatchDep: Dependency = null;
             let moduleMatchDep: Dependency = null;
@@ -153,12 +192,18 @@ class NaiveGomodParser {
 
             if (exactMatchDep == null && moduleMatchDep != null) {
                 // Software stack uses a package from the module
-                const entry: IKeyValueEntry = new KeyValueEntry(importStatement + '@' + moduleMatchDep.name.value, moduleMatchDep.name.position);
-                entry.value = new Variant(ValueType.String, moduleMatchDep.version.value);
-                entry.value_position = moduleMatchDep.version.position;
+                let replaceDependency = NaiveGomodParser.applyReplaceMap(moduleMatchDep, replaceMap);
+                if (replaceDependency !== moduleMatchDep) {
+                    importStatement = importStatement.replace(moduleMatchDep.name.value, replaceDependency.name.value);
+                }
+                const entry: IKeyValueEntry = new KeyValueEntry(importStatement + '@' + replaceDependency.name.value, replaceDependency.name.position);
+                entry.value = new Variant(ValueType.String, replaceDependency.version.value);
+                entry.value_position = replaceDependency.version.position;
                 goPackageDeps.push(new Dependency(entry));
             }
         });
+
+        goModDeps = goModDeps.map(goModDep => NaiveGomodParser.applyReplaceMap(goModDep, replaceMap));
 
         // Return modules present in go.mod and packages used in imports.
         return [...goModDeps, ...goPackageDeps];
