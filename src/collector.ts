@@ -138,9 +138,8 @@ class NaiveGomodParser {
             let moduleMatchDep: Dependency = null;
             goModDeps.forEach(goModDep => {
                 if (importStatement == goModDep.name.value) {
-                    // Stack uses module directly
+                    // Software stack uses the module
                     exactMatchDep = goModDep;
-                    dependencies.push(goModDep);
                 } else if (importStatement.startsWith(goModDep.name.value + "/")) {
                     // Find longest module name that matches the import statement
                     if (moduleMatchDep == null) {
@@ -151,8 +150,11 @@ class NaiveGomodParser {
                 }
             });
 
-            if (exactMatchDep == null && moduleMatchDep != null) {
-                // Stack uses a package from a module
+            if (exactMatchDep) {
+                // Software stack uses the module
+                dependencies.push(exactMatchDep);
+            } else if (moduleMatchDep != null) {
+                // Software stack uses a package from the module
                 const entry: IKeyValueEntry = new KeyValueEntry(importStatement + '@' + moduleMatchDep.name.value, moduleMatchDep.name.position);
                 entry.value = new Variant(ValueType.String, moduleMatchDep.version.value);
                 entry.value_position = moduleMatchDep.version.position;
