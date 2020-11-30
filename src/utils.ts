@@ -7,6 +7,7 @@ import { Stream, Readable } from 'stream';
 import { IPosition } from './types';
 import { IPositionedString } from './collector';
 import { Position, Range } from 'vscode-languageserver';
+import { config } from './config';
 
 export let stream_from_string = (s: string): Stream => {
   let stream = new Readable();
@@ -49,4 +50,8 @@ export let to_lsp_position = (pos: IPosition): Position => {
 
 export let get_range = (ps: IPositionedString): Range => {
   return _get_range_che(ps);
+};
+
+export let get_golang_imports_cmd = (): string => {
+  return `${config.golang_executable} list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`;
 };

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { GomodDependencyCollector } from '../src/collector';
-import { config } from '../src/config';
+import { get_golang_imports_cmd } from '../src/utils';
 
 const fake = require('fake-exec');
 
@@ -9,7 +9,7 @@ describe('Golang go.mod parser test', () => {
   const collector: GomodDependencyCollector = new GomodDependencyCollector(fakeSourceRoot);
 
   it('tests valid go.mod', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+    fake(get_golang_imports_cmd(), `github.com/alecthomas/units
 github.com/davecgh/go-spew
 github.com/pmezard/go-difflib
 github.com/stretchr/testify`);
@@ -43,7 +43,7 @@ github.com/stretchr/testify`);
   });
 
   it('tests go.mod with comments', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+    fake(get_golang_imports_cmd(), `github.com/alecthomas/units
 github.com/pmezard/go-difflib
 github.com/stretchr/testify`);
     const deps = await collector.collect(`// This is start point.
@@ -73,7 +73,7 @@ github.com/stretchr/testify`);
   });
 
   it('tests empty lines in go.mod', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+    fake(get_golang_imports_cmd(), `github.com/alecthomas/units
 github.com/stretchr/testify`);
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
@@ -100,7 +100,7 @@ github.com/stretchr/testify`);
   });
 
   it('tests deps with spaces before and after comparators', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+    fake(get_golang_imports_cmd(), `github.com/alecthomas/units
 github.com/davecgh/go-spew
 github.com/pmezard/go-difflib
 github.com/stretchr/testify`);
@@ -134,7 +134,7 @@ github.com/stretchr/testify`);
   });
 
   it('tests alpha beta and extra for version in go.mod', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+    fake(get_golang_imports_cmd(), `github.com/alecthomas/units
 github.com/pierrec/lz4
 github.com/davecgh/go-spew
 github.com/pmezard/go-difflib
@@ -194,7 +194,7 @@ github.com/btcsuite/btcd`);
   });
 
   it('tests replace statements in go.mod', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+    fake(get_golang_imports_cmd(), `github.com/alecthomas/units
 github.com/pierrec/lz4`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
@@ -221,7 +221,7 @@ github.com/pierrec/lz4`);
   });
 
   it('tests single line replace statement in go.mod', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `github.com/alecthomas/units
+    fake(get_golang_imports_cmd(), `github.com/alecthomas/units
 github.com/pierrec/lz4`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
@@ -245,7 +245,7 @@ github.com/pierrec/lz4`);
   });
 
   it('tests go.mod with a module in import', async () => {
-    fake(`${config.golang_executable} list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+    fake(get_golang_imports_cmd(), `fmt
 github.com/google/go-cmp/cmp
 fmt
 github.com/google/go-cmp/cmp
@@ -270,7 +270,7 @@ github.com/google/go-cmp/cmp/cmpopts`);
   });
 
   it('tests go.mod with a module and two package import', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+    fake(get_golang_imports_cmd(), `fmt
 github.com/google/go-cmp/cmp
 fmt
 github.com/google/go-cmp/cmp/version
@@ -299,7 +299,7 @@ github.com/google/go-cmp/cmp/cmpopts`);
   });
 
   it('tests go.mod with a module and package of different version', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+    fake(get_golang_imports_cmd(), `fmt
 github.com/googleapis/gax-go
 fmt
 github.com/googleapis/gax-go/v2`);
@@ -326,7 +326,7 @@ github.com/googleapis/gax-go/v2`);
   });
 
   it('tests go.mod with one more module and package of different version', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+    fake(get_golang_imports_cmd(), `fmt
 github.com/googleapis/gax-go/abc
 fmt
 github.com/googleapis/gax-go/v2`);
@@ -353,7 +353,7 @@ github.com/googleapis/gax-go/v2`);
   });
 
   it('tests go.mod with more module then imports in source', async () => {
-    fake(`go list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`, `fmt
+    fake(get_golang_imports_cmd(), `fmt
 github.com/googleapis/gax-go/abc
 github.com/alecthomas/units`);
 
