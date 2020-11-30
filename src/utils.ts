@@ -52,6 +52,6 @@ export let get_range = (ps: IPositionedString): Range => {
   return _get_range_che(ps);
 };
 
-export let get_golang_imports_cmd = (): string => {
+export let getGoLangImportsCmd = (): string => {
   return `${config.golang_executable} list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`;
 };

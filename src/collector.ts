@@ -7,7 +7,7 @@ import { Stream } from 'stream';
 import * as Xml2Object from 'xml2object';
 import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
-import { stream_from_string, get_golang_imports_cmd } from './utils';
+import { stream_from_string, getGoLangImportsCmd } from './utils';
 import { config } from './config';
 import { exec } from 'child_process';
 
@@ -180,7 +180,7 @@ class GomodDependencyCollector implements IDependencyCollector {
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
             const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
-            exec(get_golang_imports_cmd(),
+            exec(getGoLangImportsCmd(),
                 { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
                     if (error.code == 127) { // Invalid command, go executable not found
