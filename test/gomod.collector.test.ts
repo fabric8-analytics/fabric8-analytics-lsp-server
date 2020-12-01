@@ -258,12 +258,16 @@ github.com/google/go-cmp/cmp/cmpopts`);
 
       require github.com/google/go-cmp v0.5.2
     `);
-    expect(deps.length).equal(2);
+    expect(deps.length).equal(3);
     expect(deps[0]).is.eql({
-      name: { value: 'github.com/google/go-cmp/cmp@github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
     expect(deps[1]).is.eql({
+      name: { value: 'github.com/google/go-cmp/cmp@github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
+    });
+    expect(deps[2]).is.eql({
       name: { value: 'github.com/google/go-cmp/cmp/cmpopts@github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
@@ -283,16 +287,20 @@ github.com/google/go-cmp/cmp/cmpopts`);
 
       require github.com/google/go-cmp v0.5.2
     `);
-    expect(deps.length).equal(3);
+    expect(deps.length).equal(4);
     expect(deps[0]).is.eql({
-      name: { value: 'github.com/google/go-cmp/cmp@github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
     expect(deps[1]).is.eql({
-      name: { value: 'github.com/google/go-cmp/cmp/version@github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/google/go-cmp/cmp@github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
     expect(deps[2]).is.eql({
+      name: { value: 'github.com/google/go-cmp/cmp/version@github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
+    });
+    expect(deps[3]).is.eql({
       name: { value: 'github.com/google/go-cmp/cmp/cmpopts@github.com/google/go-cmp', position: { line: 0, column: 0 } },
       version: { value: 'v0.5.2', position: { line: 6, column: 40 } }
     });
@@ -341,14 +349,18 @@ github.com/googleapis/gax-go/v2`);
         github.com/googleapis/gax-go/v2 v2.0.5
       )
     `);
-    expect(deps.length).equal(2);
+    expect(deps.length).equal(3);
     expect(deps[0]).is.eql({
-      name: { value: 'github.com/googleapis/gax-go/abc@github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
       version: { value: 'v1.0.3', position: { line: 7, column: 38 } }
     });
     expect(deps[1]).is.eql({
       name: { value: 'github.com/googleapis/gax-go/v2', position: { line: 0, column: 0 } },
       version: { value: 'v2.0.5', position: { line: 8, column: 41 } }
+    });
+    expect(deps[2]).is.eql({
+      name: { value: 'github.com/googleapis/gax-go/abc@github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
+      version: { value: 'v1.0.3', position: { line: 7, column: 38 } }
     });
   });
 
@@ -374,14 +386,46 @@ github.com/alecthomas/units`);
         github.com/regen-network/protobuf v1.3.2-alpha.regen.4
       )
     `);
-    expect(deps.length).equal(2);
+    expect(deps.length).equal(10);
     expect(deps[0]).is.eql({
-      name: { value: 'github.com/googleapis/gax-go/abc@github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
+      name: { value: 'github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
       version: { value: 'v1.0.3', position: { line: 7, column: 38 } }
     });
     expect(deps[1]).is.eql({
+      name: { value: 'github.com/google/go-cmp', position: { line: 0, column: 0 } },
+      version: { value: 'v0.5.2', position: { line: 8, column: 34 } }
+    });
+    expect(deps[2]).is.eql({
+      name: { value: 'github.com/googleapis/gax-go/v2', position: { line: 0, column: 0 } },
+      version: { value: 'v2.0.5', position: { line: 9, column: 41 } }
+    });
+    expect(deps[3]).is.eql({
       name: { value: 'github.com/alecthomas/units', position: { line: 0, column: 0 } },
       version: { value: 'v0.1.3-alpha', position: { line: 10, column: 37 } }
+    });
+    expect(deps[4]).is.eql({
+      name: { value: 'github.com/pierrec/lz4', position: { line: 0, column: 0 } },
+      version: { value: 'v2.5.2-alpha+incompatible', position: { line: 11, column: 32 } }
+    });
+    expect(deps[5]).is.eql({
+      name: { value: 'github.com/davecgh/go-spew', position: { line: 0, column: 0 } },
+      version: { value: 'v1.1.1+incompatible', position: { line: 12, column: 36 } }
+    });
+    expect(deps[6]).is.eql({
+      name: { value: 'github.com/pmezard/go-difflib', position: { line: 0, column: 0 } },
+      version: { value: 'v1.3.0+version', position: { line: 13, column: 39 } }
+    });
+    expect(deps[7]).is.eql({
+      name: { value: 'github.com/stretchr/testify', position: { line: 0, column: 0 } },
+      version: { value: 'v1.2.2+incompatible-version', position: { line: 14, column: 37 } }
+    });
+    expect(deps[8]).is.eql({
+      name: { value: 'github.com/regen-network/protobuf', position: { line: 0, column: 0 } },
+      version: { value: 'v1.3.2-alpha.regen.4', position: { line: 15, column: 43 } }
+    });
+    expect(deps[9]).is.eql({
+      name: { value: 'github.com/googleapis/gax-go/abc@github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
+      version: { value: 'v1.0.3', position: { line: 7, column: 38 } }
     });
   });
 });

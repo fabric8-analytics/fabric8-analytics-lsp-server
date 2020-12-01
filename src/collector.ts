@@ -105,6 +105,7 @@ class NaiveGomodParser {
     dependencies: Array<IDependency>;
 
     static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
+        let finalDeps = []
         let goModDeps = contents.split("\n").reduce((dependencies, line, index) => {
             // Ignore "replace" lines
             if (!line.includes("=>")) {
@@ -125,14 +126,16 @@ class NaiveGomodParser {
                         const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                         entry.value = new Variant(ValueType.String, 'v' + version[0]);
                         entry.value_position = { line: index + 1, column: version.index };
-                        dependencies.push(new Dependency(entry));
+                        const dep = new Dependency(entry);
+                        dependencies.push(dep);
+                        // Push all direct and indirect modules present in go.mod (manifest) 
+                        finalDeps.push(dep);
                     }
                 }
             }
             return dependencies;
         }, []);
 
-        let dependencies = []
         goImports.forEach(importStatement => {
             let exactMatchDep: Dependency = null;
             let moduleMatchDep: Dependency = null;
@@ -150,19 +153,16 @@ class NaiveGomodParser {
                 }
             });
 
-            if (exactMatchDep) {
-                // Software stack uses the module
-                dependencies.push(exactMatchDep);
-            } else if (moduleMatchDep != null) {
+            if (exactMatchDep == null && moduleMatchDep != null) {
                 // Software stack uses a package from the module
                 const entry: IKeyValueEntry = new KeyValueEntry(importStatement + '@' + moduleMatchDep.name.value, moduleMatchDep.name.position);
                 entry.value = new Variant(ValueType.String, moduleMatchDep.version.value);
                 entry.value_position = moduleMatchDep.version.position;
-                dependencies.push(new Dependency(entry));
+                finalDeps.push(new Dependency(entry));
             }
         });
 
-        return dependencies;
+        return finalDeps;
     }
 
     parse(): Array<IDependency> {
