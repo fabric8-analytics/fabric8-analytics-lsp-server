@@ -160,6 +160,7 @@ class NaiveGomodParser {
             }
         });
 
+        // Return modules present in go.mod and packages used in imports.
         return [...goModDeps, ...goPackageDeps];
     }
 
