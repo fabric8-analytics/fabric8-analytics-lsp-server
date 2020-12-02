@@ -180,7 +180,7 @@ class GomodDependencyCollector implements IDependencyCollector {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
             const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
             exec(getGoLangImportsCmd(),
-                { cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
+                { shell :process.env["SHELL"], windowsHide: true, cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
                     if (error.code == 127) { // Invalid command, go executable not found
                         reject(`Unable to locate '${config.golang_executable}'`);
