@@ -230,7 +230,7 @@ const fetchVulnerabilities = async (reqData) => {
             return response.status;
         }
     } catch(err) {
-        connection.console.error(`Exception while fetch: ${err}`);
+        connection.console.warn(`Exception while fetch: ${err}`);
     }
 };
 
