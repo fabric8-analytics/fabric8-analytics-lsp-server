@@ -256,6 +256,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         if (ecosystem == "golang") {
             connection.console.error(`Command execution failed with error: ${error}`);
             connection.sendNotification('caError', {'data': error});
+            connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
             return;
         }
     }
