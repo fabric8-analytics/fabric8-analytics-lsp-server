@@ -247,7 +247,7 @@ function slicePayload(payload, batchSize, ecosystem): any {
 
 const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
-    connection.sendNotification('caNotification', {'data': caDefaultMsg});
+    connection.sendNotification('caNotification', {data: caDefaultMsg, done: false});
     let deps = null;
     try {
         deps = await collector.collect(contents);
@@ -281,8 +281,9 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
 
     await Promise.allSettled(allRequests);
     const end = new Date().getTime();
-    connection.console.log("Time taken to fetch vulnerabilities: " + ((end - start) / 1000).toFixed(1) + " sec.");
-    connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics, totalCount), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
+
+    connection.console.log('Time taken to fetch vulnerabilities: ' + ((end - start) / 1000).toFixed(1) + ' sec.');
+    connection.sendNotification('caNotification', {data: getCAmsg(deps, diagnostics, totalCount), diagCount : diagnostics.length || 0, vulnCount: totalCount, depCount: deps.length || 0, done: true});
 };
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
