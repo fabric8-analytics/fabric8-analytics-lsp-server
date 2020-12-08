@@ -323,7 +323,6 @@ connection.onDidOpenTextDocument((params) => {
 });
 
 connection.onCodeAction((params, token): CodeAction[] => {
-    clearTimeout(checkDelay);
     let codeActions: CodeAction[] = [];
     let hasAnalyticsDiagonostic: boolean = false;
     for (let diagnostic of params.context.diagnostics) {
