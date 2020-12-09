@@ -255,7 +255,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         // Error can be raised during golang `go list ` command only.
         if (ecosystem == "golang") {
             connection.console.error(`Command execution failed with error: ${error}`);
-            connection.sendNotification('caError', {'data': error});
+            connection.sendNotification('caError', {data: error, uri: diagnosticFilePath});
             connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
             return;
         }
