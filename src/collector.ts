@@ -4,7 +4,6 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { Stream } from 'stream';
-import * as Xml2Object from 'xml2object';
 import * as jsonAst from 'json-to-ast';
 import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
 import { stream_from_string, getGoLangImportsCmd } from './utils';
@@ -247,74 +246,6 @@ class GomodDependencyCollector implements IDependencyCollector {
 
 }
 
-class NaivePomXmlSaxParser {
-    constructor(stream: Stream) {
-        this.stream = stream;
-        this.parser = this.createParser();
-    }
-
-    stream: Stream;
-    parser: Xml2Object;
-    dependencies: Array<IDependency> = [];
-    isDependency: boolean = false;
-    isProperties: boolean = false;
-    versionStartLine: number = 0;
-    versionStartColumn: number = 0;
-
-    createParser(): Xml2Object {
-        let parser = new Xml2Object([ "dependency" ], {strict: true, trackPosition: true});
-        let deps = this.dependencies;
-        let versionLine = this.versionStartLine;
-        let versionColumn = this.versionStartColumn;
-
-        parser.on("object", (name, obj) => {
-            if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version") && 
-                (!obj.hasOwnProperty("scope") || (obj.hasOwnProperty("scope") && obj["scope"] != "test"))) {
-                let ga = `${obj["groupId"]}:${obj["artifactId"]}`;
-                let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
-                entry.value = new Variant(ValueType.String, obj["version"]);
-                entry.value_position = {line: versionLine, column: versionColumn};
-                let dep: IDependency = new Dependency(entry);
-                deps.push(dep)
-            }
-        });
-        parser.saxStream.on("opentag", (node) => {
-            if (node.name == "dependency") {
-                this.isDependency = true;
-            }
-            if (this.isDependency && node.name == "version") {
-                versionLine = parser.saxStream._parser.line + 1;
-                versionColumn = parser.saxStream._parser.column +1;
-            }
-        });
-        parser.saxStream.on("closetag", (nodeName) => {
-            // TODO: nested deps!
-            if (nodeName == "dependency") {
-                this.isDependency = false;
-            }
-        });
-        parser.on("error", () => {
-            // the XML document doesn't have to be well-formed, that's fine
-            parser.error = null;
-        });
-        parser.on("end", () => {
-            // the XML document doesn't have to be well-formed, that's fine
-            // parser.error = null;
-            this.dependencies = deps;
-        });
-        return parser
-    }
-
-    async parse(): Promise<Array<IDependency>> {
-        return new Promise(resolve => {
-            this.stream.pipe(this.parser.saxStream).on('end', (data) => {
-                resolve(this.dependencies);
-           });
-        });
-
-    }
-}
-
 class PomXmlDependencyCollector implements IDependencyCollector {
     private xmlDocAst: XMLDocument;
 
@@ -340,25 +271,28 @@ class PomXmlDependencyCollector implements IDependencyCollector {
     }
 
     private mapToDependency(dependenciesNode: XMLElement): Array<IDependency> {
-        // const deps: Array<IDependency> = [];
-        // const dependencies = dependenciesNode.
-        //     subElements.
-        //     filter(e => e.name === 'dependency').
-        //     filter(e => e.subElements.filter(e => e.name !== 'scope' || e.na )).
-        return null;
+        const dependencies = dependenciesNode?.
+            subElements.
+            filter(e => e.name === 'dependency').
+            filter(e => !e.subElements.find(e => (e.name == 'scope' && e.textContents?.[0].text == 'test'))).
+            map(e => {
+            const groupId = e.subElements.find(e => e.name == 'groupId');
+            const artifactId = e.subElements.find(e => e.name == 'artifactId');
+            const version = e.subElements.find(e => e.name == 'version');
+            let entry: IKeyValueEntry = new KeyValueEntry(`${groupId.textContents[0].text}:${artifactId.textContents[0].text}`, {line: 0, column: 0});
+            const versionVal = version.textContents[0];
+            entry.value = new Variant(ValueType.String, versionVal.text);
+            entry.value_position = {line: versionVal.position.startLine, column: versionVal.position.startColumn};
+            return new Dependency(entry);
+        });
+        return dependencies;
     }
 
     async collect(contents: string): Promise<Array<IDependency>> {
         this.parseXml(contents);
         const properties = this.findRootNodes("properties");
-        console.log(properties?.[0].subElements);
         const deps = this.findRootNodes("dependencies");
-        console.log(deps);
-
-        const file = stream_from_string(contents);
-        let parser = new NaivePomXmlSaxParser(file);
-        let dependencies = await parser.parse();
-        return dependencies;
+        return this.mapToDependency(deps[0]) || [];
     }
 }
 

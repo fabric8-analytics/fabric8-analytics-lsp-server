@@ -179,11 +179,18 @@ describe('Maven pom.xml parser test', () => {
                     <scope>test</scope>
                     <optional>true</optional>
                 </dependency>
+                <dependency>
+                    <groupId>c</groupId>
+                    <artifactId>ab-cd</artifactId>
+                    <version>2.3</version>
+                    <scope>com</scope>
+                    <optional>true</optional>
+                </dependency>
       
             </dependencies>
          </dependencyManagement>
          </project>
         `);
-        expect(deps.length).equal(0);
+        expect(deps.length).equal(1);
     });
 });
