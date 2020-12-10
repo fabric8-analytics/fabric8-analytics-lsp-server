@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { PomXmlDependencyCollector } from '../src/collector';
+import { PomXmlDependencyCollector } from '../src/maven.collector';
 import parse = require("@xml-tools/parser");
 
 describe('Maven pom.xml parser test', () => {

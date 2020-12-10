@@ -5,7 +5,7 @@
 'use strict';
 import { Stream } from 'stream';
 import * as jsonAst from 'json-to-ast';
-import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
+import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IPositionedString, IDependencyCollector, Dependency } from './types';
 import { stream_from_string, getGoLangImportsCmd } from './utils';
 import { config } from './config';
 import { exec } from 'child_process';
@@ -19,40 +19,6 @@ import { buildAst, accept, XMLElement, XMLDocument } from "@xml-tools/ast";
 function semVerRegExp(line: string): RegExpExecArray {
     const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig
     return regExp.exec(line);
-}
-
-/* String value with position */
-interface IPositionedString {
-  value:    string;
-  position: IPosition;
-}
-
-/* Dependency specification */
-interface IDependency {
-  name:    IPositionedString;
-  version: IPositionedString;
-}
-
-/* Dependency collector interface */
-interface IDependencyCollector {
-  classes: Array<string>;
-  collect(contents: string): Promise<Array<IDependency>>;
-}
-
-/* Dependency class that can be created from `IKeyValueEntry` */
-class Dependency implements IDependency {
-  name:    IPositionedString;
-  version: IPositionedString;
-  constructor(dependency: IKeyValueEntry) {
-    this.name = {
-        value: dependency.key,
-        position: dependency.key_position
-    };
-    this.version = {
-        value: dependency.value.object,
-        position: dependency.value_position
-    };
-  }
 }
 
 class NaivePyParser {
@@ -246,56 +212,6 @@ class GomodDependencyCollector implements IDependencyCollector {
 
 }
 
-class PomXmlDependencyCollector implements IDependencyCollector {
-    private xmlDocAst: XMLDocument;
-
-    constructor(public classes: Array<string> = ["dependencies"]) {}
-
-    private findRootNodes(rootElementName: string): Array<XMLElement> {
-        const properties: Array<XMLElement> = [];
-        const propertiesElement = {
-            // Will be invoked once for each Element node in the AST.
-            visitXMLElement: (node: XMLElement) => {
-                if (node.name === rootElementName) {
-                    properties.push(node);
-                }
-            },
-        };
-        accept(this.xmlDocAst, propertiesElement);
-        return properties;
-    }
-
-    private parseXml(contents: string): void {
-        const { cst, tokenVector } = parse(contents);
-        this.xmlDocAst = buildAst(cst as DocumentCstNode, tokenVector);
-    }
-
-    private mapToDependency(dependenciesNode: XMLElement): Array<IDependency> {
-        const dependencies = dependenciesNode?.
-            subElements.
-            filter(e => e.name === 'dependency').
-            filter(e => !e.subElements.find(e => (e.name == 'scope' && e.textContents?.[0].text == 'test'))).
-            map(e => {
-            const groupId = e.subElements.find(e => e.name == 'groupId');
-            const artifactId = e.subElements.find(e => e.name == 'artifactId');
-            const version = e.subElements.find(e => e.name == 'version');
-            let entry: IKeyValueEntry = new KeyValueEntry(`${groupId.textContents[0].text}:${artifactId.textContents[0].text}`, {line: 0, column: 0});
-            const versionVal = version.textContents[0];
-            entry.value = new Variant(ValueType.String, versionVal.text);
-            entry.value_position = {line: versionVal.position.startLine, column: versionVal.position.startColumn};
-            return new Dependency(entry);
-        });
-        return dependencies;
-    }
-
-    async collect(contents: string): Promise<Array<IDependency>> {
-        this.parseXml(contents);
-        const properties = this.findRootNodes("properties");
-        const deps = this.findRootNodes("dependencies");
-        return this.mapToDependency(deps[0]) || [];
-    }
-}
-
 class PackageJsonCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
@@ -313,4 +229,4 @@ class PackageJsonCollector implements IDependencyCollector {
     }
 }
 
-export { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };
+export { IDependencyCollector, PackageJsonCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };

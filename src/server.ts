@@ -8,7 +8,8 @@ import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
-import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
+import { IDependencyCollector, PackageJsonCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
+import { PomXmlDependencyCollector } from './maven.collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from './vulnerability';
