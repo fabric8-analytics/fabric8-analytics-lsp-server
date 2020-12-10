@@ -10,6 +10,8 @@ import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './
 import { stream_from_string, getGoLangImportsCmd } from './utils';
 import { config } from './config';
 import { exec } from 'child_process';
+import { parse, DocumentCstNode } from "@xml-tools/parser";
+import { buildAst, accept, XMLElement, XMLDocument } from "@xml-tools/ast";
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
@@ -255,6 +257,7 @@ class NaivePomXmlSaxParser {
     parser: Xml2Object;
     dependencies: Array<IDependency> = [];
     isDependency: boolean = false;
+    isProperties: boolean = false;
     versionStartLine: number = 0;
     versionStartColumn: number = 0;
 
@@ -264,7 +267,7 @@ class NaivePomXmlSaxParser {
         let versionLine = this.versionStartLine;
         let versionColumn = this.versionStartColumn;
 
-        parser.on("object", function (name, obj) {
+        parser.on("object", (name, obj) => {
             if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version") && 
                 (!obj.hasOwnProperty("scope") || (obj.hasOwnProperty("scope") && obj["scope"] != "test"))) {
                 let ga = `${obj["groupId"]}:${obj["artifactId"]}`;
@@ -275,7 +278,7 @@ class NaivePomXmlSaxParser {
                 deps.push(dep)
             }
         });
-        parser.saxStream.on("opentag", function (node) {
+        parser.saxStream.on("opentag", (node) => {
             if (node.name == "dependency") {
                 this.isDependency = true;
             }
@@ -284,17 +287,17 @@ class NaivePomXmlSaxParser {
                 versionColumn = parser.saxStream._parser.column +1;
             }
         });
-        parser.saxStream.on("closetag", function (nodeName) {
+        parser.saxStream.on("closetag", (nodeName) => {
             // TODO: nested deps!
             if (nodeName == "dependency") {
                 this.isDependency = false;
             }
         });
-        parser.on("error", function (e) {
+        parser.on("error", () => {
             // the XML document doesn't have to be well-formed, that's fine
             parser.error = null;
         });
-        parser.on("end", function () {
+        parser.on("end", () => {
             // the XML document doesn't have to be well-formed, that's fine
             // parser.error = null;
             this.dependencies = deps;
@@ -302,7 +305,7 @@ class NaivePomXmlSaxParser {
         return parser
     }
 
-    async parse() {
+    async parse(): Promise<Array<IDependency>> {
         return new Promise(resolve => {
             this.stream.pipe(this.parser.saxStream).on('end', (data) => {
                 resolve(this.dependencies);
@@ -313,16 +316,49 @@ class NaivePomXmlSaxParser {
 }
 
 class PomXmlDependencyCollector implements IDependencyCollector {
+    private xmlDocAst: XMLDocument;
+
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
+    private findRootNodes(rootElementName: string): Array<XMLElement> {
+        const properties: Array<XMLElement> = [];
+        const propertiesElement = {
+            // Will be invoked once for each Element node in the AST.
+            visitXMLElement: (node: XMLElement) => {
+                if (node.name === rootElementName) {
+                    properties.push(node);
+                }
+            },
+        };
+        accept(this.xmlDocAst, propertiesElement);
+        return properties;
+    }
+
+    private parseXml(contents: string): void {
+        const { cst, tokenVector } = parse(contents);
+        this.xmlDocAst = buildAst(cst as DocumentCstNode, tokenVector);
+    }
+
+    private mapToDependency(dependenciesNode: XMLElement): Array<IDependency> {
+        // const deps: Array<IDependency> = [];
+        // const dependencies = dependenciesNode.
+        //     subElements.
+        //     filter(e => e.name === 'dependency').
+        //     filter(e => e.subElements.filter(e => e.name !== 'scope' || e.na )).
+        return null;
+    }
+
     async collect(contents: string): Promise<Array<IDependency>> {
+        this.parseXml(contents);
+        const properties = this.findRootNodes("properties");
+        console.log(properties?.[0].subElements);
+        const deps = this.findRootNodes("dependencies");
+        console.log(deps);
+
         const file = stream_from_string(contents);
         let parser = new NaivePomXmlSaxParser(file);
-        let dependencies;
-         await parser.parse().then(data => {
-            dependencies = data;
-        });
-        return dependencies || [];
+        let dependencies = await parser.parse();
+        return dependencies;
     }
 }
 

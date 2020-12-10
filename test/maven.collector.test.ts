@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { PomXmlDependencyCollector } from '../src/collector';
+import parse = require("@xml-tools/parser");
 
 describe('Maven pom.xml parser test', () => {
     const collector:PomXmlDependencyCollector = new PomXmlDependencyCollector();
@@ -158,6 +159,30 @@ describe('Maven pom.xml parser test', () => {
       
             </dependencies>
          </dependencyManagement>
+        `);
+        expect(deps.length).equal(0);
+    });
+
+    it('tests pom.xml with properties', async () => {
+        const deps = await collector.collect(
+        `
+        <project>
+         <properties>
+            <foo.dep.version>1.0</foo.dep.version>
+         </properties>
+         <dependencyManagement>
+            <dependencies>
+                <dependency>
+                    <groupId>c</groupId>
+                    <artifactId>ab-cd</artifactId>
+                    <version>2.3</version>
+                    <scope>test</scope>
+                    <optional>true</optional>
+                </dependency>
+      
+            </dependencies>
+         </dependencyManagement>
+         </project>
         `);
         expect(deps.length).equal(0);
     });
