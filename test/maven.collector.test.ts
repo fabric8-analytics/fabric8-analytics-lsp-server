@@ -196,19 +196,25 @@ describe('Maven pom.xml parser test', () => {
     });
 
     it('tests pom.xml with properties', async () => {
-        const propStr = '${foo.dep.version}';
         const deps = await collector.collect(
         `
         <project>
          <properties>
             <foo.dep.version>1.0</foo.dep.version>
+            <bar.dep.version></bar.dep.version>
          </properties>
          <dependencyManagement>
             <dependencies>
                 <dependency>
                     <groupId>foo</groupId>
                     <artifactId>foo-hello</artifactId>
-                    <version>${propStr}</version>
+                    <version>\$\{foo.dep.version\}</version>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>bar</groupId>
+                    <artifactId>bar-hello</artifactId>
+                    <version>\$\{bar.dep.version\}</version>
                     <optional>true</optional>
                 </dependency>
             </dependencies>
@@ -217,7 +223,11 @@ describe('Maven pom.xml parser test', () => {
         `);
         expect(deps).is.eql([{
           name: {value: 'foo:foo-hello', position: {line: 0, column: 0}},
-          version: {value: '1.0', position: {line: 11, column: 30}}
+          version: {value: '1.0', position: {line: 4, column: 30}}
+        }, {
+            name: {value: 'bar:bar-hello', position: {line: 0, column: 0}},
+            // empty property won't be sustituted
+            version: {value: '${bar.dep.version}', position: {line: 18, column: 30}}
         }]);
     });
 });
