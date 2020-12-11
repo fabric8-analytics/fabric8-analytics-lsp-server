@@ -28,20 +28,38 @@ export class PomXmlDependencyCollector implements IDependencyCollector {
     }
 
     private mapToDependency(dependenciesNode: XMLElement): Array<IDependency> {
+        class PomDependency {
+            public groupId: XMLElement;
+            public artifactId: XMLElement;
+            public version: XMLElement;
+            constructor(e: XMLElement) {
+                this.groupId = e.subElements.find(e => e.name === 'groupId');
+                this.artifactId = e.subElements.find(e => e.name === 'artifactId');
+                this.version = e.subElements.find(e => e.name === 'version');
+            }
+
+            isValid(): boolean {
+                // none should have a empty text.
+                return [this.groupId, this.artifactId, this.version].find(e => !e.textContents[0]?.text) === undefined;
+            }
+
+            toDependency(): Dependency {
+                let entry: IKeyValueEntry = new KeyValueEntry(`${this.groupId.textContents[0].text}:${this.artifactId.textContents[0].text}`, {line: 0, column: 0});
+                const versionVal = this.version.textContents[0];
+                entry.value = new Variant(ValueType.String, versionVal.text);
+                entry.value_position = {line: versionVal.position.startLine, column: versionVal.position.startColumn};
+                return new Dependency(entry);
+            }
+        };
+        const validElementNames = ['groupId', 'artifactId', 'version'];
         const dependencies = dependenciesNode?.
             subElements.
             filter(e => e.name === 'dependency').
-            filter(e => !e.subElements.find(e => (e.name == 'scope' && e.textContents?.[0].text == 'test'))).
-            map(e => {
-            const groupId = e.subElements.find(e => e.name == 'groupId');
-            const artifactId = e.subElements.find(e => e.name == 'artifactId');
-            const version = e.subElements.find(e => e.name == 'version');
-            let entry: IKeyValueEntry = new KeyValueEntry(`${groupId.textContents[0].text}:${artifactId.textContents[0].text}`, {line: 0, column: 0});
-            const versionVal = version.textContents[0];
-            entry.value = new Variant(ValueType.String, versionVal.text);
-            entry.value_position = {line: versionVal.position.startLine, column: versionVal.position.startColumn};
-            return new Dependency(entry);
-        });
+            filter(e => e.subElements.filter(e => validElementNames.includes(e.name)).length == validElementNames.length).
+            filter(e => !e.subElements.find(e => (e.name === 'scope' && e.textContents[0].text === 'test'))).
+            map(e => new PomDependency(e)).
+            filter(d => d.isValid()).
+            map(d => d.toDependency());
         return dependencies;
     }
 

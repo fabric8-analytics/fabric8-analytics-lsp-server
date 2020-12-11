@@ -44,19 +44,16 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </dependencyManagement>
         `);
-        expect(deps.length).equal(3);
-        expect(deps[0]).is.eql({
-          name: {value: '{a.groupId}:bc', position: {line: 0, column: 0}},
-          version: {value: '{a.version}', position: {line: 7, column: 30}}
-        });
-        expect(deps[1]).is.eql({
-          name: {value: 'b:c-d', position: {line: 0, column: 0}},
-          version: {value: '1.2.3', position: {line: 14, column: 30}}
-        });
-        expect(deps[2]).is.eql({
-          name: {value: 'c:ab-cd', position: {line: 0, column: 0}},
-          version: {value: '2.3', position: {line: 22, column: 30}}
-        });
+        expect(deps).is.eql([{
+            name: {value: '{a.groupId}:bc', position: {line: 0, column: 0}},
+            version: {value: '{a.version}', position: {line: 7, column: 30}}
+        },{
+            name: {value: 'b:c-d', position: {line: 0, column: 0}},
+            version: {value: '1.2.3', position: {line: 14, column: 30}}
+        },{
+            name: {value: 'c:ab-cd', position: {line: 0, column: 0}},
+            version: {value: '2.3', position: {line: 22, column: 30}}
+        }]);
     });
 
     it('tests pom.xml without any scope', async () => {
@@ -87,19 +84,16 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </dependencyManagement>
         `);
-        expect(deps.length).equal(3);
-        expect(deps[0]).is.eql({
-          name: {value: '{a.groupId}:bc', position: {line: 0, column: 0}},
-          version: {value: '{a.version}', position: {line: 7, column: 30}}
-        });
-        expect(deps[1]).is.eql({
-          name: {value: 'b:c-d', position: {line: 0, column: 0}},
-          version: {value: '1.2.3', position: {line: 14, column: 30}}
-        });
-        expect(deps[2]).is.eql({
-          name: {value: 'c:ab-cd', position: {line: 0, column: 0}},
-          version: {value: '2.3', position: {line: 21, column: 30}}
-        });
+        expect(deps).is.eql([{
+            name: {value: '{a.groupId}:bc', position: {line: 0, column: 0}},
+            version: {value: '{a.version}', position: {line: 7, column: 30}}
+        },{
+            name: {value: 'b:c-d', position: {line: 0, column: 0}},
+            version: {value: '1.2.3', position: {line: 14, column: 30}}
+        },{
+            name: {value: 'c:ab-cd', position: {line: 0, column: 0}},
+            version: {value: '2.3', position: {line: 21, column: 30}}
+        }]);
     });
 
     it('tests pom.xml with only test scope', async () => {
@@ -163,7 +157,7 @@ describe('Maven pom.xml parser test', () => {
         expect(deps.length).equal(0);
     });
 
-    it('tests pom.xml with properties', async () => {
+    it('tests pom.xml with invalid dependencies', async () => {
         const deps = await collector.collect(
         `
         <project>
@@ -183,14 +177,47 @@ describe('Maven pom.xml parser test', () => {
                     <groupId>c</groupId>
                     <artifactId>ab-cd</artifactId>
                     <version>2.3</version>
-                    <scope>com</scope>
-                    <optional>true</optional>
                 </dependency>
-      
+                <dependency>
+                    <groupId>c</groupId>
+                    <artifactId>ab-cd</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>c</groupId>
+                    <artifactId></artifactId>
+                    <version/>
+                    <scope>bala</scope>
+                </dependency>
             </dependencies>
          </dependencyManagement>
          </project>
         `);
         expect(deps.length).equal(1);
+    });
+
+    it('tests pom.xml with properties', async () => {
+        const propStr = '${foo.dep.version}';
+        const deps = await collector.collect(
+        `
+        <project>
+         <properties>
+            <foo.dep.version>1.0</foo.dep.version>
+         </properties>
+         <dependencyManagement>
+            <dependencies>
+                <dependency>
+                    <groupId>foo</groupId>
+                    <artifactId>foo-hello</artifactId>
+                    <version>${propStr}</version>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+         </dependencyManagement>
+         </project>
+        `);
+        expect(deps).is.eql([{
+          name: {value: 'foo:foo-hello', position: {line: 0, column: 0}},
+          version: {value: '1.0', position: {line: 11, column: 30}}
+        }]);
     });
 });
