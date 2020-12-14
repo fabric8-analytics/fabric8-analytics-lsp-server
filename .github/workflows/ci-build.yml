@@ -55,8 +55,8 @@ jobs:
     - name: Install local lsp
       run: npm i ../output
       working-directory: ./vscode-extension
-    - name: Compile for test
-      run: npm run test-compile
+    - name: Remove test files
+      run: rm -fr test
       working-directory: ./vscode-extension
     - name: VSCE prepublish
       run: vsce package
