@@ -16,7 +16,7 @@ jobs:
         node-version: [12.x, 14.x]
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
@@ -30,16 +30,15 @@ jobs:
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+        token: ${{ secrets.CODECOV_TOKEN }}
   test-with-vscode:
     runs-on: ubuntu-latest
     steps:
-    - name: pull lsp code
-      uses: actions/checkout@v2
+      - name: pull lsp code
+        uses: actions/checkout@v2
     - name: Setup Node env
       uses: actions/setup-node@v2.1.2
       with:
-        # Version Spec of the version to use.  Examples: 12.x, 10.15.1, >=10.15.0
         node-version: 12.x
     - name: Install Dependencies
       run: npm install
@@ -47,6 +46,7 @@ jobs:
       run: npm run build
     - name: pull vscode-extension code
       uses: actions/checkout@v2
+      with:
         repository: fabric8-analytics/fabric8-analytics-vscode-extension
         path: vscode-extension
     - name: Install vsce
