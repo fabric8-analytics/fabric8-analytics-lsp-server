@@ -16,7 +16,7 @@ jobs:
         node-version: [12.x, 14.x]
 
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
@@ -34,8 +34,8 @@ jobs:
   test-with-vscode:
     runs-on: ubuntu-latest
     steps:
-      - name: pull lsp code
-        uses: actions/checkout@v2
+    - name: pull lsp code
+      uses: actions/checkout@v2
     - name: Setup Node env
       uses: actions/setup-node@v2.1.2
       with:
