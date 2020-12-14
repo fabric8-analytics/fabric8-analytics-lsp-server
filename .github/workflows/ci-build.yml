@@ -8,13 +8,10 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [12.x, 14.x]
-
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
@@ -31,7 +28,8 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-  test-with-vscode:
+
+  build-with-vscode:
     runs-on: ubuntu-latest
     steps:
     - name: pull lsp code
@@ -51,11 +49,14 @@ jobs:
         path: vscode-extension
     - name: Install vsce
       run: npm i -g vsce
+    - name: Install Dependencies
+      run: npm ci
+      working-directory: ./vscode-extension
     - name: Install local lsp
       run: npm i ../output
       working-directory: ./vscode-extension
-    - name: Install Dependencies
-      run: npm ci
+    - name: Compile for test
+      run: npm run test-compile
       working-directory: ./vscode-extension
     - name: VSCE prepublish
       run: vsce package
