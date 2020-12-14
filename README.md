@@ -4,6 +4,7 @@
 [![NPM Version](https://img.shields.io/npm/v/fabric8-analytics-lsp-server.svg)](https://www.npmjs.com/package/fabric8-analytics-lsp-server)
 ![CI Build](https://github.com/fabric8-analytics/fabric8-analytics-lsp-server/workflows/CI%20Build/badge.svg)
 [![codecov](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server/branch/master/graph/badge.svg?token=aVThXjheDf)](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server)
+
 Language Server(LSP) that can analyze your dependencies specified in `package.json` and `pom.xml`.
 
 ## Build
