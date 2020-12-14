@@ -161,9 +161,6 @@ describe('Maven pom.xml parser test', () => {
         const deps = await collector.collect(
         `
         <project>
-         <properties>
-            <foo.dep.version>1.0</foo.dep.version>
-         </properties>
          <dependencyManagement>
             <dependencies>
                 <dependency>
@@ -174,9 +171,9 @@ describe('Maven pom.xml parser test', () => {
                     <optional>true</optional>
                 </dependency>
                 <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version>2.3</version>
+                    <groupId>foo</groupId>
+                    <artifactId>bar</artifactId>
+                    <version>2.4</version>
                 </dependency>
                 <dependency>
                     <groupId>c</groupId>
@@ -192,7 +189,10 @@ describe('Maven pom.xml parser test', () => {
          </dependencyManagement>
          </project>
         `);
-        expect(deps.length).equal(1);
+        expect(deps).is.eql([{
+          name: {value: 'foo:bar', position: {line: 0, column: 0}},
+          version: {value: '2.4', position: {line: 15, column: 30}}
+        }]);
     });
 
     it('tests pom.xml with properties', async () => {
