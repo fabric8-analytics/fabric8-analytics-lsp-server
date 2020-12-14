@@ -33,6 +33,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
   test-with-vscode:
     runs-on: ubuntu-latest
+    steps:
     - name: pull lsp code
       uses: actions/checkout@v2
     - name: Setup Node env
