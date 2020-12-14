@@ -73,6 +73,7 @@ export class PomXmlDependencyCollector implements IDependencyCollector {
                 const propertyValue = e.textContents[0];
                 property.value = new Variant(ValueType.String, propertyValue.text);
                 property.value_position = {line: propertyValue.position.startLine, column: propertyValue.position.startColumn};
+                // key should be equavalent to pom.xml property format. i.e ${property.value}
                 return [`\$\{${e.name}\}`, new Dependency(property)];
         }));
     }
