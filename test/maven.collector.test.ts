@@ -221,6 +221,37 @@ describe('Maven pom.xml parser test', () => {
         }]);
     });
 
+    it('tests pom.xml multiple dependencies', async () => {
+        const deps = await collector.collect(
+        `
+        <project>
+            <plugins>
+                <dependencies>
+                    <dependency>
+                        <groupId>plugins</groupId>
+                        <artifactId>a</artifactId>
+                        <version>2.3</version>
+                    </dependency>
+                </dependencies>
+            </plugins>
+            <dependencies>
+                <dependency>
+                    <groupId>dep</groupId>
+                    <artifactId>a</artifactId>
+                    <version>10.1</version>
+                </dependency>
+            </dependencies>
+         </project>
+        `);
+        expect(deps).is.eql([{
+          name: {value: 'plugins:a', position: {line: 0, column: 0}},
+          version: {value: '2.3', position: {line: 8, column: 34}}
+        }, {
+          name: {value: 'dep:a', position: {line: 0, column: 0}},
+          version: {value: '10.1', position: {line: 16, column: 30}}
+        }]);
+    });
+
     it('tests pom.xml with properties', async () => {
         const deps = await collector.collect(
         `

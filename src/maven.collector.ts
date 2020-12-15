@@ -95,7 +95,6 @@ export class PomXmlDependencyCollector implements IDependencyCollector {
             };
         })();
 
-        return this.mapToDependency(deps[0]).
-            map(d => this.applyProperty(d, getPropertyMap()));
+        return deps.flatMap(dep => this.mapToDependency(dep)).map(d => this.applyProperty(d, getPropertyMap()));
     }
 }

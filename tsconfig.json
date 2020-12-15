@@ -6,6 +6,7 @@
     "sourceMap": true,
     "outDir": "output",
     "lib": [
+        "ES2019.array",
         "ES2020.Promise"
     ]
   },
