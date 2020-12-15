@@ -195,6 +195,32 @@ describe('Maven pom.xml parser test', () => {
         }]);
     });
 
+    it('tests pom.xml without dependencyManagement', async () => {
+        const deps = await collector.collect(
+        `
+        <project>
+            <dependencies>
+                <dependency>
+                    <groupId>c</groupId>
+                    <artifactId>ab-cd</artifactId>
+                    <version>2.3</version>
+                    <scope>test</scope>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>foo</groupId>
+                    <artifactId>bar</artifactId>
+                    <version>2.4</version>
+                </dependency>
+            </dependencies>
+         </project>
+        `);
+        expect(deps).is.eql([{
+          name: {value: 'foo:bar', position: {line: 0, column: 0}},
+          version: {value: '2.4', position: {line: 14, column: 30}}
+        }]);
+    });
+
     it('tests pom.xml with properties', async () => {
         const deps = await collector.collect(
         `

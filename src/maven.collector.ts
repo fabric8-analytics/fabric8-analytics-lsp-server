@@ -1,5 +1,5 @@
 'use strict';
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from './types';
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency, IPositionedString, IPosition } from './types';
 import { parse, DocumentCstNode } from "@xml-tools/parser";
 import { buildAst, accept, XMLElement, XMLDocument } from "@xml-tools/ast";
 
@@ -65,21 +65,21 @@ export class PomXmlDependencyCollector implements IDependencyCollector {
         return dependencies || [];
     }
 
-    private createPropertySubstitution(e: XMLElement): Map<string, IDependency> {
+    private createPropertySubstitution(e: XMLElement): Map<string, IPositionedString> {
         return new Map(e?.subElements?.
             filter(e => e.textContents[0]?.text).
             map(e => {
-                const property: IKeyValueEntry = new KeyValueEntry(e.name, {line: 0, column: 0});
                 const propertyValue = e.textContents[0];
-                property.value = new Variant(ValueType.String, propertyValue.text);
-                property.value_position = {line: propertyValue.position.startLine, column: propertyValue.position.startColumn};
-                // key should be equavalent to pom.xml property format. i.e ${property.value}
-                return [`\$\{${e.name}\}`, new Dependency(property)];
+                const position: IPosition = {line: propertyValue.position.startLine, column: propertyValue.position.startColumn};
+                const value = {value: propertyValue.text, position: position} as IPositionedString;
+                // key should be equivalent to pom.xml property format. i.e ${property.value}
+                return [`\$\{${e.name}\}`, value];
         }));
     }
 
-    private applyProperty(dependency: IDependency, map: Map<string, IDependency>): IDependency {
-        dependency.version = map.get(dependency.version.value)?.version ?? dependency.version;
+    private applyProperty(dependency: IDependency, map: Map<string, IPositionedString>): IDependency {
+        // FIXME: Do the groupId and artifactId will also be expressed through properties?
+        dependency.version = map.get(dependency.version.value) ?? dependency.version;
         return dependency; 
     }
 
