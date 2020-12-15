@@ -8,8 +8,7 @@ import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
-import { IDependencyCollector, PackageJsonCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
-import { PomXmlDependencyCollector } from './maven.collector';
+import { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from './vulnerability';
@@ -251,14 +250,11 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     connection.sendNotification('caNotification', {data: caDefaultMsg, done: false, uri: diagnosticFilePath});
     let deps = null;
     try {
-        const start = new Date().getTime();
         deps = await collector.collect(contents);
-        const end = new Date().getTime();
-        connection.console.log(`manifest parse took ${end - start} ms`);
     } catch (error) {
         // Error can be raised during golang `go list ` command only.
         if (ecosystem == "golang") {
-            connection.console.warn(`Command execution failed with error: ${error}`);
+            connection.console.error(`Command execution failed with error: ${error}`);
             connection.sendNotification('caError', {data: error, uri: diagnosticFilePath});
             connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
             return;
@@ -286,7 +282,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     await Promise.allSettled(allRequests);
     const end = new Date().getTime();
 
-    connection.console.log(`fetch vulns took ${end - start} ms`);
+    connection.console.log('Time taken to fetch vulnerabilities: ' + ((end - start) / 1000).toFixed(1) + ' sec.');
     connection.sendNotification('caNotification', {data: getCAmsg(deps, diagnostics, totalCount), diagCount : diagnostics.length || 0, vulnCount: totalCount, depCount: deps.length || 0, done: true, uri: diagnosticFilePath});
 };
 
