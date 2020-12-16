@@ -1,9 +1,9 @@
 import { expect } from 'chai';
-import { PomXmlDependencyCollector } from '../src/maven.collector';
+import { DependencyCollector } from '../../src/collector/pom.xml';
 import parse = require("@xml-tools/parser");
 
 describe('Maven pom.xml parser test', () => {
-    const collector:PomXmlDependencyCollector = new PomXmlDependencyCollector();
+    const collector = new DependencyCollector();
 
     it('tests valid pom.xml', async () => {
         const deps = await collector.collect(

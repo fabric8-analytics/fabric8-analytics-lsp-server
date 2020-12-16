@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import { GomodDependencyCollector } from '../src/collector';
-import { getGoLangImportsCmd } from '../src/utils';
+import { DependencyCollector } from '../../src/collector/go.mod';
+import { getGoLangImportsCmd } from '../../src/utils';
 
 const fake = require('fake-exec');
 
 describe('Golang go.mod parser test', () => {
   const fakeSourceRoot = "/tmp/fake/path/to/goproject/source";
-  const collector: GomodDependencyCollector = new GomodDependencyCollector(fakeSourceRoot);
+  const collector = new DependencyCollector(fakeSourceRoot);
 
   it('tests valid go.mod', async () => {
     fake(getGoLangImportsCmd(), `github.com/alecthomas/units

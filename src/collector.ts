@@ -3,230 +3,87 @@
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
-import { Stream } from 'stream';
-import * as jsonAst from 'json-to-ast';
-import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IPositionedString, IDependencyCollector, Dependency } from './types';
-import { stream_from_string, getGoLangImportsCmd } from './utils';
-import { config } from './config';
-import { exec } from 'child_process';
-import { parse, DocumentCstNode } from "@xml-tools/parser";
-import { buildAst, accept, XMLElement, XMLDocument } from "@xml-tools/ast";
 
-/* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
- * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
- * At the moment, using regex directly to extract version information without 'v' prefix. */
-//import semverRegex = require('semver-regex');
-function semVerRegExp(line: string): RegExpExecArray {
-    const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig
-    return regExp.exec(line);
+/* Determine what is the value */
+enum ValueType {
+  Invalid,
+  String,
+  Integer,
+  Float,
+  Array,
+  Object,
+  Boolean,
+  Null
+};
+
+/* Value variant */
+interface IVariant {
+  type:   ValueType;
+  object: any;
 }
 
-class NaivePyParser {
-    constructor(contents: string) {
-        this.dependencies = NaivePyParser.parseDependencies(contents);
-    }
+/* Line and column inside the JSON file */
+interface IPosition {
+  line:   number;
+  column: number;
+};
 
-    dependencies: Array<IDependency>;
+/* Key/Value entry with positions */
+interface IKeyValueEntry {
+  key:            string;
+  value:          IVariant;
+  key_position:   IPosition;
+  value_position: IPosition;
+};
 
-    static parseDependencies(contents:string): Array<IDependency> {
-        const requirements = contents.split("\n");
-        return requirements.reduce((dependencies, req, index) => {
-            // skip any text after #
-            if (req.includes('#')) {
-                req = req.split('#')[0];
-            }
-            const parsedRequirement: Array<string>  = req.split(/[==,>=,<=]+/);
-            const pkgName:string = (parsedRequirement[0] || '').trim();
-            // skip empty lines
-            if (pkgName.length > 0) {
-                const version = (parsedRequirement[1] || '').trim();
-                const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
-                entry.value = new Variant(ValueType.String, version);
-                entry.value_position = { line: index + 1, column: req.indexOf(version) + 1 };
-                dependencies.push(new Dependency(entry));
-            }
-            return dependencies;
-        }, []);
-    }
+class KeyValueEntry implements IKeyValueEntry {
+  key:            string;
+  value:          IVariant;
+  key_position:   IPosition;
+  value_position: IPosition;
 
-    parse(): Array<IDependency> {
-        return this.dependencies;
-    }
+  constructor(k: string, pos: IPosition) {
+    this.key = k;
+    this.key_position = pos;
+  }
 }
 
-/* Process entries found in the txt files and collect all dependency
- * related information */
-class ReqDependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ["dependencies"]) {}
-
-    async collect(contents: string): Promise<Array<IDependency>> {
-        let parser = new NaivePyParser(contents);
-        return parser.parse();
-    }
-
+class Variant implements IVariant {
+    constructor(public type: ValueType, public object: any) {}
 }
 
-class NaiveGomodParser {
-    constructor(contents: string, goImports: Set<string>) {
-        this.dependencies = NaiveGomodParser.parseDependencies(contents, goImports);
-    }
-
-    dependencies: Array<IDependency>;
-
-    static getReplaceMap(line: string, index: number): any{
-        // split the replace statements by '=>'
-        const parts: Array<string> = line.replace('replace', '').replace('(', '').replace(')', '').trim().split('=>');
-        const replaceWithVersion = semVerRegExp(parts[1]);
-
-        // Skip lines without final version string
-        if (replaceWithVersion && replaceWithVersion.length > 0) {
-            const replaceTo: Array<string> = (parts[0] || '').trim().split(' ');
-            const replaceToVersion = semVerRegExp(replaceTo[1]);
-            const replaceWith: Array<string> = (parts[1] || '').trim().split(' ');
-            const replaceWithIndex = line.lastIndexOf(parts[1]);
-            const replaceEntry: IKeyValueEntry = new KeyValueEntry(replaceWith[0].trim(), { line: 0, column: 0 });
-            replaceEntry.value = new Variant(ValueType.String, 'v' + replaceWithVersion[0]);
-            replaceEntry.value_position = { line: index + 1, column: (replaceWithIndex + replaceWithVersion.index) };
-            const replaceDependency = new Dependency(replaceEntry);
-            const isReplaceToVersion: boolean = replaceToVersion && replaceToVersion.length > 0;
-            return {key: replaceTo[0].trim() + (isReplaceToVersion ? ('@v' + replaceToVersion[0]) : ''), value: replaceDependency};
-        }
-        return null;
-    }
-
-    static  applyReplaceMap(dep: IDependency, replaceMap: Map<string, IDependency>): IDependency {
-        let replaceDependency = replaceMap.get(dep.name.value + "@" + dep.version.value);
-        if (replaceDependency === undefined) {
-            replaceDependency = replaceMap.get(dep.name.value);
-            if(replaceDependency === undefined) {
-                return dep;
-            }
-        }
-        return replaceDependency;
-    }
-
-    static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
-        let replaceMap = new Map<string, IDependency>();
-        let goModDeps = contents.split("\n").reduce((dependencies, line, index) => {
-            // skip any text after '//'
-            if (line.includes("//")) {
-                line = line.split("//")[0];
-            }
-            if (line.includes("=>")) {
-                let replaceEntry = NaiveGomodParser.getReplaceMap(line, index);
-                if (replaceEntry) {
-                    replaceMap.set(replaceEntry.key, replaceEntry.value);
-                }
-            } else {
-                // Not using semver directly, look at comment on import statement.
-                //const version = semverRegex().exec(line)
-                const version = semVerRegExp(line);
-                // Skip lines without version string
-                if (version && version.length > 0) {
-                    const parts: Array<string> = line.replace('require', '').replace('(', '').replace(')', '').trim().split(' ');
-                    const pkgName: string = (parts[0] || '').trim();
-                    // Ignore line starting with replace clause and empty package
-                    if (pkgName.length > 0) {
-                        const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
-                        entry.value = new Variant(ValueType.String, 'v' + version[0]);
-                        entry.value_position = { line: index + 1, column: version.index };
-                        // Push all direct and indirect modules present in go.mod (manifest) 
-                        dependencies.push(new Dependency(entry));
-                    }
-                }
-            }
-            return dependencies;
-        }, []);
-
-        let goPackageDeps = [];
-
-        goImports.forEach(importStatement => {
-            let exactMatchDep: Dependency = null;
-            let moduleMatchDep: Dependency = null;
-            goModDeps.forEach(goModDep => {
-                if (importStatement == goModDep.name.value) {
-                    // Software stack uses the module
-                    exactMatchDep = goModDep;
-                } else if (importStatement.startsWith(goModDep.name.value + "/")) {
-                    // Find longest module name that matches the import statement
-                    if (moduleMatchDep == null) {
-                        moduleMatchDep = goModDep;
-                    } else if (moduleMatchDep.name.value.length < goModDep.name.value.length) {
-                        moduleMatchDep = goModDep;
-                    }
-                }
-            });
-
-            if (exactMatchDep == null && moduleMatchDep != null) {
-                // Software stack uses a package from the module
-                let replaceDependency = NaiveGomodParser.applyReplaceMap(moduleMatchDep, replaceMap);
-                if (replaceDependency !== moduleMatchDep) {
-                    importStatement = importStatement.replace(moduleMatchDep.name.value, replaceDependency.name.value);
-                }
-                const entry: IKeyValueEntry = new KeyValueEntry(importStatement + '@' + replaceDependency.name.value, replaceDependency.name.position);
-                entry.value = new Variant(ValueType.String, replaceDependency.version.value);
-                entry.value_position = replaceDependency.version.position;
-                goPackageDeps.push(new Dependency(entry));
-            }
-        });
-
-        goModDeps = goModDeps.map(goModDep => NaiveGomodParser.applyReplaceMap(goModDep, replaceMap));
-
-        // Return modules present in go.mod and packages used in imports.
-        return [...goModDeps, ...goPackageDeps];
-    }
-
-    parse(): Array<IDependency> {
-        return this.dependencies;
-    }
+/* String value with position */
+interface IPositionedString {
+  value:    string;
+  position: IPosition;
 }
 
-/* Process entries found in the go.mod file and collect all dependency
- * related information */
-class GomodDependencyCollector implements IDependencyCollector {
-    constructor(private manifestFile: string, public classes: Array<string> = ["dependencies"]) {
-        this.manifestFile = manifestFile;
-    }
-
-    async collect(contents: string): Promise<Array<IDependency>> {
-        let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
-            exec(getGoLangImportsCmd(),
-                { shell: process.env["SHELL"], windowsHide: true, cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Command failed, environment SHELL: [${process.env["SHELL"]}] PATH: [${process.env["PATH"]}] CWD: [${process.env["CWD"]}]`)
-                    if (error.code == 127) { // Invalid command, go executable not found
-                        reject(`Unable to locate '${config.golang_executable}'`);
-                    } else {
-                        reject(`Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to know more`);
-                    }
-                } else {
-                    resolve(new Set(stdout.toString().split("\n")));
-                }
-            });
-        });
-        const goImports: Set<string> = await promiseExec;
-        let parser = new NaiveGomodParser(contents, goImports);
-        return parser.parse();
-    }
-
+/* Dependency specification */
+interface IDependency {
+  name:    IPositionedString;
+  version: IPositionedString;
 }
 
-class PackageJsonCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ["dependencies"]) {}
-
-    async collect(contents: string): Promise<Array<IDependency>> {
-      const ast = jsonAst(contents);
-      return ast.children.
-              filter(c => this.classes.includes(c.key.value)).
-              flatMap(c => c.value.children).
-              map(c => {
-                  let entry: IKeyValueEntry = new KeyValueEntry(c.key.value, {line: c.key.loc.start.line, column: c.key.loc.start.column + 1});
-                  entry.value = new Variant(ValueType.String, c.value.value);
-                  entry.value_position = {line: c.value.loc.start.line, column: c.value.loc.start.column + 1};
-                  return new Dependency(entry);
-              });
-    }
+/* Dependency collector interface */
+interface IDependencyCollector {
+  classes: Array<string>;
+  collect(contents: string): Promise<Array<IDependency>>;
 }
 
-export { IDependencyCollector, PackageJsonCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };
+/* Dependency class that can be created from `IKeyValueEntry` */
+class Dependency implements IDependency {
+  name:    IPositionedString;
+  version: IPositionedString;
+  constructor(dependency: IKeyValueEntry) {
+    this.name = {
+        value: dependency.key,
+        position: dependency.key_position
+    };
+    this.version = {
+        value: dependency.value.object,
+        position: dependency.value_position
+    };
+  }
+}
+
+export { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IPositionedString, IDependencyCollector, Dependency };

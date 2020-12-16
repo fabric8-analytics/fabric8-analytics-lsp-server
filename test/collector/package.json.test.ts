@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import { PackageJsonCollector } from '../src/collector';
+import { DependencyCollector } from '../../src/collector/package.json';
 
 describe('npm package.json parser test', () => {
-    const collector = new PackageJsonCollector();
+    const collector = new DependencyCollector();
 
     it('tests empty package.json', async () => {
         const deps = await collector.collect(`
@@ -28,15 +28,14 @@ describe('npm package.json parser test', () => {
             "hello": "1.0"
           }
         }`);
-        expect(deps.length).equal(1);
-        expect(deps[0]).is.eql({
+        expect(deps).is.eql([{
           name: {value: "hello", position: {line: 4, column: 14}},
           version: {value: "1.0", position: {line: 4, column: 23}}
-        });
+        }]);
     });
 
     it('tests single dependency as devDependencies', async () => {
-        let collector = new PackageJsonCollector(["devDependencies"]);
+        let collector = new DependencyCollector(["devDependencies"]);
         let deps = await collector.collect(`{
           "devDependencies": {
             "hello": "1.0"
@@ -45,13 +44,12 @@ describe('npm package.json parser test', () => {
             "foo": "10.1.1"
           }
         }`);
-        expect(deps.length).equal(1);
-        expect(deps[0]).is.eql({
+        expect(deps).is.eql([{
           name: {value: "hello", position: {line: 3, column: 14}},
           version: {value: "1.0", position: {line: 3, column: 23}}
-        });
+        }]);
 
-        collector = new PackageJsonCollector(["devDependencies", "dependencies"]);
+        collector = new DependencyCollector(["devDependencies", "dependencies"]);
         deps = await collector.collect(`{
           "devDependencies": {
             "hello": "1.0"
@@ -60,15 +58,13 @@ describe('npm package.json parser test', () => {
             "foo": "10.1.1"
           }
         }`);
-        expect(deps.length).equal(2);
-        expect(deps[0]).is.eql({
+        expect(deps).is.eql([{
           name: {value: "hello", position: {line: 3, column: 14}},
           version: {value: "1.0", position: {line: 3, column: 23}}
-        });
-        expect(deps[1]).is.eql({
+        },{
           name: {value: "foo", position: {line: 6, column: 14}},
           version: {value: "10.1.1", position: {line: 6, column: 21}}
-        });
+        }]);
     });
 
 
@@ -80,11 +76,10 @@ describe('npm package.json parser test', () => {
               "1.0"
           }
         }`);
-        expect(deps.length).equal(1);
-        expect(deps[0]).is.eql({
+        expect(deps).is.eql([{
           name: {value: "hello", position: {line: 4, column: 14}},
           version: {value: "1.0", position: {line: 5, column: 16}}
-        });
+        }]);
     });
 
     it('tests 3 dependencies with spaces', async () => {
@@ -100,18 +95,15 @@ describe('npm package.json parser test', () => {
           "     10.0.1"
           }
         }`);
-        expect(deps.length).equal(3);
-        expect(deps[0]).is.eql({
+        expect(deps).is.eql([{
           name: {value: "hello", position: {line: 4, column: 13}},
           version: {value: "1.0", position: {line: 4, column: 37}}
-        });
-        expect(deps[1]).is.eql({
+        },{
           name: {value: "world", position: {line: 5, column: 16}},
           version: {value: "^1.0", position: {line: 5, column: 24}}
-        });
-        expect(deps[2]).is.eql({
+        },{
           name: {value: "foo", position: {line: 8, column: 10}},
           version: {value: "     10.0.1", position: {line: 10, column: 12}}
-        });
+        }]);
     });
 });
