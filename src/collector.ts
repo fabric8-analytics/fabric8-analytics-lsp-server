@@ -5,7 +5,7 @@
 'use strict';
 
 /* Determine what is the value */
-enum ValueType {
+export enum ValueType {
   Invalid,
   String,
   Integer,
@@ -17,26 +17,26 @@ enum ValueType {
 };
 
 /* Value variant */
-interface IVariant {
+export interface IVariant {
   type:   ValueType;
   object: any;
 }
 
 /* Line and column inside the JSON file */
-interface IPosition {
+export interface IPosition {
   line:   number;
   column: number;
 };
 
 /* Key/Value entry with positions */
-interface IKeyValueEntry {
+export interface IKeyValueEntry {
   key:            string;
   value:          IVariant;
   key_position:   IPosition;
   value_position: IPosition;
 };
 
-class KeyValueEntry implements IKeyValueEntry {
+export class KeyValueEntry implements IKeyValueEntry {
   key:            string;
   value:          IVariant;
   key_position:   IPosition;
@@ -50,32 +50,34 @@ class KeyValueEntry implements IKeyValueEntry {
   }
 }
 
-class Variant implements IVariant {
+export class Variant implements IVariant {
   constructor(public type: ValueType, public object: any) {}
 }
 
 /* String value with position */
-interface IPositionedString {
+export interface IPositionedString {
   value:    string;
   position: IPosition;
 }
 
 /* Dependency specification */
-interface IDependency {
-  name:    IPositionedString;
+export interface IDependency {
+  name: IPositionedString;
   version: IPositionedString;
-  /* key shall be used as key in Map */
+}
+
+export interface IHashableDependency extends IDependency {
   key(): string;
 }
 
 /* Dependency collector interface */
-interface IDependencyCollector {
+export interface IDependencyCollector {
   classes: Array<string>;
   collect(contents: string): Promise<Array<IDependency>>;
 }
 
 /* Dependency class that can be created from `IKeyValueEntry` */
-class Dependency implements IDependency {
+export class Dependency implements IHashableDependency {
   name:    IPositionedString;
   version: IPositionedString;
   constructor(dependency: IKeyValueEntry) {
@@ -101,4 +103,13 @@ export class SimpleDependency extends Dependency {
   }
 }
 
-export { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IPositionedString, IDependencyCollector, Dependency };
+export class DependencyMap {
+   mapper: Map<string, IHashableDependency>;
+   constructor(deps: Array<IHashableDependency>) {
+     this.mapper = new Map(deps.map(d => [d.key(), d]));
+   }
+
+   public get(key: string): IHashableDependency {
+     return this.mapper.get(key);
+   }
+}

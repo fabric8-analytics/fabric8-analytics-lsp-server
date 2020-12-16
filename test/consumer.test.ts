@@ -5,21 +5,21 @@ import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from '../s
 const config = {};
 const diagnosticFilePath = "a/b/c/d";
 const dependency = {
-    "name": {
-        "value" : "abc",
-        "position": {
-            "line": 20,
-            "column": 6
-        }
-    },
-    "version": {
-        "value": "1.2.3",
-        "position": {
-            "line": 20,
-            "column": 17
-        }
+  name: {
+    value: "abc",
+    position: {
+      line: 20,
+      column: 6
     }
-}
+  },
+  version: {
+    value: "1.2.3",
+    position: {
+      line: 20,
+      column: 17
+    }
+  }
+};
 
 describe('Response consumer test', () => {
     it('Consume response for free-users', () => {

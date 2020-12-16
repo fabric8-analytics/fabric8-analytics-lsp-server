@@ -1,6 +1,6 @@
 'use strict';
 
-import * as jsonAst from 'json-to-ast';
+import jsonAst from 'json-to-ast';
 import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
 
 export class DependencyCollector implements IDependencyCollector {

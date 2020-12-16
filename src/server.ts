@@ -12,11 +12,10 @@ import { DependencyCollector as GoMod } from './collector/go.mod';
 import { DependencyCollector as PackageJson } from './collector/package.json';
 import { DependencyCollector as PomXml } from './collector/pom.xml';
 import { DependencyCollector as RequirementsTxt } from './collector/requirements.txt';
-import { IDependencyCollector } from './collector';
+import { IDependencyCollector, IHashableDependency, SimpleDependency, DependencyMap } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from './vulnerability';
-import { IDependency, SimpleDependency } from './types';
 import { config } from './config';
 import fetch from 'node-fetch';
 
@@ -223,7 +222,7 @@ class TotalCount {
 };
 
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
-function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: PackageMap, totalCount) {
+function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount) {
     response.forEach(r => {
         const dependency = pkgMap.get(new SimpleDependency(r.package, r.version).key());
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
@@ -236,17 +235,6 @@ function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePat
         }
         connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
     });
-}
-
-class PackageMap {
-   requestMapper: Map<string, IDependency>;
-   constructor(deps: Array<IDependency>) {
-     this.requestMapper = new Map(deps.map(d => [d.key(), d]));
-   }
-
-   public get(key: string): IDependency {
-     return this.requestMapper.get(key);
-   }
 }
 
 /* Slice payload in each chunk size of @batchSize */
@@ -289,7 +277,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         packageAggregator = new GolangVulnerabilityAggregator();
     }
     const requestPayload = validPackages.map(d => ({package: d.name.value, version: d.version.value}));
-    const pkgMap = new PackageMap(validPackages);
+    const pkgMap = new DependencyMap(validPackages);
     const batchSize = 10;
     let diagnostics = [];
     let totalCount = new TotalCount();
