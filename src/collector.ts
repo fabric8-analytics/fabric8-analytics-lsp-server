@@ -4,12 +4,13 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { Stream } from 'stream';
-import * as Xml2Object from 'xml2object';
 import * as jsonAst from 'json-to-ast';
-import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType } from './types';
+import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IPositionedString, IDependencyCollector, Dependency } from './types';
 import { stream_from_string, getGoLangImportsCmd } from './utils';
 import { config } from './config';
 import { exec } from 'child_process';
+import { parse, DocumentCstNode } from "@xml-tools/parser";
+import { buildAst, accept, XMLElement, XMLDocument } from "@xml-tools/ast";
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts 
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment. 
@@ -18,40 +19,6 @@ import { exec } from 'child_process';
 function semVerRegExp(line: string): RegExpExecArray {
     const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig
     return regExp.exec(line);
-}
-
-/* String value with position */
-interface IPositionedString {
-  value:    string;
-  position: IPosition;
-}
-
-/* Dependency specification */
-interface IDependency {
-  name:    IPositionedString;
-  version: IPositionedString;
-}
-
-/* Dependency collector interface */
-interface IDependencyCollector {
-  classes: Array<string>;
-  collect(contents: string): Promise<Array<IDependency>>;
-}
-
-/* Dependency class that can be created from `IKeyValueEntry` */
-class Dependency implements IDependency {
-  name:    IPositionedString;
-  version: IPositionedString;
-  constructor(dependency: IKeyValueEntry) {
-    this.name = {
-        value: dependency.key,
-        position: dependency.key_position
-    };
-    this.version = {
-        value: dependency.value.object,
-        position: dependency.value_position
-    };
-  }
 }
 
 class NaivePyParser {
@@ -245,87 +212,6 @@ class GomodDependencyCollector implements IDependencyCollector {
 
 }
 
-class NaivePomXmlSaxParser {
-    constructor(stream: Stream) {
-        this.stream = stream;
-        this.parser = this.createParser();
-    }
-
-    stream: Stream;
-    parser: Xml2Object;
-    dependencies: Array<IDependency> = [];
-    isDependency: boolean = false;
-    versionStartLine: number = 0;
-    versionStartColumn: number = 0;
-
-    createParser(): Xml2Object {
-        let parser = new Xml2Object([ "dependency" ], {strict: true, trackPosition: true});
-        let deps = this.dependencies;
-        let versionLine = this.versionStartLine;
-        let versionColumn = this.versionStartColumn;
-
-        parser.on("object", function (name, obj) {
-            if (obj.hasOwnProperty("groupId") && obj.hasOwnProperty("artifactId") && obj.hasOwnProperty("version") && 
-                (!obj.hasOwnProperty("scope") || (obj.hasOwnProperty("scope") && obj["scope"] != "test"))) {
-                let ga = `${obj["groupId"]}:${obj["artifactId"]}`;
-                let entry: IKeyValueEntry = new KeyValueEntry(ga, {line: 0, column: 0});
-                entry.value = new Variant(ValueType.String, obj["version"]);
-                entry.value_position = {line: versionLine, column: versionColumn};
-                let dep: IDependency = new Dependency(entry);
-                deps.push(dep)
-            }
-        });
-        parser.saxStream.on("opentag", function (node) {
-            if (node.name == "dependency") {
-                this.isDependency = true;
-            }
-            if (this.isDependency && node.name == "version") {
-                versionLine = parser.saxStream._parser.line + 1;
-                versionColumn = parser.saxStream._parser.column +1;
-            }
-        });
-        parser.saxStream.on("closetag", function (nodeName) {
-            // TODO: nested deps!
-            if (nodeName == "dependency") {
-                this.isDependency = false;
-            }
-        });
-        parser.on("error", function (e) {
-            // the XML document doesn't have to be well-formed, that's fine
-            parser.error = null;
-        });
-        parser.on("end", function () {
-            // the XML document doesn't have to be well-formed, that's fine
-            // parser.error = null;
-            this.dependencies = deps;
-        });
-        return parser
-    }
-
-    async parse() {
-        return new Promise(resolve => {
-            this.stream.pipe(this.parser.saxStream).on('end', (data) => {
-                resolve(this.dependencies);
-           });
-        });
-
-    }
-}
-
-class PomXmlDependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ["dependencies"]) {}
-
-    async collect(contents: string): Promise<Array<IDependency>> {
-        const file = stream_from_string(contents);
-        let parser = new NaivePomXmlSaxParser(file);
-        let dependencies;
-         await parser.parse().then(data => {
-            dependencies = data;
-        });
-        return dependencies || [];
-    }
-}
-
 class PackageJsonCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
@@ -343,4 +229,4 @@ class PackageJsonCollector implements IDependencyCollector {
     }
 }
 
-export { IDependencyCollector, PackageJsonCollector, PomXmlDependencyCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };
+export { IDependencyCollector, PackageJsonCollector, ReqDependencyCollector, GomodDependencyCollector, IPositionedString, IDependency };

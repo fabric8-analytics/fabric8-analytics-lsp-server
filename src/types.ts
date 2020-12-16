@@ -53,6 +53,38 @@ class Variant implements IVariant {
     constructor(public type: ValueType, public object: any) {}
 }
 
+/* String value with position */
+interface IPositionedString {
+  value:    string;
+  position: IPosition;
+}
 
-export { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType };
+/* Dependency specification */
+interface IDependency {
+  name:    IPositionedString;
+  version: IPositionedString;
+}
 
+/* Dependency collector interface */
+interface IDependencyCollector {
+  classes: Array<string>;
+  collect(contents: string): Promise<Array<IDependency>>;
+}
+
+/* Dependency class that can be created from `IKeyValueEntry` */
+class Dependency implements IDependency {
+  name:    IPositionedString;
+  version: IPositionedString;
+  constructor(dependency: IKeyValueEntry) {
+    this.name = {
+        value: dependency.key,
+        position: dependency.key_position
+    };
+    this.version = {
+        value: dependency.value.object,
+        position: dependency.value_position
+    };
+  }
+}
+
+export { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IPositionedString, IDependencyCollector, Dependency };
