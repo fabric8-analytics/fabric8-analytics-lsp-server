@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { GomodDependencyCollector } from '../src/collector';
+import { GomodDependencyCollector } from '../src/gomod.collector';
 import { getGoLangImportsCmd } from '../src/utils';
 
 const fake = require('fake-exec');

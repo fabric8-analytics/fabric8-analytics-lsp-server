@@ -8,13 +8,13 @@ import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
-import { GomodDependencyCollector } from './collector';
-import { PomXmlDependencyCollector } from './maven.collector';
+import { GomodDependencyCollector } from './gomod.collector';
 import { PackageJsonCollector } from './npm.collector';
+import { PomXmlDependencyCollector } from './maven.collector';
 import { ReqDependencyCollector } from './requirements.txt.collector';
+import { IDependencyCollector } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
-import { IDependencyCollector } from './types';
 import { AnalyticsSource } from './vulnerability';
 import { config } from './config';
 import fetch from 'node-fetch';

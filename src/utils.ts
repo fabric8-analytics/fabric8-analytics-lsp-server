@@ -4,9 +4,8 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { Stream, Readable } from 'stream';
-import { IPosition } from './types';
-import { IPositionedString } from './types';
 import { Position, Range } from 'vscode-languageserver';
+import { IPositionedString, IPosition } from './collector';
 import { config } from './config';
 
 export let stream_from_string = (s: string): Stream => {

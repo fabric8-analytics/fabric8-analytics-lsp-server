@@ -1,5 +1,5 @@
 'use strict';
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency, IPositionedString, IPosition } from './types';
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency, IPositionedString, IPosition } from './collector';
 import { parse, DocumentCstNode } from "@xml-tools/parser";
 import { buildAst, accept, XMLElement, XMLDocument } from "@xml-tools/ast";
 

@@ -5,9 +5,9 @@ import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from '../s
 const config = {};
 const diagnosticFilePath = "a/b/c/d";
 const dependency = {
-    "name": { 
+    "name": {
         "value" : "abc",
-        "position": { 
+        "position": {
             "line": 20,
             "column": 6
         }
@@ -22,7 +22,6 @@ const dependency = {
 }
 
 describe('Response consumer test', () => {
-    
     it('Consume response for free-users', () => {
         let DiagnosticsEngines = [SecurityEngine];
         let diagnostics = [];

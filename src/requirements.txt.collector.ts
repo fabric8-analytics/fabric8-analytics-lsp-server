@@ -1,6 +1,6 @@
 'use strict';
 
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from './types';
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from './collector';
 
 class NaivePyParser {
     constructor(contents: string) {
