@@ -3,10 +3,9 @@
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
-import { Stream } from 'stream';
-import * as jsonAst from 'json-to-ast';
-import { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IPositionedString, IDependencyCollector, Dependency } from './types';
-import { stream_from_string, getGoLangImportsCmd } from './utils';
+
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from './types';
+import { getGoLangImportsCmd } from './utils';
 import { config } from './config';
 import { exec } from 'child_process';
 
@@ -17,51 +16,6 @@ import { exec } from 'child_process';
 function semVerRegExp(line: string): RegExpExecArray {
     const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig
     return regExp.exec(line);
-}
-
-class NaivePyParser {
-    constructor(contents: string) {
-        this.dependencies = NaivePyParser.parseDependencies(contents);
-    }
-
-    dependencies: Array<IDependency>;
-
-    static parseDependencies(contents:string): Array<IDependency> {
-        const requirements = contents.split("\n");
-        return requirements.reduce((dependencies, req, index) => {
-            // skip any text after #
-            if (req.includes('#')) {
-                req = req.split('#')[0];
-            }
-            const parsedRequirement: Array<string>  = req.split(/[==,>=,<=]+/);
-            const pkgName:string = (parsedRequirement[0] || '').trim();
-            // skip empty lines
-            if (pkgName.length > 0) {
-                const version = (parsedRequirement[1] || '').trim();
-                const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
-                entry.value = new Variant(ValueType.String, version);
-                entry.value_position = { line: index + 1, column: req.indexOf(version) + 1 };
-                dependencies.push(new Dependency(entry));
-            }
-            return dependencies;
-        }, []);
-    }
-
-    parse(): Array<IDependency> {
-        return this.dependencies;
-    }
-}
-
-/* Process entries found in the txt files and collect all dependency
- * related information */
-class ReqDependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ["dependencies"]) {}
-
-    async collect(contents: string): Promise<Array<IDependency>> {
-        let parser = new NaivePyParser(contents);
-        return parser.parse();
-    }
-
 }
 
 class NaiveGomodParser {
@@ -210,4 +164,4 @@ class GomodDependencyCollector implements IDependencyCollector {
 
 }
 
-export { ReqDependencyCollector, GomodDependencyCollector };
+export { GomodDependencyCollector };
