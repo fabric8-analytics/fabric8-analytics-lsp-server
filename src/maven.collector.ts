@@ -52,8 +52,7 @@ export class PomXmlDependencyCollector implements IDependencyCollector {
             }
         };
         const validElementNames = ['groupId', 'artifactId', 'version'];
-        const dependencies = dependenciesNode?.
-            subElements.
+        const dependencies = dependenciesNode.subElements.
             filter(e => e.name === 'dependency').
             // must include all validElementNames
             filter(e => e.subElements.filter(e => validElementNames.includes(e.name)).length == validElementNames.length).
@@ -62,7 +61,7 @@ export class PomXmlDependencyCollector implements IDependencyCollector {
             map(e => new PomDependency(e)).
             filter(d => d.isValid()).
             map(d => d.toDependency());
-        return dependencies || [];
+        return dependencies;
     }
 
     private createPropertySubstitution(e: XMLElement): Map<string, IPositionedString> {
