@@ -8,10 +8,10 @@ import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
-import { GomodDependencyCollector } from './gomod.collector';
-import { PackageJsonCollector } from './npm.collector';
-import { PomXmlDependencyCollector } from './maven.collector';
-import { ReqDependencyCollector } from './requirements.txt.collector';
+import { DependencyCollector as GoMod } from './collector/go.mod';
+import { DependencyCollector as PackageJson } from './collector/package.json';
+import { DependencyCollector as PomXml } from './collector/pom.xml';
+import { DependencyCollector as RequirementsTxt } from './collector/requirements.txt';
 import { IDependencyCollector } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
@@ -294,20 +294,20 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
 };
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
-    sendDiagnostics('npm', uri, contents, new PackageJsonCollector());
+    sendDiagnostics('npm', uri, contents, new PackageJson());
 });
 
 files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
-    sendDiagnostics('maven', uri, contents, new PomXmlDependencyCollector());
+    sendDiagnostics('maven', uri, contents, new PomXml());
 });
 
 files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
-    sendDiagnostics('pypi', uri, contents, new ReqDependencyCollector());
+    sendDiagnostics('pypi', uri, contents, new RequirementsTxt());
 });
 
 files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
     connection.console.log("Using golang executable: " + config.golang_executable);
-    sendDiagnostics('golang', uri, contents, new GomodDependencyCollector(uri));
+    sendDiagnostics('golang', uri, contents, new GoMod(uri));
 });
 
 let checkDelay;

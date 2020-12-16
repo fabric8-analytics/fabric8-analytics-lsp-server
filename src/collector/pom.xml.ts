@@ -1,9 +1,9 @@
 'use strict';
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency, IPositionedString, IPosition } from './collector';
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency, IPositionedString, IPosition } from '../collector';
 import { parse, DocumentCstNode } from "@xml-tools/parser";
 import { buildAst, accept, XMLElement, XMLDocument } from "@xml-tools/ast";
 
-export class PomXmlDependencyCollector implements IDependencyCollector {
+export class DependencyCollector implements IDependencyCollector {
     private xmlDocAst: XMLDocument;
 
     constructor(public classes: Array<string> = ["dependencies"]) {}

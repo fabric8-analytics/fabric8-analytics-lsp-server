@@ -1,8 +1,8 @@
 'use strict';
 
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from './collector';
-import { getGoLangImportsCmd } from './utils';
-import { config } from './config';
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
+import { getGoLangImportsCmd } from '../utils';
+import { config } from '../config';
 import { exec } from 'child_process';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts
@@ -131,7 +131,7 @@ class NaiveGomodParser {
 
 /* Process entries found in the go.mod file and collect all dependency
  * related information */
-class GomodDependencyCollector implements IDependencyCollector {
+export class DependencyCollector implements IDependencyCollector {
     constructor(private manifestFile: string, public classes: Array<string> = ["dependencies"]) {
         this.manifestFile = manifestFile;
     }
@@ -159,5 +159,3 @@ class GomodDependencyCollector implements IDependencyCollector {
     }
 
 }
-
-export { GomodDependencyCollector };
