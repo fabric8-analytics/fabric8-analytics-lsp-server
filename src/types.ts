@@ -10,13 +10,6 @@ enum ValueType {
   Null
 };
 
-/* Generic token interface, although currently we're going to use only IToken<string> */
-interface IToken<T> {
-    value: T;
-    line:  number;
-    pos:   number;
-}
-
 /* Value variant */
 interface IVariant {
   type:   ValueType;

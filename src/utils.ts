@@ -5,7 +5,7 @@
 'use strict';
 import { Stream, Readable } from 'stream';
 import { IPosition } from './types';
-import { IPositionedString } from './collector';
+import { IPositionedString } from './types';
 import { Position, Range } from 'vscode-languageserver';
 import { config } from './config';
 
