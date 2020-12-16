@@ -1,7 +1,7 @@
 'use strict';
 
 import { expect } from 'chai';
-import { Cache } from '../src/cache';
+import { Cache, globalCache } from '../src/cache';
 import { SimpleDependency } from '../src/collector';
 
 describe('LRU Cache test', () => {
@@ -60,9 +60,20 @@ describe('LRU Cache test', () => {
       {package: 'bar', version: '2.0', extra: "got bar@2.0"}
     ];
     cache.add(response);
+    // wait for the cache to expiry.
     await new Promise(r => setTimeout(r, 11));
     const {cachedValues, missedItems} = cache.classify(deps);
     expect(cachedValues).is.empty;
     expect(missedItems).is.eql(deps);
+  });
+
+  it('globalCache check', () => {
+    const abc = globalCache('abc', 0, 0);
+    const xyz = globalCache('xyz', 0, 0);
+    expect(abc).to.equal(globalCache('abc', 10, 20));
+    expect(xyz).to.equal(globalCache('xyz', 10, 20));
+    expect(abc).not.to.equal(globalCache('xyz', 10, 20));
+    expect(xyz).not.to.equal(globalCache('abc', 10, 20));
+    expect(abc).not.to.equal(xyz);
   });
 });

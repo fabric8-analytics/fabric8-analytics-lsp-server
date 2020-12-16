@@ -8,6 +8,11 @@ import * as fs from 'fs';
 import {
 	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
 	TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
+import fetch from 'node-fetch';
+import url from 'url';
+import winston from 'winston';
+
+
 import { DependencyCollector as GoMod } from './collector/go.mod';
 import { DependencyCollector as PackageJson } from './collector/package.json';
 import { DependencyCollector as PomXml } from './collector/pom.xml';
@@ -17,10 +22,7 @@ import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from './vulnerability';
 import { config } from './config';
-import fetch from 'node-fetch';
-
-const url = require('url');
-const winston = require('winston');
+import { globalCache as GlobalCache } from './cache';
 
 let transport;
 try {
@@ -134,7 +136,11 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
         let contents = this.files.file_data[uri];
         return this.files.run(EventStream.CodeLens, uri, file_name, contents);
     }
-};
+}
+
+const maxCacheItems = 1000;
+const maxCacheAge = 30 * 1000 * 60;
+const globalCache = key => GlobalCache(key, maxCacheItems, maxCacheAge);
 
 let files: IAnalysisFiles = new AnalysisFiles();
 let server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
@@ -160,7 +166,6 @@ let DiagnosticsEngines = [SecurityEngine];
 const getCAmsg = (deps, diagnostics, totalCount): string => {
     let msg = `Scanned ${deps.length} ${deps.length == 1 ? 'dependency' : 'dependencies'}, `;
 
-    
     if(diagnostics.length > 0) {
         const vulStr = (count: number) => count == 1 ? 'Vulnerability' : 'Vulnerabilities';
         const advStr = (count: number) => count == 1 ? 'Advisory' : 'Advisories';
@@ -276,18 +281,24 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     } else {
         packageAggregator = new GolangVulnerabilityAggregator();
     }
-    const requestPayload = validPackages.map(d => ({package: d.name.value, version: d.version.value}));
     const pkgMap = new DependencyMap(validPackages);
     const batchSize = 10;
     let diagnostics = [];
     let totalCount = new TotalCount();
     const start = new Date().getTime();
+    const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
     // filter items which are already on cache
-    // const nonCachedRequest = validPackages.filter(r => globalCache.get(r)
-    // run diagnostics pipeline
+    const cache = globalCache(ecosystem);
+    const {cachedValues, missedItems} = cache.classify(validPackages);
+    // run diagnostics pipeline for cachedValues.
+    pipeline(cachedValues);
+    const cacheAndRunPipeline = response => {
+      cache.add(response);
+      pipeline(response);
+    }
+    const requestPayload = missedItems.map(d => ({package: d.name.value, version: d.version.value}));
     const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
-            map(request => fetchVulnerabilities(request).then(response =>
-            runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount)));
+            map(request => fetchVulnerabilities(request).then(cacheAndRunPipeline));
 
     await Promise.allSettled(allRequests);
     const end = new Date().getTime();

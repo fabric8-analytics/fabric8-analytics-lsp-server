@@ -34,3 +34,12 @@ export class Cache {
     });
   }
 }
+
+export const globalCache = (() => {
+  const cache = new Map<string, Cache>();
+  return (key, max, maxAge) => {
+    const c = cache.get(key) ?? new Cache(max, maxAge);
+    cache.has(key) || cache.set(key, c);
+    return c;
+  };
+})();
