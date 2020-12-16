@@ -1,9 +1,3 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Pavel Odvody 2016
- * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
-'use strict';
-
 /* Determine what is the value */
 enum ValueType {
   Invalid,
@@ -15,6 +9,13 @@ enum ValueType {
   Boolean,
   Null
 };
+
+/* Generic token interface, although currently we're going to use only IToken<string> */
+interface IToken<T> {
+    value: T;
+    line:  number;
+    pos:   number;
+}
 
 /* Value variant */
 interface IVariant {
@@ -51,7 +52,7 @@ class KeyValueEntry implements IKeyValueEntry {
 }
 
 class Variant implements IVariant {
-  constructor(public type: ValueType, public object: any) {}
+    constructor(public type: ValueType, public object: any) {}
 }
 
 /* String value with position */
@@ -80,12 +81,12 @@ class Dependency implements IDependency {
   version: IPositionedString;
   constructor(dependency: IKeyValueEntry) {
     this.name = {
-      value: dependency.key,
-      position: dependency.key_position
+        value: dependency.key,
+        position: dependency.key_position
     };
     this.version = {
-      value: dependency.value.object,
-      position: dependency.value_position
+        value: dependency.value.object,
+        position: dependency.value_position
     };
   }
 

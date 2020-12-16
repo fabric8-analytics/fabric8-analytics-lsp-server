@@ -16,6 +16,7 @@ import { IDependencyCollector } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from './vulnerability';
+import { IDependency, SimpleDependency } from './types';
 import { config } from './config';
 import fetch from 'node-fetch';
 
@@ -222,9 +223,9 @@ class TotalCount {
 };
 
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
-function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, dependencyMap, totalCount) {
+function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: PackageMap, totalCount) {
     response.forEach(r => {
-        const dependency = dependencyMap.get(r.package + r.version);
+        const dependency = pkgMap.get(new SimpleDependency(r.package, r.version).key());
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(r);
         for (const item of pipeline.items) {
@@ -234,7 +235,18 @@ function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePat
             totalCount.exploitCount += secEng.exploitCount;
         }
         connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
-    })
+    });
+}
+
+class PackageMap {
+   requestMapper: Map<string, IDependency>;
+   constructor(deps: Array<IDependency>) {
+     this.requestMapper = new Map(deps.map(d => [d.key(), d]));
+   }
+
+   public get(key: string): IDependency {
+     return this.requestMapper.get(key);
+   }
 }
 
 /* Slice payload in each chunk size of @batchSize */
@@ -276,15 +288,18 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     } else {
         packageAggregator = new GolangVulnerabilityAggregator();
     }
-    const requestPayload = validPackages.map(d => ({"package": d.name.value, "version": d.version.value}));
-    const requestMapper = new Map(validPackages.map(d => [d.name.value + d.version.value, d]));
+    const requestPayload = validPackages.map(d => ({package: d.name.value, version: d.version.value}));
+    const pkgMap = new PackageMap(validPackages);
     const batchSize = 10;
     let diagnostics = [];
     let totalCount = new TotalCount();
     const start = new Date().getTime();
-    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).map(request =>
-        fetchVulnerabilities(request).then(response =>
-            runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, requestMapper, totalCount)));
+    // filter items which are already on cache
+    // const nonCachedRequest = validPackages.filter(r => globalCache.get(r)
+    // run diagnostics pipeline
+    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
+            map(request => fetchVulnerabilities(request).then(response =>
+            runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount)));
 
     await Promise.allSettled(allRequests);
     const end = new Date().getTime();

@@ -34,6 +34,7 @@
     "@xml-tools/parser": "^1.0.7",
     "compare-versions": "3.6.0",
     "json-to-ast": "^2.1.0",
+    "lru-cache": "^6.0.0",
     "node-fetch": "^2.6.0",
     "vscode-languageserver": "^5.3.0-next.9",
     "winston": "3.2.1"
@@ -41,16 +42,17 @@
   "devDependencies": {
     "@semantic-release/exec": "^5.0.0",
     "@types/chai": "^4.1.7",
+    "@types/lru-cache": "^5.1.0",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.7.5",
     "@types/node-fetch": "^2.5.7",
     "chai": "^4.2.0",
+    "fake-exec": "^1.1.0",
     "mocha": "^6.2.0",
     "nyc": "^14.1.1",
     "semantic-release": "^17.1.0",
     "ts-node": "^8.3.0",
-    "typescript": "^3.6.3",
-    "fake-exec": "^1.1.0"
+    "typescript": "^3.6.3"
   },
   "scripts": {
     "build": "tsc -p . && cp package.json LICENSE README.md output",
