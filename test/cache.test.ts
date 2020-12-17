@@ -29,7 +29,7 @@ describe('LRU Cache test', () => {
     const cache = new Cache(10, 10000);
 
     const response: Array<any> = [
-      {package: 'foo', version: '1.0', extra: "got it!"}
+      {package: 'foo', version: '1.0', extra: 'got it!'}
     ];
     cache.add(response);
 
@@ -42,8 +42,8 @@ describe('LRU Cache test', () => {
     const cache = new Cache(10, 10000);
 
     const response: Array<any> = [
-      {package: 'foo', version: '1.0', extra: "got foo@1.0"},
-      {package: 'bar', version: '2.0', extra: "got bar@2.0"}
+      {package: 'foo', version: '1.0', extra: 'got foo@1.0'},
+      {package: 'bar', version: '2.0', extra: 'got bar@2.0'}
     ];
     cache.add(response);
 
@@ -56,8 +56,8 @@ describe('LRU Cache test', () => {
     const cache = new Cache(10, 1);
 
     const response: Array<any> = [
-      {package: 'foo', version: '1.0', extra: "got foo@1.0"},
-      {package: 'bar', version: '2.0', extra: "got bar@2.0"}
+      {package: 'foo', version: '1.0', extra: 'got foo@1.0'},
+      {package: 'bar', version: '2.0', extra: 'got bar@2.0'}
     ];
     cache.add(response);
     // wait for the cache to expiry.
@@ -65,6 +65,20 @@ describe('LRU Cache test', () => {
     const {cachedValues, missedItems} = cache.classify(deps);
     expect(cachedValues).is.empty;
     expect(missedItems).is.eql(deps);
+  });
+
+  it('classification after cache full', async () => {
+    const cache = new Cache(2, 0);
+
+    const response: Array<any> = [
+      {package: 'foo', version: '1.0', extra: 'got foo@1.0'},
+      {package: 'bar', version: '2.0', extra: 'got bar@2.0'},
+      {package: 'jaz', version: '3.0', extra: 'got jaz@3.0'}
+    ];
+    cache.add(response);
+    const {cachedValues, missedItems} = cache.classify([...deps, new SimpleDependency('jaz', '3.0')]);
+    expect(cachedValues).is.eql(response.slice(1));
+    expect(missedItems).is.eql(deps.slice(0, 1));
   });
 
   it('globalCache check', () => {
