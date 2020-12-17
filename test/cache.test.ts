@@ -53,7 +53,7 @@ describe('LRU Cache test', () => {
   });
 
   it('classification on cache after cache expiry', async () => {
-    const cache = new Cache(10, 10);
+    const cache = new Cache(10, 1);
 
     const response: Array<any> = [
       {package: 'foo', version: '1.0', extra: "got foo@1.0"},
