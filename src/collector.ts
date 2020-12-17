@@ -109,7 +109,7 @@ export class DependencyMap {
      this.mapper = new Map(deps.map(d => [d.key(), d]));
    }
 
-   public get(key: string): IHashableDependency {
-     return this.mapper.get(key);
+   public get(dep: IHashableDependency): IHashableDependency {
+     return this.mapper.get(dep.key());
    }
 }

@@ -38,8 +38,7 @@ export class Cache {
 export const globalCache = (() => {
   const cache = new Map<string, Cache>();
   return (key, max, maxAge) => {
-    const c = cache.get(key) ?? new Cache(max, maxAge);
-    cache.has(key) || cache.set(key, c);
+    const c = cache.get(key) ?? cache.set(key, new Cache(max, maxAge)).get(key);
     return c;
   };
 })();

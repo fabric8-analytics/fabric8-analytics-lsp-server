@@ -229,7 +229,7 @@ class TotalCount {
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
 function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount) {
     response.forEach(r => {
-        const dependency = pkgMap.get(new SimpleDependency(r.package, r.version).key());
+        const dependency = pkgMap.get(new SimpleDependency(r.package, r.version));
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(r);
         for (const item of pipeline.items) {
@@ -283,20 +283,23 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     }
     const pkgMap = new DependencyMap(validPackages);
     const batchSize = 10;
-    let diagnostics = [];
-    let totalCount = new TotalCount();
+    const diagnostics = [];
+    const totalCount = new TotalCount();
     const start = new Date().getTime();
+    // Closure which captures common arg to runPipeline.
     const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
-    // filter items which are already on cache
+    // Get and fire diagnostics for items found in Cache.
     const cache = globalCache(ecosystem);
     const {cachedValues, missedItems} = cache.classify(validPackages);
-    // run diagnostics pipeline for cachedValues.
     pipeline(cachedValues);
+
+    // Construct request payload for items not in Cache.
+    const requestPayload = missedItems.map(d => ({package: d.name.value, version: d.version.value}));
+    // Closure which adds response into cache before firing diagnostics.
     const cacheAndRunPipeline = response => {
       cache.add(response);
       pipeline(response);
     }
-    const requestPayload = missedItems.map(d => ({package: d.name.value, version: d.version.value}));
     const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
             map(request => fetchVulnerabilities(request).then(cacheAndRunPipeline));
 
