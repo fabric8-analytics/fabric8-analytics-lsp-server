@@ -139,7 +139,7 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
 }
 
 const maxCacheItems = 1000;
-const maxCacheAge = 30 * 1000 * 60;
+const maxCacheAge = 30 * 60 * 1000;
 const globalCache = key => GlobalCache(key, maxCacheItems, maxCacheAge);
 
 let files: IAnalysisFiles = new AnalysisFiles();
@@ -291,6 +291,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     // Get and fire diagnostics for items found in Cache.
     const cache = globalCache(ecosystem);
     const {cachedValues, missedItems} = cache.classify(validPackages);
+    connection.console.log(`cache hit: ${cachedValues.length} miss: ${missedItems.length}`);
     pipeline(cachedValues);
 
     // Construct request payload for items not in Cache.

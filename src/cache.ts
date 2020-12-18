@@ -29,7 +29,8 @@ export class Cache {
 
   add(items: Array<any>): void {
     items.forEach(item => {
-      const dep = new SimpleDependency(item.package, item.version);
+      // FIXME: response field is inconsistent when unknown is included.
+      const dep = new SimpleDependency(item.package || item.name, item.version);
       this.cache.set(dep.key(), item);
     });
   }
