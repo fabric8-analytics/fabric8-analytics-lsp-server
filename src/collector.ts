@@ -5,7 +5,7 @@
 'use strict';
 
 /* Determine what is the value */
-enum ValueType {
+export enum ValueType {
   Invalid,
   String,
   Integer,
@@ -17,73 +17,99 @@ enum ValueType {
 };
 
 /* Value variant */
-interface IVariant {
+export interface IVariant {
   type:   ValueType;
   object: any;
 }
 
 /* Line and column inside the JSON file */
-interface IPosition {
+export interface IPosition {
   line:   number;
   column: number;
 };
 
 /* Key/Value entry with positions */
-interface IKeyValueEntry {
+export interface IKeyValueEntry {
   key:            string;
   value:          IVariant;
   key_position:   IPosition;
   value_position: IPosition;
 };
 
-class KeyValueEntry implements IKeyValueEntry {
+export class KeyValueEntry implements IKeyValueEntry {
   key:            string;
   value:          IVariant;
   key_position:   IPosition;
   value_position: IPosition;
 
-  constructor(k: string, pos: IPosition) {
+  constructor(k: string, pos: IPosition, v?: IVariant, v_pos?: IPosition) {
     this.key = k;
     this.key_position = pos;
+    this.value = v;
+    this.value_position = v_pos;
   }
 }
 
-class Variant implements IVariant {
-    constructor(public type: ValueType, public object: any) {}
+export class Variant implements IVariant {
+  constructor(public type: ValueType, public object: any) {}
 }
 
 /* String value with position */
-interface IPositionedString {
+export interface IPositionedString {
   value:    string;
   position: IPosition;
 }
 
 /* Dependency specification */
-interface IDependency {
-  name:    IPositionedString;
+export interface IDependency {
+  name: IPositionedString;
   version: IPositionedString;
 }
 
+export interface IHashableDependency extends IDependency {
+  key(): string;
+}
+
 /* Dependency collector interface */
-interface IDependencyCollector {
+export interface IDependencyCollector {
   classes: Array<string>;
   collect(contents: string): Promise<Array<IDependency>>;
 }
 
 /* Dependency class that can be created from `IKeyValueEntry` */
-class Dependency implements IDependency {
+export class Dependency implements IHashableDependency {
   name:    IPositionedString;
   version: IPositionedString;
   constructor(dependency: IKeyValueEntry) {
     this.name = {
-        value: dependency.key,
-        position: dependency.key_position
+      value: dependency.key,
+      position: dependency.key_position
     };
     this.version = {
-        value: dependency.value.object,
-        position: dependency.value_position
+      value: dependency.value.object,
+      position: dependency.value_position
     };
+  }
+
+  key(): string {
+    return `${this.name.value}@${this.version.value}`;
   }
 }
 
-export { IPosition, IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IPositionedString, IDependencyCollector, Dependency };
+/* Dependency from name, version without position */
+export class SimpleDependency extends Dependency {
+  constructor(name: string, version: string) {
+    super(new KeyValueEntry(name, null, new Variant(ValueType.String, version), null));
+  }
+}
+
+export class DependencyMap {
+   mapper: Map<string, IHashableDependency>;
+   constructor(deps: Array<IHashableDependency>) {
+     this.mapper = new Map(deps.map(d => [d.key(), d]));
+   }
+
+   public get(dep: IHashableDependency): IHashableDependency {
+     return this.mapper.get(dep.key());
+   }
+}

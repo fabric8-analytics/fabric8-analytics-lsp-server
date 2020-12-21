@@ -1,6 +1,7 @@
+'use strict';
+
 import { expect } from 'chai';
 import { DependencyCollector } from '../../src/collector/pom.xml';
-import parse = require("@xml-tools/parser");
 
 describe('Maven pom.xml parser test', () => {
     const collector = new DependencyCollector();
