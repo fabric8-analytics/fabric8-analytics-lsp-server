@@ -1,7 +1,7 @@
 'use strict';
 
 import { expect } from 'chai';
-import { Cache, globalCache } from '../src/cache';
+import { Cache, CachedItem, globalCache } from '../src/cache';
 import { SimpleDependency } from '../src/collector';
 
 describe('LRU Cache test', () => {
@@ -13,14 +13,15 @@ describe('LRU Cache test', () => {
 
   it('classification on empty cache, empty input', async () => {
     const cache = new Cache(10, 10000);
-    const {cachedValues, missedItems} = cache.classify([]);
-    expect(cachedValues).is.empty;
-    expect(missedItems).is.empty;
+    const cachedItems = cache.get([]);
+    expect(cachedItems).is.empty;
   });
 
   it('classification on empty cache, valid input', async () => {
     const cache = new Cache(10, 10000);
-    const {cachedValues, missedItems} = cache.classify(deps);
+    const cachedItems = cache.get(deps);
+    const cachedValues = cachedItems.filter(c => c.V !== undefined).map(c => c.V);
+    const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
     expect(cachedValues).is.empty;
     expect(missedItems).is.eql(deps);
   });
@@ -33,7 +34,9 @@ describe('LRU Cache test', () => {
     ];
     cache.add(response);
 
-    const {cachedValues, missedItems} = cache.classify(deps);
+    const cachedItems = cache.get(deps);
+    const cachedValues = cachedItems.filter(c => c.V !== undefined).map(c => c.V);
+    const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
     expect(cachedValues).is.eql([response[0]]);
     expect(missedItems).is.eql([deps[1]]);
   });
@@ -47,7 +50,9 @@ describe('LRU Cache test', () => {
     ];
     cache.add(response);
 
-    const {cachedValues, missedItems} = cache.classify(deps);
+    const cachedItems = cache.get(deps);
+    const cachedValues = cachedItems.filter(c => c.V !== undefined).map(c => c.V);
+    const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
     expect(cachedValues).is.eql(response);
     expect(missedItems).is.empty;
   });
@@ -62,7 +67,9 @@ describe('LRU Cache test', () => {
     cache.add(response);
     // wait for the cache to expiry.
     await new Promise(r => setTimeout(r, 11));
-    const {cachedValues, missedItems} = cache.classify(deps);
+    const cachedItems = cache.get(deps);
+    const cachedValues = cachedItems.filter(c => c.V !== undefined).map(c => c.V);
+    const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
     expect(cachedValues).is.empty;
     expect(missedItems).is.eql(deps);
   });
@@ -76,7 +83,9 @@ describe('LRU Cache test', () => {
       {package: 'jaz', version: '3.0', extra: 'got jaz@3.0'}
     ];
     cache.add(response);
-    const {cachedValues, missedItems} = cache.classify([...deps, new SimpleDependency('jaz', '3.0')]);
+    const cachedItems = cache.get([...deps, new SimpleDependency('jaz', '3.0')]);
+    const cachedValues = cachedItems.filter(c => c.V !== undefined).map(c => c.V);
+    const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
     expect(cachedValues).is.eql(response.slice(1));
     expect(missedItems).is.eql(deps.slice(0, 1));
   });

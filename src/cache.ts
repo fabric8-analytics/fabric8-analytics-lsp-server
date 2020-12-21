@@ -3,7 +3,10 @@
 import LRUCache from 'lru-cache';
 import { IHashableDependency, SimpleDependency } from './collector';
 
-type CachedItems = {cachedValues: Array<any>, missedItems: Array<IHashableDependency>};
+export interface CachedItem {
+  K: IHashableDependency
+  V: any
+};
 
 export class Cache {
   private cache: LRUCache<string, any>;
@@ -12,19 +15,12 @@ export class Cache {
     this.cache = new LRUCache<string, any>({max, maxAge});
   }
 
-  // returns cachedValues and non cached items.
-  classify(deps: Array<IHashableDependency>): CachedItems {
-    const cachedValues = Array<any>();
-    const missedItems = Array<IHashableDependency>();
-    deps.forEach(d => {
+  // returns null as a value for dependency which is not in the cache.
+  get(deps: Array<IHashableDependency>): Array<CachedItem> {
+    return deps.map(d => {
       const cached = this.cache.get(d.key());
-      if (cached) {
-        cachedValues.push(cached);
-      } else {
-        missedItems.push(d);
-      }
+      return {K: d, V: cached} as CachedItem;
     });
-    return {cachedValues, missedItems};
   }
 
   add(items: Array<any>): void {
