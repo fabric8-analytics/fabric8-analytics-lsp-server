@@ -256,21 +256,19 @@ function slicePayload(payload, batchSize, ecosystem): any {
 
 const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
+    // clear all diagnostics
+    connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
     connection.sendNotification('caNotification', {data: caDefaultMsg, done: false, uri: diagnosticFilePath});
     let deps = null;
     try {
         const start = new Date().getTime();
         deps = await collector.collect(contents);
         const end = new Date().getTime();
-        connection.console.log(`manifest parse took ${end - start} ms`);
+        connection.console.log(`manifest parse took ${end - start} ms, found ${deps.length} deps`);
     } catch (error) {
-        // Error can be raised during golang `go list ` command only.
-        if (ecosystem == "golang") {
-            connection.console.warn(`Command execution failed with error: ${error}`);
-            connection.sendNotification('caError', {data: error, uri: diagnosticFilePath});
-            connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
-            return;
-        }
+        connection.console.warn(`Error: ${error}`);
+        connection.sendNotification('caError', {data: error, uri: diagnosticFilePath});
+        return;
     }
 
     let validPackages = deps;
