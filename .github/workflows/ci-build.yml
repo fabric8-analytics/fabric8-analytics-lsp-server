@@ -22,6 +22,8 @@ jobs:
       run: npm install
     - name: Build
       run: npm run build
+    - name: Invoke LSP entrypoint(server.js)
+      run: node output/server.js
     - name: Run the unit tests
       run: npm test -- --coverage
     - name: Upload coverage to Codecov
@@ -42,6 +44,9 @@ jobs:
       run: npm install
     - name: Build
       run: npm run build
+    - name: Create local package tarball
+      run: npm pack
+      working-directory: output
     - name: pull vscode-extension code
       uses: actions/checkout@v2
       with:
@@ -53,13 +58,16 @@ jobs:
       run: npm ci
       working-directory: ./vscode-extension
     - name: Install local lsp
-      run: npm i ../output
+      run: npm i ../output/fabric8-analytics-lsp-server-*.tgz
       working-directory: ./vscode-extension
     - name: Remove test files
       run: rm -fr test
       working-directory: ./vscode-extension
     - name: VSCE prepublish
       run: vsce package
+      working-directory: ./vscode-extension
+    - name: Invoke LSP entrypoint(server.js)
+      run: node dist/server.js
       working-directory: ./vscode-extension
     - name: Upload build artifacts
       uses: actions/upload-artifact@v2
