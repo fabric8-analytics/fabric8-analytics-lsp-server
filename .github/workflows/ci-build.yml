@@ -45,7 +45,7 @@ jobs:
     - name: Build
       run: npm run build
     - name: Create local package tarball
-      run: npm pack output fabric8-analytics-lsp-server
+      run: npm pack fabric8-analytics-lsp-server
     - name: pull vscode-extension code
       uses: actions/checkout@v2
       with:
