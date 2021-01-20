@@ -45,7 +45,8 @@ jobs:
     - name: Build
       run: npm run build
     - name: Create local package tarball
-      run: npm pack fabric8-analytics-lsp-server
+      run: npm pack
+      working-directory: output
     - name: pull vscode-extension code
       uses: actions/checkout@v2
       with:
@@ -57,7 +58,7 @@ jobs:
       run: npm ci
       working-directory: ./vscode-extension
     - name: Install local lsp
-      run: npm i ../fabric8-analytics-lsp-server-*.tgz
+      run: npm i ../output/fabric8-analytics-lsp-server-*.tgz
       working-directory: ./vscode-extension
     - name: Remove test files
       run: rm -fr test
