@@ -49,7 +49,7 @@ module.exports = {
           label: "analytics-lsp-macos"
         },
         {
-          path: "analytics-lsp-win",
+          path: "analytics-lsp-win.exe",
           name: "analytics-lsp-win",
           label: "analytics-lsp-win"
         },
