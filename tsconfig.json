@@ -4,7 +4,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "output",
+    "outDir": "dist",
     "esModuleInterop": true,
     "lib": [
         "ES2019.array",
