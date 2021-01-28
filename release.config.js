@@ -38,8 +38,8 @@ module.exports = {
         },
         {
           path: "analytics-lsp-win.exe",
-          name: "analytics-lsp-win",
-          label: "analytics-lsp-win"
+          name: "analytics-lsp-win.exe",
+          label: "analytics-lsp-win.exe"
         },
         {
           path: "analytics-lsp-linux.sha256",
