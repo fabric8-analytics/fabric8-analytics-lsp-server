@@ -19,9 +19,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: Install Dependencies
-      run: npm install
-    - name: Build
-      run: npm run build
+      run: npm ci
     - name: Invoke LSP entrypoint(server.js)
       run: node dist/server.js
     - name: Run the unit tests
@@ -41,9 +39,7 @@ jobs:
       with:
         node-version: 12.x
     - name: Install Dependencies
-      run: npm install
-    - name: Build
-      run: npm run build
+      run: npm ci
     - name: Create local package tarball
       run: npm pack
     - name: pull vscode-extension code
