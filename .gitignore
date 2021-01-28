@@ -38,7 +38,7 @@ jspm_packages
 
 # Others
 .idea/
-output/
+dist
 
 # generated tarball and publishing scripts
 target/

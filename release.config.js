@@ -1,9 +1,5 @@
 module.exports = {
   prepare: [
-    {
-      path: "@semantic-release/exec",
-      cmd: "npm run build && cp package-lock.json output",
-    },
     "@semantic-release/npm",
     {
       // build the Linux executable
@@ -28,16 +24,8 @@ module.exports = {
   ],
   publish: [
     {
-      // install deps and create release tarball for intellij use.
-      path: "@semantic-release/exec",
-      cmd: "cd output && npm i --only=prod && echo ${nextRelease.version}>VERSION && tar cvjf ../ca-lsp-server.tar ."
-    },
-    {
       path: "@semantic-release/github",
       assets: [
-        {
-          path: "ca-lsp-server.tar"
-        },
         {
           path: "analytics-lsp-linux",
           name: "analytics-lsp-linux",
