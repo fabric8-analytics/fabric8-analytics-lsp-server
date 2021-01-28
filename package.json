@@ -19,7 +19,7 @@
   ],
   "license": "Apache-2.0",
   "engines": {
-    "node": "*"
+    "node": "^12.0"
   },
   "keywords": [
     "fabric8-analytics",
@@ -29,8 +29,9 @@
     "type": "git",
     "url": "https://github.com/fabric8-analytics/fabric8-analytics-lsp-server.git"
   },
+  "main": "output/server.js",
   "dependencies": {
-    "@xml-tools/ast": "5.0.0",
+    "@xml-tools/ast": "^5.0.3",
     "@xml-tools/parser": "1.0.9",
     "compare-versions": "3.6.0",
     "json-to-ast": "^2.1.0",
@@ -50,6 +51,7 @@
     "fake-exec": "^1.1.0",
     "mocha": "^6.2.0",
     "nyc": "^14.1.1",
+    "pkg": "^4.4.9",
     "semantic-release": "^17.1.0",
     "ts-node": "^8.3.0",
     "typescript": "^3.6.3"
@@ -76,34 +78,5 @@
     ],
     "sourceMap": true,
     "instrument": true
-  },
-  "release": {
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      [
-        "@semantic-release/exec",
-        {
-          "verifyConditionsCmd": "npm run build && cp package-lock.json output",
-          "publishCmd": "cd output && npm i --only=prod && echo ${nextRelease.version}>VERSION && tar cvjf ../ca-lsp-server.tar ."
-        }
-      ],
-      [
-        "@semantic-release/github",
-        {
-          "assets": [
-            {
-              "path": "ca-lsp-server.tar"
-            }
-          ]
-        }
-      ],
-      [
-        "@semantic-release/npm",
-        {
-          "pkgRoot": "output"
-        }
-      ]
-    ]
   }
 }
