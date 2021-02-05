@@ -29,7 +29,7 @@ module.exports = {
         {
           path: "analytics-lsp-linux",
           name: "analytics-lsp-linux",
-          label: "analytics-lsp-server"
+          label: "analytics-lsp-linux"
         },
         {
           path: "analytics-lsp-macos",
@@ -44,7 +44,7 @@ module.exports = {
         {
           path: "analytics-lsp-linux.sha256",
           name: "analytics-lsp-linux.sha256",
-          label: "analytics-lsp-server.sha256"
+          label: "analytics-lsp-linux.sha256"
         },
         {
           path: "analytics-lsp-macos.sha256",
