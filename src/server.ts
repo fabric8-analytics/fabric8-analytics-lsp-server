@@ -238,8 +238,9 @@ function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePat
             totalCount.advisoryCount += secEng.advisoryCount;
             totalCount.exploitCount += secEng.exploitCount;
         }
-        connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
     });
+    connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
+    connection.console.log(`sendDiagnostics: ${diagnostics?.length}`);
 }
 
 /* Slice payload in each chunk size of @batchSize */
