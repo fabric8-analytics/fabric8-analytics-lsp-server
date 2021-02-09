@@ -45,6 +45,11 @@ describe('PyPi requirements.txt parser test', () => {
         }]);
     });
 
+    it('tests empty requirements.txt', async () => {
+        const deps = await collector.collect(``);
+        expect(deps).is.eql([]);
+    });
+
     it('tests empty lines', async () => {
         const deps = await collector.collect(`
 

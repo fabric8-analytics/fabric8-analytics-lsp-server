@@ -72,6 +72,13 @@ github.com/stretchr/testify`);
     });
   });
 
+  it('tests empty go.mod', async () => {
+    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
+github.com/stretchr/testify`);
+    const deps = await collector.collect(``);
+    expect(deps).is.eql([]);
+  });
+
   it('tests empty lines in go.mod', async () => {
     fake(getGoLangImportsCmd(), `github.com/alecthomas/units
 github.com/stretchr/testify`);

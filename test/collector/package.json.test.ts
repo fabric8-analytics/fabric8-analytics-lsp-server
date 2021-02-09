@@ -4,6 +4,11 @@ import { DependencyCollector } from '../../src/collector/package.json';
 describe('npm package.json parser test', () => {
     const collector = new DependencyCollector();
 
+    it('tests empty package.json file content', async () => {
+        const deps = await collector.collect(``);
+        expect(deps.length).equal(0);
+    });
+
     it('tests empty package.json', async () => {
         const deps = await collector.collect(`
         {}
