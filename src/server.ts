@@ -10,7 +10,6 @@ import {
 	TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
 import fetch from 'node-fetch';
 import url from 'url';
-import winston from 'winston';
 
 
 import { DependencyCollector as GoMod } from './collector/go.mod';
@@ -23,19 +22,6 @@ import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './ag
 import { AnalyticsSource } from './vulnerability';
 import { config } from './config';
 import { globalCache as GlobalCache } from './cache';
-
-let transport;
-try {
-  transport = new winston.transports.File({ filename: '/workspace-logs/ls-bayesian/bayesian.log' });
-} catch(err) {
-  transport = new winston.transports.Console({ silent: true });
-}
-const logger = winston.createLogger({
-  level: 'debug',
-  format: winston.format.simple(),
-  transports: [ transport ]
-});
-logger.info('Starting Bayesian');
 
 enum EventStream {
   Invalid,
