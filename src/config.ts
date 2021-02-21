@@ -5,17 +5,20 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-class Config
-{
-    server_url:               string;
-    api_token:                string;
-    three_scale_user_token:   string;
+class Config {
+    server_url: string;
+    api_token: string;
+    three_scale_user_token: string;
     provide_fullstack_action: boolean;
-    forbidden_licenses:       Array<string>;
-    no_crypto:                boolean;
-    home_dir:                 string;
-    uuid:                     string;
-    golang_executable:        string;
+    forbidden_licenses: Array<string>;
+    no_crypto: boolean;
+    home_dir: string;
+    uuid: string;
+    golang_executable: string;
+    manifest_hash: string;
+    source: string;
+    user_agent: string;
+    request_id: string;
 
     constructor() {
         // TODO: this needs to be configurable
