@@ -31,6 +31,10 @@ class Config {
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
         this.uuid = process.env.UUID || "";
         this.golang_executable = process.env.GOLANG_EXECUTABLE || 'go';
+        this.manifest_hash = process.env.manifest_hash || "";
+        this.source = process.env.source || "";
+        this.user_agent = process.env.user_agent || "";
+        this.request_id = process.env.request_id || "";
     }
 };
 
