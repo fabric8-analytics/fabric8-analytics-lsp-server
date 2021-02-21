@@ -194,6 +194,11 @@ const fetchVulnerabilities = async (reqData) => {
     if (config.uuid) {
         headers['uuid'] = config.uuid;
     }
+
+    if (config.request_id) {
+        headers['request_id'] = config.request_id;
+    }
+
     try {
         const response = await fetch(url, {
             method: 'post',
