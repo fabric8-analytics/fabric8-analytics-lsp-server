@@ -5,6 +5,7 @@
 'use strict';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as uuid from 'uuid';
 import {
     IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
     TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind
@@ -197,6 +198,8 @@ const fetchVulnerabilities = async (reqData) => {
 
     if (config.request_id) {
         headers['request_id'] = config.request_id;
+    } else {
+        headers['request_id'] = uuid.v4();
     }
 
     try {
