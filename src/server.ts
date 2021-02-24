@@ -185,7 +185,6 @@ const fetchVulnerabilities = async (reqData) => {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + config.api_token,
         'request_id': uuid.v4(),
-        'x-3scale-account-secret': 'not-set',
     };
 
     let manifestHash = crypto.createHash("sha1").update(reqData.filepath).digest("hex");
