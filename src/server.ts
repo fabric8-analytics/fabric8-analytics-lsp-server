@@ -182,6 +182,8 @@ const fetchVulnerabilities = async (reqData) => {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + config.api_token,
+        'request_id': uuid.v4(),
+        'x-3scale-account-secret': 'not-set',
     };
 
     if (config.manifest_hash) {
@@ -194,12 +196,13 @@ const fetchVulnerabilities = async (reqData) => {
 
     if (config.uuid) {
         headers['uuid'] = config.uuid;
+        console.log(".....................................................................................")
+        console.log(config.uuid);
+
     }
 
-    if (config.request_id) {
-        headers['request_id'] = config.request_id;
-    } else {
-        headers['request_id'] = uuid.v4();
+    if (config.user_agent) {
+        headers['User-Agent'] = config.user_agent;
     }
 
     try {

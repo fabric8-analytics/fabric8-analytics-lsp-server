@@ -18,7 +18,6 @@ class Config {
     manifest_hash: string;
     source: string;
     user_agent: string;
-    request_id: string;
 
     constructor() {
         // TODO: this needs to be configurable
@@ -34,7 +33,6 @@ class Config {
         this.manifest_hash = process.env.manifest_hash || "";
         this.source = process.env.source || "";
         this.user_agent = process.env.user_agent || "";
-        this.request_id = process.env.request_id || "";
     }
 };
 
