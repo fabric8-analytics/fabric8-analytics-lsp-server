@@ -6,6 +6,8 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
+import * as crypto from "crypto";
+
 import {
     IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
     TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind
@@ -186,9 +188,8 @@ const fetchVulnerabilities = async (reqData) => {
         'x-3scale-account-secret': 'not-set',
     };
 
-    if (config.manifest_hash) {
-        url += `&utm_content=${config.manifest_hash}`;
-    }
+    let manifestHash = crypto.createHash("sha1").update(reqData.filepath).digest("hex");
+    url += `&utm_content=${manifestHash}`;
 
     if (config.source) {
         url += `&utm_source=${config.source}`;
@@ -196,9 +197,6 @@ const fetchVulnerabilities = async (reqData) => {
 
     if (config.uuid) {
         headers['uuid'] = config.uuid;
-        console.log(".....................................................................................")
-        console.log(config.uuid);
-
     }
 
     if (config.user_agent) {
@@ -250,11 +248,12 @@ function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePat
 }
 
 /* Slice payload in each chunk size of @batchSize */
-function slicePayload(payload, batchSize, ecosystem): any {
+function slicePayload(payload, batchSize, ecosystem, manifestfilePath): any {
     let reqData = [];
     for (let i = 0; i < payload.length; i += batchSize) {
         reqData.push({
             "ecosystem": ecosystem,
+            "filepath": manifestfilePath,
             "package_versions": payload.slice(i, i + batchSize)
         });
     }
@@ -308,7 +307,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         cache.add(response);
         pipeline(response);
     }
-    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
+    const allRequests = slicePayload(requestPayload, batchSize, ecosystem, diagnosticFilePath).
         map(request => fetchVulnerabilities(request).then(cacheAndRunPipeline));
 
     await Promise.allSettled(allRequests);
