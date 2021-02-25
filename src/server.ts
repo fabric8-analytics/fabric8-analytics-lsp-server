@@ -142,12 +142,12 @@ if (fs.existsSync(rc_file)) {
     }
 }
 const fullStackReportAction: CodeAction = {
-   title: "Detailed Vulnerability Report",
-   kind: CodeActionKind.QuickFix,
-   command: {
-      command: "extension.fabric8AnalyticsWidgetFullStack",
-      title: "Analytics Report",
-   }
+  title: "Detailed Vulnerability Report",
+  kind: CodeActionKind.QuickFix,
+  command: {
+    command: "extension.fabric8AnalyticsWidgetFullStack",
+    title: "Analytics Report",
+  }
 };
 
 let DiagnosticsEngines = [SecurityEngine];
@@ -264,7 +264,7 @@ const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     // clear all diagnostics
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
-    connection.sendNotification('caNotification', {data: caDefaultMsg, done: false, uri: diagnosticFilePath });
+    connection.sendNotification('caNotification', {data: caDefaultMsg, done: false, uri: diagnosticFilePath});
     let deps = null;
     try {
         const start = new Date().getTime();
@@ -273,7 +273,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         connection.console.log(`manifest parse took ${end - start} ms, found ${deps.length} deps`);
     } catch (error) {
         connection.console.warn(`Error: ${error}`);
-        connection.sendNotification('caError', {data: error, uri: diagnosticFilePath });
+        connection.sendNotification('caError', {data: error, uri: diagnosticFilePath});
         return;
     }
 
@@ -301,7 +301,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     pipeline(cachedValues);
 
     // Construct request payload for items not in Cache.
-    const requestPayload = missedItems.map(d => ({package: d.name.value, version: d.version.value }));
+    const requestPayload = missedItems.map(d => ({package: d.name.value, version: d.version.value}));
     // Closure which adds response into cache before firing diagnostics.
     const cacheAndRunPipeline = response => {
        cache.add(response);
@@ -360,6 +360,7 @@ connection.onCodeAction((params, token): CodeAction[] => {
         let codeAction = codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character];
         if (codeAction != null) {
             codeActions.push(codeAction);
+
         }
         if (!hasAnalyticsDiagonostic) {
             hasAnalyticsDiagonostic = diagnostic.source === AnalyticsSource;
