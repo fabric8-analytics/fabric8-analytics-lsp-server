@@ -10,8 +10,7 @@ import * as crypto from "crypto";
 
 import {
       IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-      TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind
-} from 'vscode-languageserver';
+      TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
 import fetch from 'node-fetch';
 import url from 'url';
 
