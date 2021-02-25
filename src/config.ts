@@ -5,7 +5,8 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-class Config {
+class Config
+{
     server_url: string;
     api_token: string;
     three_scale_user_token: string;
