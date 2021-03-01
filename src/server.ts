@@ -184,11 +184,10 @@ const fetchVulnerabilities = async (reqData) => {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + config.api_token,
-        'request_id': uuid.v4(),
+        'request_id':reqData.request_id,
     };
 
-    let manifestHash = crypto.createHash("sha1").update(reqData.filepath).digest("hex");
-    url += `&utm_content=${manifestHash}`;
+    url += `&utm_content=${reqData.manifest_hash}`;
 
     if (config.source) {
         url += `&utm_source=${config.source}`;
@@ -196,10 +195,6 @@ const fetchVulnerabilities = async (reqData) => {
 
     if (config.uuid) {
         headers['uuid'] = config.uuid;
-    }
-
-    if (config.user_agent) {
-        headers['User-Agent'] = config.user_agent;
     }
 
     try {
@@ -247,12 +242,13 @@ function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePat
 }
 
 /* Slice payload in each chunk size of @batchSize */
-function slicePayload(payload, batchSize, ecosystem, manifestfilePath): any {
+function slicePayload(payload, batchSize, ecosystem, manifestHash, requestId): any {
     let reqData = [];
     for (let i = 0; i < payload.length; i += batchSize) {
         reqData.push({
             "ecosystem": ecosystem,
-            "filepath": manifestfilePath,
+            "manifest_hash": manifestHash,
+            "request_id":requestId,
             "package_versions": payload.slice(i, i + batchSize)
         });
     }
@@ -289,6 +285,8 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const diagnostics = [];
     const totalCount = new TotalCount();
     const start = new Date().getTime();
+    let manifestHash = crypto.createHash("sha1").update(diagnosticFilePath).digest("hex");
+    let requestId = uuid.v4();
     // Closure which captures common arg to runPipeline.
     const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
     // Get and fire diagnostics for items found in Cache.
@@ -306,7 +304,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
        cache.add(response);
        pipeline(response);
     }
-    const allRequests = slicePayload(requestPayload, batchSize, ecosystem, diagnosticFilePath).
+    const allRequests = slicePayload(requestPayload, batchSize, ecosystem, manifestHash, requestId).
             map(request => fetchVulnerabilities(request).then(cacheAndRunPipeline));
 
     await Promise.allSettled(allRequests);
