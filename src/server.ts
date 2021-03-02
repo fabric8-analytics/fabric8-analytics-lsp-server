@@ -199,7 +199,7 @@ const fetchVulnerabilities = async (reqData, manifestHash, requestId) => {
     }
 
     try {
-        const response = await fetch(url, {
+        const response = await fetch(url , {
             method: 'post',
             body:    JSON.stringify(reqData),
             headers: headers,
