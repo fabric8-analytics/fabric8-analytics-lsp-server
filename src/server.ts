@@ -185,7 +185,6 @@ const fetchVulnerabilities = async (reqData, manifestHash, requestId) => {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + config.api_token,
         'request_id': requestId,
-        'x-3scale-account-secret': 'not-set',
     };
 
     url += `&utm_content=${manifestHash}`;
