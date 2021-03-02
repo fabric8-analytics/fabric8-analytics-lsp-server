@@ -17,7 +17,6 @@ class Config
     uuid:                     string;
     golang_executable:        string;
     source:                   string;
-    user_agent:               string;
 
     constructor() {
         // TODO: this needs to be configurable
@@ -31,7 +30,6 @@ class Config
         this.uuid = process.env.UUID || "";
         this.golang_executable = process.env.GOLANG_EXECUTABLE || 'go';
         this.source = process.env.source || "";
-        this.user_agent = process.env.user_agent || "";
     }
 };
 
