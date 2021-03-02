@@ -10,8 +10,7 @@ import * as crypto from "crypto";
 
 import {
       IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-      TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind
-} from 'vscode-languageserver';
+      TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
 import fetch from 'node-fetch';
 import url from 'url';
 
@@ -98,7 +97,8 @@ class AnalysisFiles implements IAnalysisFiles {
     }
 };
 
-interface IAnalysisLSPServer {
+interface IAnalysisLSPServer
+{
     connection: IConnection;
     files:      IAnalysisFiles;
 
@@ -141,12 +141,12 @@ if (fs.existsSync(rc_file)) {
     }
 }
 const fullStackReportAction: CodeAction = {
-   title: "Detailed Vulnerability Report",
-   kind: CodeActionKind.QuickFix,
-   command: {
-     command: "extension.fabric8AnalyticsWidgetFullStack",
-     title: "Analytics Report",
-   }
+  title: "Detailed Vulnerability Report",
+  kind: CodeActionKind.QuickFix,
+  command: {
+    command: "extension.fabric8AnalyticsWidgetFullStack",
+    title: "Analytics Report",
+  }
 };
 
 let DiagnosticsEngines = [SecurityEngine];
