@@ -17,7 +17,7 @@ class Config
     uuid:                     string;
     golang_executable:        string;
     utm_source:               string;
-    telemetry_id              string;
+    telemetry_id:             string;
 
     constructor() {
         // TODO: this needs to be configurable
