@@ -184,7 +184,7 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + config.api_token,
-        'X-Request_Id': requestId,
+        'X-Request-Id': requestId,
     };
 
     url += `&utm_content=${manifestHash}`;
