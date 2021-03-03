@@ -16,7 +16,7 @@ class Config
     home_dir:                 string;
     uuid:                     string;
     golang_executable:        string;
-    source:                   string;
+    utm_source:               string;
 
     constructor() {
         // TODO: this needs to be configurable
@@ -29,7 +29,7 @@ class Config
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
         this.uuid = process.env.UUID || "";
         this.golang_executable = process.env.GOLANG_EXECUTABLE || 'go';
-        this.source = process.env.UTM_SOURCE || "";
+        this.utm_source = process.env.UTM_SOURCE || "";
     }
 };
 

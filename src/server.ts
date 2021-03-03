@@ -174,7 +174,7 @@ const getCAmsg = (deps, diagnostics, totalCount): string => {
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
 /* Fetch Vulnerabilities by component-analysis batch api-call */
-const fetchVulnerabilities = async (reqData, manifestHash, requestId) => {
+const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestId: uuid) => {
     let url = config.server_url;
     if (config.three_scale_user_token) {
         url += `/component-analyses/?user_key=${config.three_scale_user_token}`;
@@ -184,13 +184,13 @@ const fetchVulnerabilities = async (reqData, manifestHash, requestId) => {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + config.api_token,
-        'request_id': requestId,
+        'X-Request_Id': requestId,
     };
 
     url += `&utm_content=${manifestHash}`;
 
-    if (config.source) {
-        url += `&utm_source=${config.source}`;
+    if (config.utm_source) {
+        url += `&utm_source=${config.utm_source}`;
     }
 
     if (config.uuid) {
@@ -283,8 +283,8 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const diagnostics = [];
     const totalCount = new TotalCount();
     const start = new Date().getTime();
-    let manifestHash = crypto.createHash("sha256").update(diagnosticFilePath).digest("hex");
-    let requestId = uuid.v4();
+    const manifestHash = crypto.createHash("sha256").update(diagnosticFilePath).digest("hex");
+    const requestId = uuid.v4();
     // Closure which captures common arg to runPipeline.
     const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
     // Get and fire diagnostics for items found in Cache.
