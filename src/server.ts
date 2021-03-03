@@ -174,7 +174,7 @@ const getCAmsg = (deps, diagnostics, totalCount): string => {
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
 /* Fetch Vulnerabilities by component-analysis batch api-call */
-const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestId: String) => {
+const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestId: string) => {
     let url = config.server_url;
     if (config.three_scale_user_token) {
         url += `/component-analyses/?user_key=${config.three_scale_user_token}`;
