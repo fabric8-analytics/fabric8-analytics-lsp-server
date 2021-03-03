@@ -196,6 +196,10 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
     if (config.uuid) {
         headers['uuid'] = config.uuid;
     }
+    
+    if (config.telemetry_id) {
+        headers['X-Telemetry-Id'] = config.telemetry_id;
+    }
 
     try {
         const response = await fetch(url , {

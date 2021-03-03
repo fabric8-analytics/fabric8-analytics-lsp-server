@@ -17,6 +17,7 @@ class Config
     uuid:                     string;
     golang_executable:        string;
     utm_source:               string;
+    telemetry_id              string;
 
     constructor() {
         // TODO: this needs to be configurable
@@ -30,6 +31,7 @@ class Config
         this.uuid = process.env.UUID || "";
         this.golang_executable = process.env.GOLANG_EXECUTABLE || 'go';
         this.utm_source = process.env.UTM_SOURCE || "";
+        this.telemetry_id = process.env.TELEMETRY_ID || "";
     }
 };
 
