@@ -5,9 +5,12 @@
 'use strict';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as uuid from 'uuid';
+import * as crypto from "crypto";
+
 import {
-	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-	TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
+      IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
+      TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
 import fetch from 'node-fetch';
 import url from 'url';
 
@@ -171,7 +174,7 @@ const getCAmsg = (deps, diagnostics, totalCount): string => {
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
 /* Fetch Vulnerabilities by component-analysis batch api-call */
-const fetchVulnerabilities = async (reqData) => {
+const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestId: string) => {
     let url = config.server_url;
     if (config.three_scale_user_token) {
         url += `/component-analyses/?user_key=${config.three_scale_user_token}`;
@@ -181,10 +184,23 @@ const fetchVulnerabilities = async (reqData) => {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + config.api_token,
+        'X-Request-Id': requestId,
     };
+
+    url += `&utm_content=${manifestHash}`;
+
+    if (config.utm_source) {
+        url += `&utm_source=${config.utm_source}`;
+    }
+
     if (config.uuid) {
         headers['uuid'] = config.uuid;
     }
+    
+    if (config.telemetry_id) {
+        headers['X-Telemetry-Id'] = config.telemetry_id;
+    }
+
     try {
         const response = await fetch(url , {
             method: 'post',
@@ -271,6 +287,8 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const diagnostics = [];
     const totalCount = new TotalCount();
     const start = new Date().getTime();
+    const manifestHash = crypto.createHash("sha256").update(diagnosticFilePath).digest("hex");
+    const requestId = uuid.v4();
     // Closure which captures common arg to runPipeline.
     const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
     // Get and fire diagnostics for items found in Cache.
@@ -289,7 +307,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
       pipeline(response);
     }
     const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
-            map(request => fetchVulnerabilities(request).then(cacheAndRunPipeline));
+            map(request => fetchVulnerabilities(request, manifestHash, requestId).then(cacheAndRunPipeline));
 
     await Promise.allSettled(allRequests);
     const end = new Date().getTime();
@@ -341,7 +359,7 @@ connection.onCodeAction((params, token): CodeAction[] => {
         let codeAction = codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character];
         if (codeAction != null) {
             codeActions.push(codeAction);
-   
+
         }
         if (!hasAnalyticsDiagonostic) {
             hasAnalyticsDiagonostic = diagnostic.source === AnalyticsSource;
