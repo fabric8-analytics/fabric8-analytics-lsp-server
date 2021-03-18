@@ -55,9 +55,6 @@ jobs:
     - name: Install local lsp
       run: npm i ../fabric8-analytics-lsp-server-*.tgz
       working-directory: ./vscode-extension
-    - name: Copy fabric8-analytics-lsp-server files to one level up(FIXME)
-      run: cp -a node_modules/fabric8-analytics-lsp-server/dist/* node_modules/fabric8-analytics-lsp-server/
-      working-directory: ./vscode-extension
     - name: Remove test files
       run: rm -fr test
       working-directory: ./vscode-extension
