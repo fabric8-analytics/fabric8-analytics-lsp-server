@@ -9,10 +9,7 @@ describe('Golang go.mod parser test', () => {
   const collector = new DependencyCollector(fakeSourceRoot);
 
   it('tests valid go.mod', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/davecgh/go-spew
-github.com/pmezard/go-difflib
-github.com/stretchr/testify`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/davecgh/go-spew github.com/pmezard/go-difflib github.com/stretchr/testify]`);
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
           require (
@@ -43,9 +40,7 @@ github.com/stretchr/testify`);
   });
 
   it('tests go.mod with comments', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/pmezard/go-difflib
-github.com/stretchr/testify`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/pmezard/go-difflib github.com/stretchr/testify]`);
     const deps = await collector.collect(`// This is start point.
           module github.com/alecthomas/kingpin
           require (
@@ -80,8 +75,7 @@ github.com/stretchr/testify`);
   });
 
   it('tests empty lines in go.mod', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/stretchr/testify`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/stretchr/testify]`);
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
 
@@ -107,10 +101,7 @@ github.com/stretchr/testify`);
   });
 
   it('tests deps with spaces before and after comparators', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/davecgh/go-spew
-github.com/pmezard/go-difflib
-github.com/stretchr/testify`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/davecgh/go-spew github.com/pmezard/go-difflib github.com/stretchr/testify]`);
     const deps = await collector.collect(`
           module github.com/alecthomas/kingpin
           require (
@@ -141,14 +132,7 @@ github.com/stretchr/testify`);
   });
 
   it('tests alpha beta and extra for version in go.mod', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/pierrec/lz4
-github.com/davecgh/go-spew
-github.com/pmezard/go-difflib
-github.com/stretchr/testify
-github.com/regen-network/protobuf
-github.com/vmihailenco/msgpack/v5
-github.com/btcsuite/btcd`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/pierrec/lz4 github.com/davecgh/go-spew github.com/pmezard/go-difflib github.com/stretchr/testify github.com/regen-network/protobuf github.com/vmihailenco/msgpack/v5 github.com/btcsuite/btcd]`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
 
@@ -162,7 +146,7 @@ github.com/btcsuite/btcd`);
           github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1
           github.com/btcsuite/btcd v0.20.1-beta
         )
-        
+
         go 1.13
       `);
     expect(deps.length).equal(8);
@@ -201,17 +185,7 @@ github.com/btcsuite/btcd`);
   });
 
   it('tests replace statements in go.mod', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/pierrec/lz4
-github.com/davecgh/go-spew
-github.com/pmezard/go-difflib
-github.com/stretchr/testify
-github.com/stretchr/testify/test
-github.com/regen-network/protobuf
-github.com/regen-network/protobuf/multi
-github.com/vmihailenco/msgpack/v5
-github.com/vmihailenco/msgpack/v5/v6
-github.com/btcsuite/btcd`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/pierrec/lz4 github.com/davecgh/go-spew github.com/pmezard/go-difflib github.com/stretchr/testify github.com/stretchr/testify/test github.com/regen-network/protobuf github.com/regen-network/protobuf/multi github.com/vmihailenco/msgpack/v5 github.com/vmihailenco/msgpack/v5/v6 github.com/btcsuite/btcd]`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -225,7 +199,7 @@ github.com/btcsuite/btcd`);
           github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1
           github.com/btcsuite/btcd v0.0.0-20151022065526-2efee857e7cf
         )
-        
+
         replace (
           github.com/alecthomas/units v0.1.3-alpha => github.com/test-user/units v13.3.2 // Required by OLM
           github.com/alecthomas/units v0.1.3 => github.com/test-user/units v13.3.2 // Required by OLM
@@ -287,8 +261,7 @@ github.com/btcsuite/btcd`);
   });
 
   it('tests single line replace statement in go.mod', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/pierrec/lz4`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/pierrec/lz4]`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -296,7 +269,7 @@ github.com/pierrec/lz4`);
           github.com/alecthomas/units v0.1.3-alpha
           github.com/pierrec/lz4 v2.5.2-alpha+incompatible
         )
-        
+
         replace github.com/alecthomas/units => github.com/test-user/units v13.3.2
       `);
     expect(deps.length).equal(2);
@@ -311,11 +284,7 @@ github.com/pierrec/lz4`);
   });
 
   it('tests multiple line replace statement in go.mod', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/pierrec/lz4
-github.com/davecgh/go-spew
-github.com/davecgh/go-spew/spew
-github.com/pmezard/go-difflib`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/pierrec/lz4 github.com/davecgh/go-spew github.com/davecgh/go-spew/spew github.com/pmezard/go-difflib]`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -328,7 +297,7 @@ github.com/pmezard/go-difflib`);
           github.com/davecgh/go-spew v1.1.1+incompatible
           github.com/pmezard/go-difflib v1.3.0
         )
-        
+
         replace github.com/pierrec/lz4 v2.5.2-alpha+incompatible => github.com/pierrec/lz4 v2.5.3
         replace github.com/davecgh/go-spew => github.com/davecgh/go-spew v1.1.2
         // replace github.com/pmezard/go-difflib v1.3.0 => github.com/pmezard/go-difflib v1.3.1
@@ -356,12 +325,9 @@ github.com/pmezard/go-difflib`);
     });
   });
 
-  
+
   it('tests multiple module points to same replace module in go.mod', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/pierrec/lz4
-github.com/gogo/protobuf
-github.com/golang/protobuf`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/pierrec/lz4 github.com/gogo/protobuf github.com/golang/protobuf]`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -374,7 +340,7 @@ github.com/golang/protobuf`);
         replace (
           github.com/golang/protobuf => github.com/gogo/protobuf v1.3.1
           github.com/gogo/protobuf v1.3.0 => github.com/gogo/protobuf v1.3.1
-        )      
+        )
       `);
     expect(deps.length).equal(4);
     expect(deps[0]).is.eql({
@@ -396,11 +362,7 @@ github.com/golang/protobuf`);
   });
 
   it('tests replace block before require in go.mod', async () => {
-    fake(getGoLangImportsCmd(), `github.com/alecthomas/units
-github.com/pierrec/lz4
-github.com/davecgh/go-spew
-github.com/davecgh/go-spew/spew
-github.com/pmezard/go-difflib`);
+    fake(getGoLangImportsCmd(), `[github.com/alecthomas/units github.com/pierrec/lz4 github.com/davecgh/go-spew github.com/davecgh/go-spew/spew github.com/pmezard/go-difflib]`);
     const deps = await collector.collect(`
         module github.com/alecthomas/kingpin
         go 1.13
@@ -443,11 +405,7 @@ github.com/pmezard/go-difflib`);
   });
 
   it('tests go.mod with a module in import', async () => {
-    fake(getGoLangImportsCmd(), `fmt
-github.com/google/go-cmp/cmp
-fmt
-github.com/google/go-cmp/cmp
-github.com/google/go-cmp/cmp/cmpopts`);
+    fake(getGoLangImportsCmd(), `[fmt github.com/google/go-cmp/cmp fmt github.com/google/go-cmp/cmp github.com/google/go-cmp/cmp/cmpopts]`);
 
     const deps = await collector.collect(`
       module test/data/sample1
@@ -474,11 +432,7 @@ github.com/google/go-cmp/cmp/cmpopts`);
   });
 
   it('tests go.mod with a module and two package import', async () => {
-    fake(getGoLangImportsCmd(), `fmt
-github.com/google/go-cmp/cmp
-fmt
-github.com/google/go-cmp/cmp/version
-github.com/google/go-cmp/cmp/cmpopts`);
+    fake(getGoLangImportsCmd(), `[fmt github.com/google/go-cmp/cmp fmt github.com/google/go-cmp/cmp/version github.com/google/go-cmp/cmp/cmpopts]`);
 
     const deps = await collector.collect(`
       module test/data/sample1
@@ -507,10 +461,7 @@ github.com/google/go-cmp/cmp/cmpopts`);
   });
 
   it('tests go.mod with a module and package of different version', async () => {
-    fake(getGoLangImportsCmd(), `fmt
-github.com/googleapis/gax-go
-fmt
-github.com/googleapis/gax-go/v2`);
+    fake(getGoLangImportsCmd(), `[fmt github.com/googleapis/gax-go fmt github.com/googleapis/gax-go/v2]`);
 
     const deps = await collector.collect(`
       module test/data/sample1
@@ -534,10 +485,7 @@ github.com/googleapis/gax-go/v2`);
   });
 
   it('tests go.mod with one more module and package of different version', async () => {
-    fake(getGoLangImportsCmd(), `fmt
-github.com/googleapis/gax-go/abc
-fmt
-github.com/googleapis/gax-go/v2`);
+    fake(getGoLangImportsCmd(), `[fmt github.com/googleapis/gax-go/abc fmt github.com/googleapis/gax-go/v2]`);
 
     const deps = await collector.collect(`
       module test/data/sample1
@@ -565,9 +513,7 @@ github.com/googleapis/gax-go/v2`);
   });
 
   it('tests go.mod with more module then imports in source', async () => {
-    fake(getGoLangImportsCmd(), `fmt
-github.com/googleapis/gax-go/abc
-github.com/alecthomas/units`);
+    fake(getGoLangImportsCmd(), `[fmt github.com/googleapis/gax-go/abc github.com/alecthomas/units]`);
 
     const deps = await collector.collect(`
       module test/data/sample1
