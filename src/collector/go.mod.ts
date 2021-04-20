@@ -140,13 +140,13 @@ export class DependencyCollector implements IDependencyCollector {
 
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            var vscodeRootpath = this.manifestFile.replace("/go.mod", "")
+            var vscodeRootpath = this.manifestFile.replace("/go.mod", "").replace(/%20/g, " ")
             if (os.platform().startsWith('win')) {
                 vscodeRootpath = vscodeRootpath.replace("file:///", "").replace(/\//g, "\\").replace("%3A", ":")
             } else {
                 vscodeRootpath = vscodeRootpath.replace("file://", "")
             }
-            console.info(`Source root path: ${vscodeRootpath}`)
+            console.info(`Source root path: "${vscodeRootpath}"`)
             const cmd = getGoLangImportsCmd()
             console.info(`cmd : ${cmd}`)
             exec(cmd,
