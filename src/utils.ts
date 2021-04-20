@@ -26,7 +26,7 @@ let _to_lsp_position_vscode = (pos: IPosition): Position => {
 let _get_range_vscode = (ps: IPositionedString): Range => {
   let length = ps.value.length;
   return {
-      start: to_lsp_position(ps.position), 
+      start: to_lsp_position(ps.position),
       end: {line: ps.position.line/2, character: ps.position.column + length - 1}
   };
 }
@@ -38,7 +38,7 @@ let _to_lsp_position_che = (pos: IPosition): Position => {
 let _get_range_che = (ps: IPositionedString): Range => {
    let length = ps.value.length;
   return {
-      start: to_lsp_position(ps.position), 
+      start: to_lsp_position(ps.position),
       end: {line: ps.position.line - 1, character: ps.position.column + length - 1}
   };
 }
@@ -52,5 +52,5 @@ export let get_range = (ps: IPositionedString): Range => {
 };
 
 export let getGoLangImportsCmd = (): string => {
-  return `${config.golang_executable} list -mod=readonly -f '{{ join .Imports "\\n" }}' ./...`;
+  return `${config.golang_executable} list -mod=readonly -f "{{.Imports}}" ./...`;
 };

@@ -5,6 +5,8 @@ import { getGoLangImportsCmd } from '../utils';
 import { config } from '../config';
 import { exec } from 'child_process';
 
+var os = require('os');
+
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment.
  * At the moment, using regex directly to extract version information without 'v' prefix. */
@@ -78,7 +80,7 @@ class NaiveGomodParser {
                         const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                         entry.value = new Variant(ValueType.String, 'v' + version[0]);
                         entry.value_position = { line: index + 1, column: version.index };
-                        // Push all direct and indirect modules present in go.mod (manifest) 
+                        // Push all direct and indirect modules present in go.mod (manifest)
                         dependencies.push(new Dependency(entry));
                     }
                 }
@@ -138,18 +140,26 @@ export class DependencyCollector implements IDependencyCollector {
 
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            const vscodeRootpath = this.manifestFile.replace("file://", "").replace("/go.mod", "")
-            exec(getGoLangImportsCmd(),
-                { shell: process.env["SHELL"], windowsHide: true, cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
+            var vscodeRootpath = this.manifestFile.replace("/go.mod", "")
+            if (os.platform().startsWith('win')) {
+                vscodeRootpath = vscodeRootpath.replace("file:///", "").replace(/\//g, "\\").replace("%3A", ":")
+            } else {
+                vscodeRootpath = vscodeRootpath.replace("file://", "")
+            }
+            console.info(`Source root path: ${vscodeRootpath}`)
+            const cmd = getGoLangImportsCmd()
+            console.info(`cmd : ${cmd}`)
+            exec(cmd,
+                { windowsHide: true, cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
-                    console.error(`Command failed, environment SHELL: [${process.env["SHELL"]}] PATH: [${process.env["PATH"]}] CWD: [${process.env["CWD"]}]`)
+                    console.error(`Command error [${error}], PATH: [${process.env["PATH"]}] CWD: [${vscodeRootpath}] CMD: [${cmd}]`)
                     if (error.code == 127) { // Invalid command, go executable not found
                         reject(`Unable to locate '${config.golang_executable}'`);
                     } else {
                         reject(`Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to know more`);
                     }
                 } else {
-                    resolve(new Set(stdout.toString().split("\n")));
+                    resolve(new Set(stdout.toString().replace("[", "").replace("]", "").split(" ")));
                 }
             });
         });
