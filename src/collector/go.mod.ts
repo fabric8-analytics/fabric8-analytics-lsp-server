@@ -4,8 +4,7 @@ import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDepend
 import { getGoLangImportsCmd } from '../utils';
 import { config } from '../config';
 import { exec } from 'child_process';
-
-var os = require('os');
+import os from 'os';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment.
