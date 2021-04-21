@@ -5,7 +5,7 @@ import { getGoLangImportsCmd } from '../utils';
 import { config } from '../config';
 import { exec } from 'child_process';
 import { dirname } from 'path';
-import url from 'url';
+import { fileURLToPath } from 'url';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment.
@@ -140,7 +140,7 @@ export class DependencyCollector implements IDependencyCollector {
 
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            const sourceRootPath = url.fileURLToPath(dirname(this.manifestFile));
+            const sourceRootPath = fileURLToPath(dirname(this.manifestFile));
             const cmd = getGoLangImportsCmd();
             console.info(`Root path : '${sourceRootPath}' Cmd : '${cmd}'`);
             exec(cmd,
