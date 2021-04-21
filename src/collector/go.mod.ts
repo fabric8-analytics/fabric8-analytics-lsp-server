@@ -4,7 +4,7 @@ import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDepend
 import { getGoLangImportsCmd } from '../utils';
 import { config } from '../config';
 import { exec } from 'child_process';
-import os from 'os';
+import url from 'url';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment.
@@ -139,19 +139,13 @@ export class DependencyCollector implements IDependencyCollector {
 
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            var vscodeRootpath = this.manifestFile.replace("/go.mod", "").replace(/%20/g, " ")
-            if (os.platform().startsWith('win')) {
-                vscodeRootpath = vscodeRootpath.replace("file:///", "").replace(/\//g, "\\").replace("%3A", ":")
-            } else {
-                vscodeRootpath = vscodeRootpath.replace("file://", "")
-            }
-            console.info(`Source root path: "${vscodeRootpath}"`)
-            const cmd = getGoLangImportsCmd()
-            console.info(`cmd : ${cmd}`)
+            const sourceRootPath = url.fileURLToPath(this.manifestFile.replace("go.mod", ""));
+            const cmd = getGoLangImportsCmd();
+            console.info(`Root path : '${sourceRootPath}' Cmd : '${cmd}'`);
             exec(cmd,
-                { windowsHide: true, cwd: vscodeRootpath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
+                { windowsHide: true, cwd: sourceRootPath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
                 if (error) {
-                    console.error(`Command error [${error}], PATH: [${process.env["PATH"]}] CWD: [${vscodeRootpath}] CMD: [${cmd}]`)
+                    console.error(`Command error [${error}], PATH: [${process.env["PATH"]}] CWD: [${sourceRootPath}] CMD: [${cmd}]`)
                     if (error.code == 127) { // Invalid command, go executable not found
                         reject(`Unable to locate '${config.golang_executable}'`);
                     } else {

@@ -5,7 +5,7 @@ import { getGoLangImportsCmd } from '../../src/utils';
 const fake = require('fake-exec');
 
 describe('Golang go.mod parser test', () => {
-  const fakeSourceRoot = "/tmp/fake/path/to/goproject/source";
+  const fakeSourceRoot = 'file:///fake/path/to/goproject/source/go.mod';
   const collector = new DependencyCollector(fakeSourceRoot);
 
   it('tests valid go.mod', async () => {
