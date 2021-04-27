@@ -261,7 +261,12 @@ const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     // clear all diagnostics
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
-    connection.sendNotification('caNotification', {data: caDefaultMsg, done: false, uri: diagnosticFilePath});
+    connection.sendNotification('caNotification', {
+      data: caDefaultMsg,
+      done: false,
+      uri: diagnosticFilePath,
+    });
+
     let deps = null;
     try {
         const start = new Date().getTime();
@@ -270,7 +275,10 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         connection.console.log(`manifest parse took ${end - start} ms, found ${deps.length} deps`);
     } catch (error) {
         connection.console.warn(`Error: ${error}`);
-        connection.sendNotification('caError', {data: error, uri: diagnosticFilePath});
+        connection.sendNotification('caError', {
+          data: error,
+          uri: diagnosticFilePath,
+        });
         return;
     }
 
@@ -313,7 +321,16 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const end = new Date().getTime();
 
     connection.console.log(`fetch vulns took ${end - start} ms`);
-    connection.sendNotification('caNotification', {data: getCAmsg(deps, diagnostics, totalCount), diagCount : diagnostics.length || 0, vulnCount: totalCount, depCount: deps.length || 0, done: true, uri: diagnosticFilePath});
+    connection.sendNotification('caNotification', {
+      data: getCAmsg(deps, diagnostics, totalCount),
+      diagCount : diagnostics.length || 0,
+      vulnCount: totalCount,
+      depCount: deps.length || 0,
+      done: true,
+      uri: diagnosticFilePath,
+      cacheHitCount: cachedValues.length,
+      cacheMissCount: missedItems.length,
+    });
 };
 
 files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
