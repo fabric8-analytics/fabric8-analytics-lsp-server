@@ -16,6 +16,29 @@ describe('npm package.json parser test', () => {
         expect(deps.length).equal(0);
     });
 
+    it('tests invalid token package.json', async () => {
+        const deps = await collector.collect(`
+         {
+             <<<<<
+             "dependencies": {
+                 "hello": "1.0",
+             }
+         }
+        `);
+        expect(deps).eql([]);
+    });
+
+    it('tests invalid package.json', async () => {
+        const deps = await collector.collect(`
+         {
+             "dependencies": {
+                 "hello": "1.0",
+             }
+         }
+        `);
+        expect(deps).eql([]);
+    });
+
     it('tests empty dependencies key', async () => {
         const deps = await collector.collect(`
         {

@@ -7,7 +7,16 @@ export class DependencyCollector implements IDependencyCollector {
     constructor(public classes: Array<string> = ["dependencies"]) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
-      const ast = jsonAst(contents || '{}');
+      let ast: any;
+      try {
+          ast = jsonAst(contents || '{}');
+      } catch (err) {
+          // doesn't make any sense to throw syntax errors.
+          if (err.name === 'SyntaxError') {
+              return [];
+          }
+          throw err;
+      }
       return ast.children.
               filter(c => this.classes.includes(c.key.value)).
               flatMap(c => c.value.children).
