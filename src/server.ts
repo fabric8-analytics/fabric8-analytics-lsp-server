@@ -175,7 +175,6 @@ const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
 /* Fetch Vulnerabilities by component-analysis batch api-call */
 const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestId: string) => {
-    connection.console.log(`TEST-DEBUG: fetchVulnerabilities reqData- ${JSON.stringify(reqData)}`);
     let url = "";
     let headers = {};
     let body = "";
@@ -224,9 +223,6 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
         connection.console.log(`fetching vuln for ${reqData.package_versions.length} packages`);
         if (response.ok) {
             const respData = await response.json();
-            connection.console.log(`TEST-DEBUG: fetchVulnerabilities respData- ${JSON.stringify(respData)}`);
-            connection.console.log(`TEST-DEBUG: fetchVulnerabilities url- ${JSON.stringify(url)}`);
-            connection.console.log(`TEST-DEBUG: fetchVulnerabilities headers- ${JSON.stringify(headers)}`);
             return respData;
         } else {
             connection.console.warn(`fetch error. http status ${response.status}`);
@@ -247,12 +243,9 @@ class TotalCount {
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
 function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount, ecosystem: string) {
     response.forEach(r => {
-        connection.console.log(`TEST-DEBUG: runPipeline r- ${JSON.stringify(r)}`);
         const dependency = (ecosystem == 'maven') ? pkgMap.get(new SimpleDependency( r.ref.name, r.ref.version)) : pkgMap.get(new SimpleDependency( r.package, r.version));
-        connection.console.log(`TEST-DEBUG: runPipeline dependency- ${JSON.stringify(dependency)}`);
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
-        pipeline.run(r, connection);
-        connection.console.log(`TEST-DEBUG: pipeline items- ${JSON.stringify(pipeline.items)}`);
+        pipeline.run(r);
         for (const item of pipeline.items) {
             const secEng = item as SecurityEngine;
             totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
@@ -279,7 +272,6 @@ function slicePayload(payload, batchSize, ecosystem): any {
 const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     // clear all diagnostics
-    connection.console.log(`TEST-DEBUG: ecosystem- ${ecosystem}, diagnosticFilePath- ${diagnosticFilePath}, contents- ${contents}`);
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
     connection.sendNotification('caNotification', {
       data: caDefaultMsg,
@@ -291,7 +283,6 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     try {
         const start = new Date().getTime();
         deps = await collector.collect(contents);
-        connection.console.log(`TEST-DEBUG: deps- ${JSON.stringify(deps)}`);
         const end = new Date().getTime();
         connection.console.log(`manifest parse took ${end - start} ms, found ${deps.length} deps`);
     } catch (error) {

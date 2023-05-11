@@ -45,7 +45,7 @@ interface IPipelineItem<T> extends IConsumer, IProducer<T> { };
 /* House bunches of `IPipelineItem`'s */
 interface IPipeline<T> {
     items: Array<IPipelineItem<T>>;
-    run(data: any, connection: IConnection): T;
+    run(data: any): T;
 };
 
 /* Diagnostics producer type */
@@ -70,8 +70,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
         this.vulnerabilityAggregator = vulnerabilityAggregator;
     }
 
-    run(data: any, connection: IConnection): Vulnerability[] {
-        connection.console.log(`TEST-DEBUG: hello world!!!}`);
+    run(data: any): Vulnerability[] {
         for (let item of this.items) {
             if (item.consume(data)) {
                 for (let d of item.produce()) {
