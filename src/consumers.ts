@@ -7,7 +7,7 @@ import { IDependency } from './collector';
 import { get_range } from './utils';
 import { Vulnerability } from './vulnerability';
 import { VulnerabilityAggregator } from './aggregators';
-import { Diagnostic, CodeAction, CodeActionKind } from 'vscode-languageserver'
+import { Diagnostic, CodeAction, CodeActionKind, IConnection } from 'vscode-languageserver'
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor {
@@ -45,7 +45,7 @@ interface IPipelineItem<T> extends IConsumer, IProducer<T> { };
 /* House bunches of `IPipelineItem`'s */
 interface IPipeline<T> {
     items: Array<IPipelineItem<T>>;
-    run(data: any): T;
+    run(data: any, connection: IConnection): T;
 };
 
 /* Diagnostics producer type */
@@ -70,31 +70,75 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
         this.vulnerabilityAggregator = vulnerabilityAggregator;
     }
 
-    run(data: any): Vulnerability[] {
+    run(data: any, connection: IConnection): Vulnerability[] {
+        connection.console.log(`TEST-DEBUG: hello world!!!}`);
         for (let item of this.items) {
             if (item.consume(data)) {
                 for (let d of item.produce()) {
                     const aggVulnerability = this.vulnerabilityAggregator.aggregate(d);
                     const aggDiagnostic = aggVulnerability.getDiagnostic();
-
-                    // Add/Update quick action for given aggregated diangnostic
-                    // TODO: this can be done lazily
-                    if (aggVulnerability.recommendedVersion && (aggVulnerability.vulnerabilityCount > 0 || aggVulnerability.exploitCount != null)) {
-                        let codeAction: CodeAction = {
-                            title: `Switch to recommended version ${aggVulnerability.recommendedVersion}`,
-                            diagnostics: [aggDiagnostic],
-                            kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
-                            edit: {
-                                changes: {
+                    
+                    // maven
+                    if (aggVulnerability.ecosystem == 'maven') {
+                        if (aggVulnerability.recommendation != null && aggVulnerability.issuesCount == 0) {
+                            let codeAction: CodeAction = {
+                                title: `Switch to version ${aggVulnerability.recommendationVersion}`,
+                                diagnostics: [aggDiagnostic],
+                                kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
+                                edit: {
+                                    changes: {
+                                    }
                                 }
+                            };
+                            codeAction.edit.changes[this.uri] = [{
+                                range: aggDiagnostic.range,
+                                newText: aggVulnerability.recommendationVersion
+                            }];
+                            // We will have line|start as key instead of message
+                            codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
+                        }
+                        if (aggVulnerability.securityRecommendations != null && aggVulnerability.issuesCount > 0) {
+                            for (const cve of Object.keys(aggVulnerability.securityRecommendations)) {
+                                let version = aggVulnerability.securityRecommendations[cve]['mavenPackage']['version'];
+                                let codeAction: CodeAction = {
+                                    title: `Switch to version ${version} for ${cve}`,
+                                    diagnostics: [aggDiagnostic],
+                                    kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
+                                    edit: {
+                                        changes: {
+                                        }
+                                    }
+                                };
+                                codeAction.edit.changes[this.uri] = [{
+                                    range: aggDiagnostic.range,
+                                    newText: version
+                                }];
+                                // We will have line|start as key instead of message
+                                codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
                             }
-                        };
-                        codeAction.edit.changes[this.uri] = [{
-                            range: aggDiagnostic.range,
-                            newText: aggVulnerability.recommendedVersion
-                        }];
-                        // We will have line|start as key instead of message
-                        codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
+                        }
+                        // end maven
+                    } else {
+
+                        // Add/Update quick action for given aggregated diangnostic
+                        // TODO: this can be done lazily
+                        if (aggVulnerability.recommendedVersion && (aggVulnerability.vulnerabilityCount > 0 || aggVulnerability.exploitCount != null)) {
+                            let codeAction: CodeAction = {
+                                title: `Switch to recommended version ${aggVulnerability.recommendedVersion}`,
+                                diagnostics: [aggDiagnostic],
+                                kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
+                                edit: {
+                                    changes: {
+                                    }
+                                }
+                            };
+                            codeAction.edit.changes[this.uri] = [{
+                                range: aggDiagnostic.range,
+                                newText: aggVulnerability.recommendedVersion
+                            }];
+                            // We will have line|start as key instead of message
+                            codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
+                        }
                     }
 
                     if (this.vulnerabilityAggregator.isNewVulnerability) {
@@ -137,11 +181,35 @@ class AnalysisConsumer implements IConsumer {
     advisoryCount: number = 0;
     exploitCount: number | null;
     highestSeverity: string = null;
+    // maven 
+    issuesBinding: IBindingDescriptor;
+    refNameBinding: IBindingDescriptor;
+    refVersionBinding: IBindingDescriptor;
+    recommendationBinding: IBindingDescriptor;
+    recommendationNameBinding: IBindingDescriptor;
+    recommendationVersionBinding: IBindingDescriptor;
+    securityRecommendationsBinding: IBindingDescriptor;
+    issuesCount: number = 0;
+    refName: string = null;
+    refVersion: string = null;
+    recommendation: any = null;
+    recommendationName: string = null;
+    recommendationVersion: string = null;
+    securityRecommendations: any = null;
+    // securityRecommendationsCount: number = 0;
+    // end maven
     constructor(public config: any) { }
     consume(data: any): boolean {
         if (this.binding != null) {
             this.item = bind_object(data, this.binding);
-        } else {
+        }
+        if (this.item == null && this.issuesBinding != null) {
+            // maven
+            this.item = bind_object(data, this.issuesBinding);
+            this.issuesCount = this.item.length;
+            // end maven
+        }
+        if (this.item == null || this.item.length == 0) {
             this.item = data;
         }
         if (this.packageBinding != null) {
@@ -168,6 +236,27 @@ class AnalysisConsumer implements IConsumer {
         if (this.highestSeverityBinding != null) {
             this.highestSeverity = bind_object(data, this.highestSeverityBinding);
         }
+        // maven
+        if (this.refNameBinding != null) {
+            this.refName = bind_object(data, this.refNameBinding);
+        }
+        if (this.refVersionBinding != null) {
+            this.refVersion = bind_object(data, this.refVersionBinding);
+        }
+        if (this.recommendationBinding != null) {
+            this.recommendation = bind_object(data, this.recommendationBinding);
+        }
+        if (this.recommendation != null && this.recommendationNameBinding != null) {
+            this.recommendationName = bind_object(data, this.recommendationNameBinding);
+        }
+        if (this.recommendation != null && this.recommendationVersionBinding != null) {
+            this.recommendationVersion = bind_object(data, this.recommendationVersionBinding);
+        }
+        if (this.securityRecommendationsBinding != null) {
+            this.securityRecommendations = bind_object(data, this.securityRecommendationsBinding);
+            // this.securityRecommendationsCount = this.securityRecommendations.length;
+        }
+        // end maven
         return this.item != null;
     }
 };
@@ -191,13 +280,40 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         this.exploitCountBinding = { path: ['exploitable_vulnerabilities_count'] };
         /* Highest Severity */
         this.highestSeverityBinding = { path: ['highest_severity'] };
+        // maven 
+        this.issuesBinding = { path: ['issues'] };
+        this.refNameBinding = { path: ['ref', 'name'] };
+        this.refVersionBinding = { path: ['ref', 'version'] };
+        this.recommendationBinding = { path: ['recommendation'] };
+        this.recommendationNameBinding = { path: ['recommendation', 'name'] };
+        this.recommendationVersionBinding = { path: ['recommendation', 'version'] };
+        this.securityRecommendationsBinding = { path: ['securityRecommendations'] };
+        // end maven
     }
 
     produce(): Vulnerability[] {
-        if (this.item.length > 0) {
-            return [new Vulnerability(this.package, this.version, 1,
-                this.vulnerabilityCount, this.advisoryCount, this.exploitCount, this.highestSeverity,
-                this.changeTo, get_range(this.context.version))];
+        if (this.item != null) {
+            return [new Vulnerability(
+                this.package,
+                this.version, 
+                1,
+                this.vulnerabilityCount, 
+                this.advisoryCount, 
+                this.exploitCount, 
+                this.highestSeverity,
+                this.changeTo, 
+                get_range(this.context.version),
+                //maven
+                this.issuesCount,
+                this.refName,
+                this.refVersion,
+                this.recommendation,
+                this.recommendationName,
+                this.recommendationVersion,
+                this.securityRecommendations,
+                // this.securityRecommendationsCount,
+                // end maven
+                )];
         } else {
             return [];
         }

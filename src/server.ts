@@ -21,7 +21,7 @@ import { DependencyCollector as PomXml } from './collector/pom.xml';
 import { DependencyCollector as RequirementsTxt } from './collector/requirements.txt';
 import { IDependencyCollector, IHashableDependency, SimpleDependency, DependencyMap } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
-import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
+import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from './vulnerability';
 import { config } from './config';
 import { globalCache as GlobalCache } from './cache';
@@ -175,42 +175,58 @@ const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
 /* Fetch Vulnerabilities by component-analysis batch api-call */
 const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestId: string) => {
-    let url = config.server_url;
-    if (config.three_scale_user_token) {
-        url += `/component-analyses/?user_key=${config.three_scale_user_token}`;
+    connection.console.log(`TEST-DEBUG: fetchVulnerabilities reqData- ${JSON.stringify(reqData)}`);
+    let url = "";
+    let headers = {};
+    let body = "";
+    if (reqData.ecosystem == 'maven') {
+        url = `http://crda-backend-crda.apps.sssc-cl01.appeng.rhecoeng.com/api/v3/component-analysis/${reqData.ecosystem}`;
+        headers = {
+            'Content-Type': 'application/json',
+        };
+        body = JSON.stringify(reqData.package_versions);
     } else {
-        url += `/component-analyses`;
-    }
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + config.api_token,
-        'X-Request-Id': requestId,
-    };
+        url = config.server_url;
+        if (config.three_scale_user_token) {
+            url += `/component-analyses/?user_key=${config.three_scale_user_token}`;
+        } else {
+            url += `/component-analyses`;
+        }
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + config.api_token,
+            'X-Request-Id': requestId,
+        };
 
-    url += `&utm_content=${manifestHash}`;
+        url += `&utm_content=${manifestHash}`;
 
-    if (config.utm_source) {
-        url += `&utm_source=${config.utm_source}`;
-    }
+        if (config.utm_source) {
+            url += `&utm_source=${config.utm_source}`;
+        }
 
-    if (config.uuid) {
-        headers['uuid'] = config.uuid;
-    }
-    
-    if (config.telemetry_id) {
-        headers['X-Telemetry-Id'] = config.telemetry_id;
+        if (config.uuid) {
+            headers['uuid'] = config.uuid;
+        }
+
+        if (config.telemetry_id) {
+            headers['X-Telemetry-Id'] = config.telemetry_id;
+        }
+        body = JSON.stringify(reqData);
     }
 
     try {
         const response = await fetch(url , {
             method: 'post',
-            body:    JSON.stringify(reqData),
+            body:    body,
             headers: headers,
         });
 
         connection.console.log(`fetching vuln for ${reqData.package_versions.length} packages`);
         if (response.ok) {
             const respData = await response.json();
+            connection.console.log(`TEST-DEBUG: fetchVulnerabilities respData- ${JSON.stringify(respData)}`);
+            connection.console.log(`TEST-DEBUG: fetchVulnerabilities url- ${JSON.stringify(url)}`);
+            connection.console.log(`TEST-DEBUG: fetchVulnerabilities headers- ${JSON.stringify(headers)}`);
             return respData;
         } else {
             connection.console.warn(`fetch error. http status ${response.status}`);
@@ -229,11 +245,14 @@ class TotalCount {
 };
 
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
-function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount) {
+function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount, ecosystem: string) {
     response.forEach(r => {
-        const dependency = pkgMap.get(new SimpleDependency(r.package, r.version));
+        connection.console.log(`TEST-DEBUG: runPipeline r- ${JSON.stringify(r)}`);
+        const dependency = (ecosystem == 'maven') ? pkgMap.get(new SimpleDependency( r.ref.name, r.ref.version)) : pkgMap.get(new SimpleDependency( r.package, r.version));
+        connection.console.log(`TEST-DEBUG: runPipeline dependency- ${JSON.stringify(dependency)}`);
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
-        pipeline.run(r);
+        pipeline.run(r, connection);
+        connection.console.log(`TEST-DEBUG: pipeline items- ${JSON.stringify(pipeline.items)}`);
         for (const item of pipeline.items) {
             const secEng = item as SecurityEngine;
             totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
@@ -260,6 +279,7 @@ function slicePayload(payload, batchSize, ecosystem): any {
 const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     // clear all diagnostics
+    connection.console.log(`TEST-DEBUG: ecosystem- ${ecosystem}, diagnosticFilePath- ${diagnosticFilePath}, contents- ${contents}`);
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
     connection.sendNotification('caNotification', {
       data: caDefaultMsg,
@@ -271,6 +291,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     try {
         const start = new Date().getTime();
         deps = await collector.collect(contents);
+        connection.console.log(`TEST-DEBUG: deps- ${JSON.stringify(deps)}`);
         const end = new Date().getTime();
         connection.console.log(`manifest parse took ${end - start} ms, found ${deps.length} deps`);
     } catch (error) {
@@ -286,7 +307,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     let packageAggregator = null;
     if (ecosystem != "golang") {
         validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-        packageAggregator = new NoopVulnerabilityAggregator();
+        packageAggregator = ecosystem == "maven" ? new MavenVulnerabilityAggregator() : new NoopVulnerabilityAggregator();
     } else {
         packageAggregator = new GolangVulnerabilityAggregator();
     }
@@ -298,7 +319,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const manifestHash = crypto.createHash("sha256").update(diagnosticFilePath).digest("hex");
     const requestId = uuid.v4();
     // Closure which captures common arg to runPipeline.
-    const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
+    const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount, ecosystem);
     // Get and fire diagnostics for items found in Cache.
     const cache = globalCache(ecosystem);
     const cachedItems = cache.get(validPackages);
@@ -308,7 +329,13 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     pipeline(cachedValues);
 
     // Construct request payload for items not in Cache.
-    const requestPayload = missedItems.map(d => ({package: d.name.value, version: d.version.value}));
+    const requestPayload = missedItems.map(d => {
+        if (ecosystem == 'maven') {
+            return { name: d.name.value, version: d.version.value };
+          } else {
+            return { package: d.name.value, version: d.version.value };
+          }
+        });
     // Closure which adds response into cache before firing diagnostics.
     const cacheAndRunPipeline = response => {
       cache.add(response);

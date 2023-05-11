@@ -27,6 +27,19 @@ class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
     }
 }
 
+/* Maven Vulnerability aggregator class */
+class MavenVulnerabilityAggregator implements VulnerabilityAggregator {
+    isNewVulnerability: boolean;
+
+    aggregate(newVulnerability: Vulnerability): Vulnerability {
+        // Make it a new vulnerability always and set ecosystem for vulnerability.
+        this.isNewVulnerability = true;
+        newVulnerability.ecosystem = "maven";
+
+        return newVulnerability;
+    }
+}
+
 /* Golang Vulnerability aggregator class */
 class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
     vulnerabilities: Array<Vulnerability> = Array<Vulnerability>();
@@ -100,4 +113,4 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
     }
 }
 
-export { VulnerabilityAggregator, NoopVulnerabilityAggregator, GolangVulnerabilityAggregator };
+export { VulnerabilityAggregator, NoopVulnerabilityAggregator, MavenVulnerabilityAggregator, GolangVulnerabilityAggregator };
