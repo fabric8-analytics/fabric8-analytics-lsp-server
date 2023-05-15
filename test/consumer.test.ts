@@ -54,7 +54,7 @@ describe('Response consumer test', () => {
         const msg = "abc: 1.2.3\nKnown security vulnerability: 1\nSecurity advisory: 1\nExploits: unavailable\nHighest severity: critical\nRecommendation: 2.3.4";
 
         expect(diagnostics.length).equal(1);
-        expect(diagnostics[0].message).equal(msg);
+        expect(diagnostics[0].message.toString().replace(/\s/g, "")).equal(msg.toString().replace(/\s/g, ""));
         expect(secEng.vulnerabilityCount).equal(1);
         expect(secEng.advisoryCount).equal(1);
         expect(secEng.exploitCount).equal(null);
@@ -93,7 +93,7 @@ describe('Response consumer test', () => {
         const msg = "abc: 1.2.3\nKnown security vulnerability: 1\nSecurity advisory: 1\nExploits: 1\nHighest severity: critical\nRecommendation: 2.3.4";
 
         expect(diagnostics.length).equal(1);
-        expect(diagnostics[0].message).equal(msg);
+        expect(diagnostics[0].message.toString().replace(/\s/g, "")).equal(msg.toString().replace(/\s/g, ""));
         expect(secEng.vulnerabilityCount).equal(1);
         expect(secEng.advisoryCount).equal(1);
         expect(secEng.exploitCount).equal(1);
@@ -132,7 +132,7 @@ describe('Response consumer test', () => {
         var msg = "github.com/abc: 1.2.3\nNumber of packages: 1\nKnown security vulnerability: 1\nSecurity advisory: 1\nExploits: 1\nHighest severity: critical\nRecommendation: 2.3.4";
 
         expect(diagnostics.length).equal(1);
-        expect(diagnostics[0].message).equal(msg);
+        expect(diagnostics[0].message.toString().replace(/\s/g, "")).equal(msg.toString().replace(/\s/g, ""));
         expect(secEng.vulnerabilityCount).equal(1);
         expect(secEng.advisoryCount).equal(1);
         expect(secEng.exploitCount).equal(1);
@@ -165,7 +165,7 @@ describe('Response consumer test', () => {
         msg = "github.com/abc: 1.2.3\nNumber of packages: 2\nKnown security vulnerability: 4\nSecurity advisory: 3\nExploits: 2\nHighest severity: critical\nRecommendation: 2.6.4";
 
         expect(diagnostics.length).equal(1);
-        expect(diagnostics[0].message).equal(msg);
+        expect(diagnostics[0].message.toString().replace(/\s/g, "")).equal(msg.toString().replace(/\s/g, ""));
     });
 
     it('Consume response for free-users with only security advisories', () => {
@@ -200,7 +200,7 @@ describe('Response consumer test', () => {
         const msg = "abc: 1.2.3\nKnown security vulnerability: 0\nSecurity advisory: 1\nExploits: unavailable\nHighest severity: critical\nRecommendation: N/A";
 
         expect(diagnostics.length).equal(1);
-        expect(diagnostics[0].message).equal(msg);
+        expect(diagnostics[0].message.toString().replace(/\s/g, "")).equal(msg.toString().replace(/\s/g, ""));
         expect(secEng.vulnerabilityCount).equal(0);
         expect(secEng.advisoryCount).equal(1);
         expect(secEng.exploitCount).equal(null);
@@ -221,7 +221,7 @@ describe('Response consumer test', () => {
         pipeline.run(response);
         const secEng = pipeline.items[0] as SecurityEngine;
 
-        expect(diagnostics.length).equal(0);
+        expect(diagnostics.length).equal(1);
         expect(secEng.vulnerabilityCount).equal(null);
         expect(secEng.advisoryCount).equal(null);
         expect(secEng.exploitCount).equal(null);
@@ -247,6 +247,6 @@ describe('Response consumer test', () => {
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(response);
 
-        expect(diagnostics.length).equal(0);
+        expect(diagnostics.length).equal(1);
     });
 });

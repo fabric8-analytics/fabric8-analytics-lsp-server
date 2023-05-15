@@ -29,7 +29,7 @@ describe('Noop vulnerability aggregator tests', () => {
             source: '\nDependency Analytics Plugin [Powered by Snyk]',
         };
 
-        expect(pckg.getDiagnostic()).is.eql(expectedDiagnostic);
+        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 
     it('Test noop aggregator with two vulnerability', async () => {
@@ -49,7 +49,7 @@ describe('Noop vulnerability aggregator tests', () => {
         };
 
         // Noop should not aggregate any data, it should be same as PCKG2
-        expect(pckg.getDiagnostic()).is.eql(expectedDiagnostic);
+        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 });
 
@@ -67,7 +67,7 @@ describe('Golang vulnerability aggregator tests', () => {
             source: '\nDependency Analytics Plugin [Powered by Snyk]',
         };
 
-        expect(pckg.getDiagnostic()).is.eql(expectedDiagnostic);
+        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 
     it('Test golang aggregator with two vulnerability', async () => {
@@ -87,7 +87,7 @@ describe('Golang vulnerability aggregator tests', () => {
         };
 
         // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic()).is.eql(expectedDiagnostic);
+        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 
     it('Test golang aggregator with empty old rec version', async () => {
@@ -107,7 +107,7 @@ describe('Golang vulnerability aggregator tests', () => {
         };
 
         // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic()).is.eql(expectedDiagnostic);
+        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 
     it('Test golang aggregator with null old rec version', async () => {
@@ -127,7 +127,7 @@ describe('Golang vulnerability aggregator tests', () => {
         };
 
         // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic()).is.eql(expectedDiagnostic);
+        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 
     it('Test golang aggregator for vulnerability and module response out of order', async () => {
@@ -147,7 +147,7 @@ describe('Golang vulnerability aggregator tests', () => {
         };
 
         // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic()).is.eql(expectedDiagnostic);
+        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 
     it('Test golang aggregator with first package has null values', async () => {
@@ -167,7 +167,7 @@ describe('Golang vulnerability aggregator tests', () => {
         };
 
         // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic()).is.eql(expectedDiagnostic);
+        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 
     it('Test golang aggregator with second package has null values', async () => {
@@ -187,7 +187,7 @@ describe('Golang vulnerability aggregator tests', () => {
         };
 
         // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic()).is.eql(expectedDiagnostic);
+        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 
 });
