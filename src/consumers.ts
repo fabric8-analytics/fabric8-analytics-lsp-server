@@ -77,7 +77,6 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                     const aggVulnerability = this.vulnerabilityAggregator.aggregate(d);
                     const aggDiagnostic = aggVulnerability.getDiagnostic();
                     
-                    // maven
                     if (aggVulnerability.ecosystem == 'maven') {
                         if (aggVulnerability.recommendation != null && aggVulnerability.issuesCount == 0) {
                             let codeAction: CodeAction = {
@@ -116,7 +115,6 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                                 codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
                             }
                         }
-                        // end maven
                     } else {
 
                         // Add/Update quick action for given aggregated diangnostic
@@ -180,7 +178,6 @@ class AnalysisConsumer implements IConsumer {
     advisoryCount: number = 0;
     exploitCount: number | null;
     highestSeverity: string = null;
-    // maven 
     issuesBinding: IBindingDescriptor;
     refNameBinding: IBindingDescriptor;
     refVersionBinding: IBindingDescriptor;
@@ -195,18 +192,14 @@ class AnalysisConsumer implements IConsumer {
     recommendationName: string = null;
     recommendationVersion: string = null;
     securityRecommendations: any = null;
-    // securityRecommendationsCount: number = 0;
-    // end maven
     constructor(public config: any) { }
     consume(data: any): boolean {
         if (this.binding != null) {
             this.item = bind_object(data, this.binding);
         }
         if (this.item == null && this.issuesBinding != null) {
-            // maven
             this.item = bind_object(data, this.issuesBinding);
             this.issuesCount = this.item.length;
-            // end maven
         }
         if (this.item == null || this.item.length == 0) {
             this.item = data;
@@ -235,7 +228,6 @@ class AnalysisConsumer implements IConsumer {
         if (this.highestSeverityBinding != null) {
             this.highestSeverity = bind_object(data, this.highestSeverityBinding);
         }
-        // maven
         if (this.refNameBinding != null) {
             this.refName = bind_object(data, this.refNameBinding);
         }
@@ -253,9 +245,7 @@ class AnalysisConsumer implements IConsumer {
         }
         if (this.securityRecommendationsBinding != null) {
             this.securityRecommendations = bind_object(data, this.securityRecommendationsBinding);
-            // this.securityRecommendationsCount = this.securityRecommendations.length;
         }
-        // end maven
         return this.item != null;
     }
 };
@@ -279,7 +269,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         this.exploitCountBinding = { path: ['exploitable_vulnerabilities_count'] };
         /* Highest Severity */
         this.highestSeverityBinding = { path: ['highest_severity'] };
-        // maven 
         this.issuesBinding = { path: ['issues'] };
         this.refNameBinding = { path: ['ref', 'name'] };
         this.refVersionBinding = { path: ['ref', 'version'] };
@@ -287,7 +276,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         this.recommendationNameBinding = { path: ['recommendation', 'name'] };
         this.recommendationVersionBinding = { path: ['recommendation', 'version'] };
         this.securityRecommendationsBinding = { path: ['securityRecommendations'] };
-        // end maven
     }
 
     produce(): Vulnerability[] {
@@ -302,7 +290,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
                 this.highestSeverity,
                 this.changeTo, 
                 get_range(this.context.version),
-                //maven
                 this.issuesCount,
                 this.refName,
                 this.refVersion,
@@ -310,8 +297,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
                 this.recommendationName,
                 this.recommendationVersion,
                 this.securityRecommendations,
-                // this.securityRecommendationsCount,
-                // end maven
                 )];
         } else {
             return [];

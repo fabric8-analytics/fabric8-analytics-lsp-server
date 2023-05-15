@@ -158,11 +158,12 @@ const getCAmsg = (deps, diagnostics, totalCount): string => {
     if(diagnostics.length > 0) {
         const vulStr = (count: number) => count == 1 ? 'Vulnerability' : 'Vulnerabilities';
         const advStr = (count: number) => count == 1 ? 'Advisory' : 'Advisories';
-        const knownVulnMsg =  !totalCount.vulnerabilityCount || `${totalCount.vulnerabilityCount} Known Security ${vulStr(totalCount.vulnerabilityCount)}`;
+        const vulnCount = totalCount.vulnerabilityCount || totalCount.issuesCount || 0;
+        const knownVulnMsg =  !vulnCount || `${vulnCount} Known Security ${vulStr(vulnCount)}`;
         const advisoryMsg =  !totalCount.advisoryCount || `${totalCount.advisoryCount} Security ${advStr(totalCount.advisoryCount)}`;
         let summaryMsg = [knownVulnMsg, advisoryMsg].filter(x => x !== true).join(' and ');
         summaryMsg += (totalCount.exploitCount > 0) ? ` with ${totalCount.exploitCount} Exploitable ${vulStr(totalCount.exploitCount)}` : "";
-        summaryMsg += ((totalCount.vulnerabilityCount + totalCount.advisoryCount) > 0) ? " along with quick fixes" : "";
+        summaryMsg += ((vulnCount + totalCount.advisoryCount) > 0) ? " along with quick fixes" : "";
         msg += summaryMsg ? ('flagged ' + summaryMsg) : 'No potential security vulnerabilities found';
     } else {
         msg += `No potential security vulnerabilities found`;
@@ -238,6 +239,7 @@ class TotalCount {
     vulnerabilityCount: number = 0;
     advisoryCount: number = 0;
     exploitCount: number = 0;
+    issuesCount: number = 0;
 };
 
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
@@ -251,6 +253,7 @@ function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePat
             totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
             totalCount.advisoryCount += secEng.advisoryCount;
             totalCount.exploitCount += secEng.exploitCount;
+            totalCount.issuesCount += secEng.issuesCount;
         }
     });
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
@@ -294,14 +297,8 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         return;
     }
 
-    let validPackages = deps;
-    let packageAggregator = null;
-    if (ecosystem != "golang") {
-        validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-        packageAggregator = ecosystem == "maven" ? new MavenVulnerabilityAggregator() : new NoopVulnerabilityAggregator();
-    } else {
-        packageAggregator = new GolangVulnerabilityAggregator();
-    }
+    let validPackages = ecosystem == "golang" ? deps : deps.filter(d => regexVersion.test(d.version.value.trim()));
+    let packageAggregator = ecosystem == "golang" ? new GolangVulnerabilityAggregator() : (ecosystem == "maven" ? new MavenVulnerabilityAggregator() : new NoopVulnerabilityAggregator());
     const pkgMap = new DependencyMap(validPackages);
     const batchSize = 10;
     const diagnostics = [];
