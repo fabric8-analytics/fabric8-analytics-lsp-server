@@ -14,7 +14,7 @@ export enum ValueType {
   Object,
   Boolean,
   Null
-};
+}
 
 /* Value variant */
 export interface IVariant {
@@ -26,7 +26,7 @@ export interface IVariant {
 export interface IPosition {
   line:   number;
   column: number;
-};
+}
 
 /* Key/Value entry with positions */
 export interface IKeyValueEntry {
@@ -34,7 +34,7 @@ export interface IKeyValueEntry {
   value:          IVariant;
   key_position:   IPosition;
   value_position: IPosition;
-};
+}
 
 export class KeyValueEntry implements IKeyValueEntry {
   key:            string;

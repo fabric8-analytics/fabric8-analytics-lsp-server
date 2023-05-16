@@ -7,12 +7,12 @@ import { IDependency } from './collector';
 import { get_range } from './utils';
 import { Vulnerability } from './vulnerability';
 import { VulnerabilityAggregator } from './aggregators';
-import { Diagnostic, CodeAction, CodeActionKind, IConnection } from 'vscode-languageserver'
+import { Diagnostic, CodeAction, CodeActionKind, IConnection } from 'vscode-languageserver';
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor {
     path: Array<string>;
-};
+}
 
 /* Bind & return the part of `obj` as described by `desc` */
 let bind_object = (obj: any, desc: IBindingDescriptor) => {
@@ -32,21 +32,21 @@ interface IConsumer {
     binding: IBindingDescriptor;
     item: any;
     consume(data: any): boolean;
-};
+}
 
 /* Generic `T` producer */
 interface IProducer<T> {
     produce(): T;
-};
+}
 
 /* Each pipeline item is defined as a single consumer and producer pair */
-interface IPipelineItem<T> extends IConsumer, IProducer<T> { };
+interface IPipelineItem<T> extends IConsumer, IProducer<T> { }
 
 /* House bunches of `IPipelineItem`'s */
 interface IPipeline<T> {
     items: Array<IPipelineItem<T>>;
     run(data: any): T;
-};
+}
 
 /* Diagnostics producer type */
 type DiagnosticProducer = IProducer<Vulnerability[]>;
@@ -77,8 +77,8 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                     const aggVulnerability = this.vulnerabilityAggregator.aggregate(d);
                     const aggDiagnostic = aggVulnerability.getDiagnostic();
                     
-                    if (aggVulnerability.ecosystem == 'maven') {
-                        if (aggVulnerability.recommendation != null && aggVulnerability.issuesCount == 0) {
+                    if (aggVulnerability.ecosystem === 'maven') {
+                        if (aggVulnerability.recommendation !== null && aggVulnerability.issuesCount === 0) {
                             let codeAction: CodeAction = {
                                 title: `Switch to version ${aggVulnerability.recommendationVersion}`,
                                 diagnostics: [aggDiagnostic],
@@ -93,9 +93,9 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                                 newText: aggVulnerability.recommendationVersion
                             }];
                             // We will have line|start as key instead of message
-                            codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
+                            codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
                         }
-                        if (aggVulnerability.securityRecommendations != null && aggVulnerability.issuesCount > 0) {
+                        if (aggVulnerability.securityRecommendations !== null && aggVulnerability.issuesCount > 0) {
                             for (const cve of Object.keys(aggVulnerability.securityRecommendations)) {
                                 let version = aggVulnerability.securityRecommendations[cve]['mavenPackage']['version'];
                                 let codeAction: CodeAction = {
@@ -112,14 +112,14 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                                     newText: version
                                 }];
                                 // We will have line|start as key instead of message
-                                codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
+                                codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
                             }
                         }
                     } else {
 
                         // Add/Update quick action for given aggregated diangnostic
                         // TODO: this can be done lazily
-                        if (aggVulnerability.recommendedVersion && (aggVulnerability.vulnerabilityCount > 0 || aggVulnerability.exploitCount != null)) {
+                        if (aggVulnerability.recommendedVersion && (aggVulnerability.vulnerabilityCount > 0 || aggVulnerability.exploitCount !== null)) {
                             let codeAction: CodeAction = {
                                 title: `Switch to recommended version ${aggVulnerability.recommendedVersion}`,
                                 diagnostics: [aggDiagnostic],
@@ -134,7 +134,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                                 newText: aggVulnerability.recommendedVersion
                             }];
                             // We will have line|start as key instead of message
-                            codeActionsMap[aggDiagnostic.range.start.line + "|" + aggDiagnostic.range.start.character] = codeAction;
+                            codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
                         }
                     }
 
@@ -143,8 +143,8 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                     } else {
                         // Update the existing diagnostic object based on range values
                         this.diagnostics.forEach((diag, index) => {
-                            if (diag.range.start.line == aggVulnerability.range.start.line &&
-                                diag.range.start.character == aggVulnerability.range.start.character) {
+                            if (diag.range.start.line === aggVulnerability.range.start.line &&
+                                diag.range.start.character === aggVulnerability.range.start.character) {
                                 this.diagnostics[index] = aggDiagnostic;
                                 return;
                             }
@@ -156,7 +156,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
         // This is not used by any one.
         return [];
     }
-};
+}
 
 /* A consumer that uses the binding interface to consume a metadata object */
 class AnalysisConsumer implements IConsumer {
@@ -194,61 +194,61 @@ class AnalysisConsumer implements IConsumer {
     securityRecommendations: any = null;
     constructor(public config: any) { }
     consume(data: any): boolean {
-        if (this.binding != null) {
+        if (this.binding !== null) {
             this.item = bind_object(data, this.binding);
         }
-        if (this.item == null && this.issuesBinding != null) {
+        if (this.item === null && this.issuesBinding !== null) {
             this.item = bind_object(data, this.issuesBinding);
-            this.issuesCount = this.item != null ? this.item.length : 0;
+            this.issuesCount = this.item !== null ? this.item.length : 0;
         }
-        if (this.item == null || this.item.length == 0) {
+        if (this.item === null || this.item.length === 0) {
             this.item = data;
         }
-        if (this.packageBinding != null) {
+        if (this.packageBinding !== null) {
             this.package = bind_object(data, this.packageBinding);
         }
-        if (this.versionBinding != null) {
+        if (this.versionBinding !== null) {
             this.version = bind_object(data, this.versionBinding);
         }
-        if (this.changeToBinding != null) {
+        if (this.changeToBinding !== null) {
             this.changeTo = bind_object(data, this.changeToBinding);
         }
-        if (this.messageBinding != null) {
+        if (this.messageBinding !== null) {
             this.message = bind_object(data, this.messageBinding);
         }
-        if (this.vulnerabilityCountBinding != null) {
+        if (this.vulnerabilityCountBinding !== null) {
             this.vulnerabilityCount = bind_object(data, this.vulnerabilityCountBinding);
         }
-        if (this.advisoryCountBinding != null) {
+        if (this.advisoryCountBinding !== null) {
             this.advisoryCount = bind_object(data, this.advisoryCountBinding);
         }
-        if (this.exploitCountBinding != null) {
+        if (this.exploitCountBinding !== null) {
             this.exploitCount = bind_object(data, this.exploitCountBinding);
         }
-        if (this.highestSeverityBinding != null) {
+        if (this.highestSeverityBinding !== null) {
             this.highestSeverity = bind_object(data, this.highestSeverityBinding);
         }
-        if (this.refNameBinding != null) {
+        if (this.refNameBinding !== null) {
             this.refName = bind_object(data, this.refNameBinding);
         }
-        if (this.refVersionBinding != null) {
+        if (this.refVersionBinding !== null) {
             this.refVersion = bind_object(data, this.refVersionBinding);
         }
-        if (this.recommendationBinding != null) {
+        if (this.recommendationBinding !== null) {
             this.recommendation = bind_object(data, this.recommendationBinding);
         }
-        if (this.recommendation != null && this.recommendationNameBinding != null) {
+        if (this.recommendation !== null && this.recommendationNameBinding !== null) {
             this.recommendationName = bind_object(data, this.recommendationNameBinding);
         }
-        if (this.recommendation != null && this.recommendationVersionBinding != null) {
+        if (this.recommendation !== null && this.recommendationVersionBinding !== null) {
             this.recommendationVersion = bind_object(data, this.recommendationVersionBinding);
         }
-        if (this.securityRecommendationsBinding != null) {
+        if (this.securityRecommendationsBinding !== null) {
             this.securityRecommendations = bind_object(data, this.securityRecommendationsBinding);
         }
-        return this.item != null;
+        return this.item !== null;
     }
-};
+}
 
 /* Report CVEs in found dependencies */
 class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
@@ -279,7 +279,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
     }
 
     produce(): Vulnerability[] {
-        if (this.item != null) {
+        if (this.item !== null) {
             return [new Vulnerability(
                 this.package,
                 this.version, 
@@ -302,7 +302,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
             return [];
         }
     }
-};
+}
 
 let codeActionsMap = new Map<string, CodeAction>();
 

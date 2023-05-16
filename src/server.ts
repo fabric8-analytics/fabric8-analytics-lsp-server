@@ -6,7 +6,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
-import * as crypto from "crypto";
+import * as crypto from 'crypto';
 
 import {
       IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
@@ -30,15 +30,15 @@ enum EventStream {
   Invalid,
   Diagnostics,
   CodeLens
-};
+}
 
 let connection: IConnection = null;
 /* use stdio for transfer if applicable */
-if (process.argv.indexOf('--stdio') == -1)
+if (process.argv.indexOf('--stdio') === -1) {
     connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
-else
-    connection = createConnection()
-
+} else {
+    connection = createConnection();
+}
 let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
 
@@ -50,32 +50,32 @@ connection.onInitialize((params): InitializeResult => {
             textDocumentSync: documents.syncKind,
             codeActionProvider: true
         }
-    }
+    };
 });
 
 interface IFileHandlerCallback {
     (uri: string, name: string, contents: string): void;
-};
+}
 
 interface IAnalysisFileHandler {
     matcher:  RegExp;
     stream: EventStream;
     callback: IFileHandlerCallback;
-};
+}
 
 interface IAnalysisFiles {
     handlers: Array<IAnalysisFileHandler>;
     file_data: Map<string, string>;
     on(stream: EventStream, matcher: string, cb: IFileHandlerCallback): IAnalysisFiles;
     run(stream: EventStream, uri: string, file: string, contents: string): any;
-};
+}
 
 class AnalysisFileHandler implements IAnalysisFileHandler {
     matcher: RegExp;
     constructor(matcher: string, public stream: EventStream, public callback: IFileHandlerCallback) {
         this.matcher = new RegExp(matcher);
     }
-};
+}
 
 class AnalysisFiles implements IAnalysisFiles {
     handlers: Array<IAnalysisFileHandler>;
@@ -90,12 +90,12 @@ class AnalysisFiles implements IAnalysisFiles {
     }
     run(stream: EventStream, uri: string, file: string, contents: string): any {
         for (let handler of this.handlers) {
-            if (handler.stream == stream && handler.matcher.test(file)) {
+            if (handler.stream === stream && handler.matcher.test(file)) {
                 return handler.callback(uri, file, contents);
             }
         }
     }
-};
+}
 
 interface IAnalysisLSPServer
 {
@@ -104,7 +104,7 @@ interface IAnalysisLSPServer
 
     handle_file_event(uri: string, contents: string): void;
     handle_code_lens_event(uri: string): CodeLens[];
-};
+}
 
 class AnalysisLSPServer implements IAnalysisLSPServer {
     constructor(public connection: IConnection, public files: IAnalysisFiles) {}
@@ -141,11 +141,11 @@ if (fs.existsSync(rc_file)) {
     }
 }
 const fullStackReportAction: CodeAction = {
-  title: "Detailed Vulnerability Report",
+  title: 'Detailed Vulnerability Report',
   kind: CodeActionKind.QuickFix,
   command: {
-    command: "extension.fabric8AnalyticsWidgetFullStack",
-    title: "Analytics Report",
+    command: 'extension.fabric8AnalyticsWidgetFullStack',
+    title: 'Analytics Report',
   }
 };
 
@@ -153,33 +153,33 @@ let DiagnosticsEngines = [SecurityEngine];
 
 /* Generate summarized notification message for vulnerability analysis */
 const getCAmsg = (deps, diagnostics, totalCount): string => {
-    let msg = `Scanned ${deps.length} ${deps.length == 1 ? 'dependency' : 'dependencies'}, `;
+    let msg = `Scanned ${deps.length} ${deps.length === 1 ? 'dependency' : 'dependencies'}, `;
 
     if(diagnostics.length > 0) {
-        const vulStr = (count: number) => count == 1 ? 'Vulnerability' : 'Vulnerabilities';
-        const advStr = (count: number) => count == 1 ? 'Advisory' : 'Advisories';
+        const vulStr = (count: number) => count === 1 ? 'Vulnerability' : 'Vulnerabilities';
+        const advStr = (count: number) => count === 1 ? 'Advisory' : 'Advisories';
         const vulnCount = totalCount.vulnerabilityCount || totalCount.issuesCount || 0;
         const knownVulnMsg =  !vulnCount || `${vulnCount} Known Security ${vulStr(vulnCount)}`;
         const advisoryMsg =  !totalCount.advisoryCount || `${totalCount.advisoryCount} Security ${advStr(totalCount.advisoryCount)}`;
         let summaryMsg = [knownVulnMsg, advisoryMsg].filter(x => x !== true).join(' and ');
-        summaryMsg += (totalCount.exploitCount > 0) ? ` with ${totalCount.exploitCount} Exploitable ${vulStr(totalCount.exploitCount)}` : "";
-        summaryMsg += ((vulnCount + totalCount.advisoryCount) > 0) ? " along with quick fixes" : "";
+        summaryMsg += (totalCount.exploitCount > 0) ? ` with ${totalCount.exploitCount} Exploitable ${vulStr(totalCount.exploitCount)}` : '';
+        summaryMsg += ((vulnCount + totalCount.advisoryCount) > 0) ? ' along with quick fixes' : '';
         msg += summaryMsg ? ('flagged ' + summaryMsg) : 'No potential security vulnerabilities found';
     } else {
         msg += `No potential security vulnerabilities found`;
     }
 
-    return msg
+    return msg;
 };
 
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
 /* Fetch Vulnerabilities by component-analysis batch api-call */
 const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestId: string) => {
-    let url = "";
+    let url = '';
     let headers = {};
-    let body = "";
-    if (reqData.ecosystem == 'maven') {
+    let body = '';
+    if (reqData.ecosystem === 'maven') {
         url = `http://crda-backend-crda.apps.sssc-cl01.appeng.rhecoeng.com/api/v3/component-analysis/${reqData.ecosystem}`;
         headers = {
             'Content-Type': 'application/json',
@@ -240,12 +240,12 @@ class TotalCount {
     advisoryCount: number = 0;
     exploitCount: number = 0;
     issuesCount: number = 0;
-};
+}
 
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
 function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount, ecosystem: string) {
     response.forEach(r => {
-        const dependency = (ecosystem == 'maven') ? pkgMap.get(new SimpleDependency( r.ref.name, r.ref.version)) : pkgMap.get(new SimpleDependency( r.package, r.version));
+        const dependency = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency( r.ref.name, r.ref.version)) : pkgMap.get(new SimpleDependency( r.package, r.version));
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(r);
         for (const item of pipeline.items) {
@@ -265,8 +265,8 @@ function slicePayload(payload, batchSize, ecosystem): any {
     let reqData = [];
     for (let i = 0; i < payload.length; i += batchSize) {
         reqData.push({
-            "ecosystem": ecosystem,
-            "package_versions": payload.slice(i, i + batchSize)
+            'ecosystem': ecosystem,
+            'package_versions': payload.slice(i, i + batchSize)
         });
     }
     return reqData;
@@ -297,14 +297,14 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         return;
     }
 
-    let validPackages = ecosystem == "golang" ? deps : deps.filter(d => regexVersion.test(d.version.value.trim()));
-    let packageAggregator = ecosystem == "golang" ? new GolangVulnerabilityAggregator() : (ecosystem == "maven" ? new MavenVulnerabilityAggregator() : new NoopVulnerabilityAggregator());
+    let validPackages = ecosystem === 'golang' ? deps : deps.filter(d => regexVersion.test(d.version.value.trim()));
+    let packageAggregator = ecosystem === 'golang' ? new GolangVulnerabilityAggregator() : (ecosystem === 'maven' ? new MavenVulnerabilityAggregator() : new NoopVulnerabilityAggregator());
     const pkgMap = new DependencyMap(validPackages);
     const batchSize = 10;
     const diagnostics = [];
     const totalCount = new TotalCount();
     const start = new Date().getTime();
-    const manifestHash = crypto.createHash("sha256").update(diagnosticFilePath).digest("hex");
+    const manifestHash = crypto.createHash('sha256').update(diagnosticFilePath).digest('hex');
     const requestId = uuid.v4();
     // Closure which captures common arg to runPipeline.
     const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount, ecosystem);
@@ -318,7 +318,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
 
     // Construct request payload for items not in Cache.
     const requestPayload = missedItems.map(d => {
-        if (ecosystem == 'maven') {
+        if (ecosystem === 'maven') {
             return { name: d.name.value, version: d.version.value };
           } else {
             return { package: d.name.value, version: d.version.value };
@@ -328,7 +328,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const cacheAndRunPipeline = response => {
       cache.add(response);
       pipeline(response);
-    }
+    };
     const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
             map(request => fetchVulnerabilities(request, manifestHash, requestId).then(cacheAndRunPipeline));
 
@@ -348,20 +348,20 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     });
 };
 
-files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
+files.on(EventStream.Diagnostics, '^package\\.json$', (uri, name, contents) => {
     sendDiagnostics('npm', uri, contents, new PackageJson());
 });
 
-files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
+files.on(EventStream.Diagnostics, '^pom\\.xml$', (uri, name, contents) => {
     sendDiagnostics('maven', uri, contents, new PomXml());
 });
 
-files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
+files.on(EventStream.Diagnostics, '^requirements\\.txt$', (uri, name, contents) => {
     sendDiagnostics('pypi', uri, contents, new RequirementsTxt());
 });
 
-files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
-    connection.console.log("Using golang executable: " + config.golang_executable);
+files.on(EventStream.Diagnostics, '^go\\.mod$', (uri, name, contents) => {
+    connection.console.log('Using golang executable: ' + config.golang_executable);
     sendDiagnostics('golang', uri, contents, new GoMod(uri));
 });
 
@@ -376,8 +376,8 @@ connection.onDidChangeTextDocument((params) => {
     server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
     clearTimeout(checkDelay);
     checkDelay = setTimeout(() => {
-        server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri])
-    }, 500)
+        server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
+    }, 500);
 });
 
 connection.onDidOpenTextDocument((params) => {
@@ -388,8 +388,8 @@ connection.onCodeAction((params, token): CodeAction[] => {
     let codeActions: CodeAction[] = [];
     let hasAnalyticsDiagonostic: boolean = false;
     for (let diagnostic of params.context.diagnostics) {
-        let codeAction = codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character];
-        if (codeAction != null) {
+        let codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
+        if (codeAction !== null) {
             codeActions.push(codeAction);
 
         }

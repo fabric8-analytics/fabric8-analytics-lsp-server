@@ -21,19 +21,19 @@ class Config
 
     constructor() {
         // TODO: this needs to be configurable
-        this.server_url = process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
-        this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
-        this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || "";
-        this.provide_fullstack_action = (process.env.PROVIDE_FULLSTACK_ACTION || "") === "true";
+        this.server_url = process.env.RECOMMENDER_API_URL || 'api-url-not-available-in-lsp';
+        this.api_token = process.env.RECOMMENDER_API_TOKEN || 'token-not-available-in-lsp';
+        this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || '';
+        this.provide_fullstack_action = (process.env.PROVIDE_FULLSTACK_ACTION || '') === 'true';
         this.forbidden_licenses = [];
         this.no_crypto = false;
-        this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
-        this.uuid = process.env.UUID || "";
+        this.home_dir = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
+        this.uuid = process.env.UUID || '';
         this.golang_executable = process.env.GOLANG_EXECUTABLE || 'go';
-        this.utm_source = process.env.UTM_SOURCE || "";
-        this.telemetry_id = process.env.TELEMETRY_ID || "";
+        this.utm_source = process.env.UTM_SOURCE || '';
+        this.telemetry_id = process.env.TELEMETRY_ID || '';
     }
-};
+}
 
 const config = new Config();
 

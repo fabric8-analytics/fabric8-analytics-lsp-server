@@ -4,9 +4,9 @@ import LRUCache from 'lru-cache';
 import { IHashableDependency, SimpleDependency } from './collector';
 
 export interface CachedItem {
-  K: IHashableDependency
-  V: any
-};
+  K: IHashableDependency;
+  V: any;
+}
 
 export class Cache {
   private cache: LRUCache<string, any>;

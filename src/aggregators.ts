@@ -4,9 +4,9 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { Vulnerability } from './vulnerability';
-import compareVersions = require('compare-versions');
+import compareVersions from 'compare-versions';
 
-const severity = ["low", "medium", "high", "critical"];
+const severity = ['low', 'medium', 'high', 'critical'];
 
 /* VulnerabilityAggregator */
 interface VulnerabilityAggregator {
@@ -21,7 +21,7 @@ class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Make it a new vulnerability always and set ecosystem for vulnerability.
         this.isNewVulnerability = true;
-        newVulnerability.ecosystem = "";
+        newVulnerability.ecosystem = '';
 
         return newVulnerability;
     }
@@ -34,7 +34,7 @@ class MavenVulnerabilityAggregator implements VulnerabilityAggregator {
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Make it a new vulnerability always and set ecosystem for vulnerability.
         this.isNewVulnerability = true;
-        newVulnerability.ecosystem = "maven";
+        newVulnerability.ecosystem = 'maven';
 
         return newVulnerability;
     }
@@ -47,15 +47,15 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
 
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Set ecosystem for new vulnerability from aggregator
-        newVulnerability.ecosystem = "golang";
+        newVulnerability.ecosystem = 'golang';
 
         // Check if module / package exists in the list.
         this.isNewVulnerability = true;
 
-        var existingVulnerabilityIndex = 0
+        let existingVulnerabilityIndex = 0;
         this.vulnerabilities.forEach((pckg, index) => {
             // Merge vulnerabilities for same modules.
-            if (this.getModuleName(newVulnerability.name) == this.getModuleName(pckg.name)) {
+            if (this.getModuleName(newVulnerability.name) === this.getModuleName(pckg.name)) {
                 // Module / package exists, so aggregate the data and update Diagnostic message and code action.
                 this.mergeVulnerability(index, newVulnerability);
                 this.isNewVulnerability = false;
@@ -73,14 +73,15 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
 
     private getModuleName(vulnerabilityName: string): string {
         const parts = vulnerabilityName.split('@');
-        return parts.length == 2 ? parts[1] : vulnerabilityName;
+        return parts.length === 2 ? parts[1] : vulnerabilityName;
     }
 
     private mergeVulnerability(existingIndex: number, newVulnerability: Vulnerability) {
         // Between current name and new name, smallest will be the module name.
         // So, assign the smallest as package name.
-        if (newVulnerability.name.length < this.vulnerabilities[existingIndex].name.length)
+        if (newVulnerability.name.length < this.vulnerabilities[existingIndex].name.length) {
             this.vulnerabilities[existingIndex].name = newVulnerability.name;
+        }
 
         // Merge other informations
         this.vulnerabilities[existingIndex].packageCount += newVulnerability.packageCount;
@@ -100,11 +101,11 @@ class GolangVulnerabilityAggregator implements VulnerabilityAggregator {
 
     private getMaxRecVersion(oldRecVersion: string, newRecVersion: string): string {
         // Compute maximium recommended version.
-        var maxRecVersion = oldRecVersion;
-        if (oldRecVersion == "" || oldRecVersion == null) {
+        let maxRecVersion = oldRecVersion;
+        if (oldRecVersion === '' || oldRecVersion === null) {
             maxRecVersion = newRecVersion;
-        } else if (newRecVersion != "" && newRecVersion != null) {
-            if (compareVersions(oldRecVersion, newRecVersion) == -1) {
+        } else if (newRecVersion !== '' && newRecVersion !== null) {
+            if (compareVersions(oldRecVersion, newRecVersion) === -1) {
                 maxRecVersion = newRecVersion;
             }
         }

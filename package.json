@@ -55,12 +55,14 @@
     "pkg": "^4.4.9",
     "semantic-release": "^17.1.0",
     "ts-node": "^8.3.0",
-    "typescript": "^3.6.3"
+    "typescript": "^3.6.3",
+    "tslint": "^5.19.0"
   },
   "scripts": {
     "build": "tsc -p .",
     "test": "nyc mocha",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "lint": "tslint -c tslint.json src/*.ts"
   },
   "nyc": {
     "include": [
