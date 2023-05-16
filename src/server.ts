@@ -389,7 +389,7 @@ connection.onCodeAction((params, token): CodeAction[] => {
     let hasAnalyticsDiagonostic: boolean = false;
     for (let diagnostic of params.context.diagnostics) {
         let codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
-        if (codeAction !== null) {
+        if (codeAction !== null && codeAction !== undefined) {
             codeActions.push(codeAction);
 
         }
