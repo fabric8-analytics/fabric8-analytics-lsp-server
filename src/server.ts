@@ -245,16 +245,18 @@ class TotalCount {
 /* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
 function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount, ecosystem: string) {
     response.forEach(r => {
-        const dependency = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency( r.ref.name, r.ref.version)) : pkgMap.get(new SimpleDependency( r.package, r.version));
-        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
-        pipeline.run(r);
-        for (const item of pipeline.items) {
-            const secEng = item as SecurityEngine;
-            totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
-            totalCount.advisoryCount += secEng.advisoryCount;
-            totalCount.exploitCount += secEng.exploitCount;
-            totalCount.issuesCount += secEng.issuesCount;
-        }
+        const dependencies = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency( r.ref.name, r.ref.version)) : pkgMap.get(new SimpleDependency( r.package, r.version));
+        dependencies.forEach(dependency => {
+            let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
+            pipeline.run(r);
+            for (const item of pipeline.items) {
+                const secEng = item as SecurityEngine;
+                totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
+                totalCount.advisoryCount += secEng.advisoryCount;
+                totalCount.exploitCount += secEng.exploitCount;
+                totalCount.issuesCount += secEng.issuesCount;
+            }
+        })
     });
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
     connection.console.log(`sendDiagnostics: ${diagnostics?.length}`);
