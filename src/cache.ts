@@ -26,7 +26,7 @@ export class Cache {
   add(items: Array<any>): void {
     items.forEach(item => {
       // FIXME: response field is inconsistent when unknown is included.
-      const dep = new SimpleDependency(item.package || item.name, item.version);
+      const dep = new SimpleDependency(item.package || item.name || item.ref.name, item.version || item.ref.version);
       this.cache.set(dep.key(), item);
     });
   }

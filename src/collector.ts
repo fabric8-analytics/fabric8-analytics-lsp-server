@@ -92,7 +92,7 @@ export class Dependency implements IHashableDependency {
   }
 
   key(): string {
-    return `${this.name.value}@${this.version.value}`;
+    return `${this.name.value}@${this.version.value}${this.version.position ? `:${this.version.position.line}` : ''}`;
   }
 }
 
@@ -109,7 +109,11 @@ export class DependencyMap {
      this.mapper = new Map(deps.map(d => [d.key(), d]));
    }
 
-   public get(dep: IHashableDependency): IHashableDependency {
-     return this.mapper.get(dep.key());
+   public get(dep: IHashableDependency): IHashableDependency[] {
+    const regex = new RegExp(`^${dep.key()}:\\d+$`);
+    const keysMatchingRegex = Array.from(this.mapper.keys()).filter(key => regex.test(key));
+    let valsMatchingkeys = []
+    keysMatchingRegex.forEach(key => valsMatchingkeys.push(this.mapper.get(key)))
+    return valsMatchingkeys;
    }
 }
