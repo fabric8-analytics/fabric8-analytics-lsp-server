@@ -54,6 +54,20 @@ export class DependencyCollector implements IDependencyCollector {
         const validElementNames = ['groupId', 'artifactId', 'version'];
         const dependencies = dependenciesNode.subElements.
             filter(e => e.name === 'dependency').
+            //must not be a dependency under dependencyManagement
+            filter(e => {
+                const parentElement = e.parent as XMLElement | undefined;
+                
+                if (parentElement) {
+                  const grandParentElement = parentElement.parent as XMLElement | undefined;
+                  
+                  if (grandParentElement) {
+                    return grandParentElement.name !== 'dependencyManagement';
+                  }
+                }
+                
+                return true;
+            }).
             // must include all validElementNames
             filter(e => e.subElements.filter(e => validElementNames.includes(e.name)).length == validElementNames.length).
             // no test dependencies
