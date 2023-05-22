@@ -112,8 +112,8 @@ export class DependencyMap {
    public get(dep: IHashableDependency): IHashableDependency[] {
     const regex = new RegExp(`^${dep.key()}:\\d+$`);
     const keysMatchingRegex = Array.from(this.mapper.keys()).filter(key => regex.test(key));
-    let valsMatchingkeys = []
-    keysMatchingRegex.forEach(key => valsMatchingkeys.push(this.mapper.get(key)))
+    let valsMatchingkeys = [];
+    keysMatchingRegex.forEach(key => valsMatchingkeys.push(this.mapper.get(key)));
     return valsMatchingkeys;
    }
 }

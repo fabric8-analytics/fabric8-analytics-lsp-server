@@ -180,7 +180,7 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
     let headers = {};
     let body = '';
     if (reqData.ecosystem === 'maven') {
-        url = `http://crda-backend-crda.apps.sssc-cl01.appeng.rhecoeng.com/api/v3/component-analysis/${reqData.ecosystem}`;
+        url = `http://crda-backend-dev-crda.apps.sssc-cl01.appeng.rhecoeng.com/api/v3/component-analysis/${reqData.ecosystem}`;
         headers = {
             'Content-Type': 'application/json',
         };
@@ -242,13 +242,13 @@ class TotalCount {
     issuesCount: number = 0;
 }
 
-/* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
-function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount, ecosystem: string) {
-    response.forEach(r => {
-        const dependencies = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency( r.ref.name, r.ref.version)) : pkgMap.get(new SimpleDependency( r.package, r.version));
-        dependencies.forEach(dependency => {
-            let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
-            pipeline.run(r);
+/* Runs DiagnosticPileline to consume dependencies and generate Diagnostic[] */
+function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount, ecosystem: string) {
+    dependencies.forEach(d => {
+        const packages = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency( d.ref.name, d.ref.version)) : pkgMap.get(new SimpleDependency( d.package, d.version));
+        packages.forEach(pkg => {
+            let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
+            pipeline.run(d);
             for (const item of pipeline.items) {
                 const secEng = item as SecurityEngine;
                 totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
@@ -256,7 +256,7 @@ function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePat
                 totalCount.exploitCount += secEng.exploitCount;
                 totalCount.issuesCount += secEng.issuesCount;
             }
-        })
+        });
     });
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
     connection.console.log(`sendDiagnostics: ${diagnostics?.length}`);
@@ -309,7 +309,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const manifestHash = crypto.createHash('sha256').update(diagnosticFilePath).digest('hex');
     const requestId = uuid.v4();
     // Closure which captures common arg to runPipeline.
-    const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount, ecosystem);
+    const pipeline = dependencies => runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount, ecosystem);
     // Get and fire diagnostics for items found in Cache.
     const cache = globalCache(ecosystem);
     const cachedItems = cache.get(validPackages);
@@ -326,10 +326,19 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
             return { package: d.name.value, version: d.version.value };
           }
         });
-    // Closure which adds response into cache before firing diagnostics.
+    // check for dependencies
+    const getDependencies = response => {
+        if (response.dependencies && response.dependencies.length > 0) {
+            return response.dependencies;
+        } else {
+            return [];
+        }
+    }; 
+    // Closure which adds response into cache before firing diagnostics.   
     const cacheAndRunPipeline = response => {
-      cache.add(response);
-      pipeline(response);
+      let dependencies = getDependencies(response);
+      cache.add(dependencies);
+      pipeline(dependencies);
     };
     const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
             map(request => fetchVulnerabilities(request, manifestHash, requestId).then(cacheAndRunPipeline));

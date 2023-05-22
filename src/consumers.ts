@@ -95,9 +95,9 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                             // We will have line|start as key instead of message
                             codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
                         }
-                        if (aggVulnerability.securityRecommendations !== null && aggVulnerability.issuesCount > 0) {
-                            for (const cve of Object.keys(aggVulnerability.securityRecommendations)) {
-                                let version = aggVulnerability.securityRecommendations[cve]['mavenPackage']['version'];
+                        if (Object.keys(aggVulnerability.remediations).length > 0 && aggVulnerability.issuesCount > 0) {
+                            for (const cve of Object.keys(aggVulnerability.remediations)) {
+                                let version = aggVulnerability.remediations[cve]['mavenPackage']['version'];
                                 let codeAction: CodeAction = {
                                     title: `Switch to version ${version} for ${cve}`,
                                     diagnostics: [aggDiagnostic],
@@ -184,14 +184,18 @@ class AnalysisConsumer implements IConsumer {
     recommendationBinding: IBindingDescriptor;
     recommendationNameBinding: IBindingDescriptor;
     recommendationVersionBinding: IBindingDescriptor;
-    securityRecommendationsBinding: IBindingDescriptor;
+    remediationsBinding: IBindingDescriptor;
+    highestVulnerabilityBinding: IBindingDescriptor;
+    highestVulnerabilitySeverityBinding: IBindingDescriptor;
     issuesCount: number = 0;
     refName: string = null;
     refVersion: string = null;
     recommendation: any = null;
     recommendationName: string = null;
     recommendationVersion: string = null;
-    securityRecommendations: any = null;
+    remediations: any = null;
+    highestVulnerability: any = null;
+    highestVulnerabilitySeverity: string = null;
     constructor(public config: any) { }
     consume(data: any): boolean {
         if (this.binding !== null) {
@@ -243,8 +247,14 @@ class AnalysisConsumer implements IConsumer {
         if (this.recommendation !== null && this.recommendationVersionBinding !== null) {
             this.recommendationVersion = bind_object(data, this.recommendationVersionBinding);
         }
-        if (this.securityRecommendationsBinding !== null) {
-            this.securityRecommendations = bind_object(data, this.securityRecommendationsBinding);
+        if (this.remediationsBinding !== null) {
+            this.remediations = bind_object(data, this.remediationsBinding);
+        }
+        if (this.highestVulnerabilityBinding !== null) {
+            this.highestVulnerability = bind_object(data, this.highestVulnerabilityBinding);
+        }
+        if (this.highestVulnerability !== null && this.highestVulnerabilitySeverityBinding !== null) {
+            this.highestVulnerabilitySeverity = bind_object(data, this.highestVulnerabilitySeverityBinding);
         }
         return this.item !== null;
     }
@@ -275,7 +285,9 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         this.recommendationBinding = { path: ['recommendation'] };
         this.recommendationNameBinding = { path: ['recommendation', 'name'] };
         this.recommendationVersionBinding = { path: ['recommendation', 'version'] };
-        this.securityRecommendationsBinding = { path: ['securityRecommendations'] };
+        this.remediationsBinding = { path: ['remediations'] };
+        this.highestVulnerabilityBinding = { path: ['highestVulnerability'] };
+        this.highestVulnerabilitySeverityBinding = { path: ['highestVulnerability', 'severity'] };
     }
 
     produce(): Vulnerability[] {
@@ -296,7 +308,8 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
                 this.recommendation,
                 this.recommendationName,
                 this.recommendationVersion,
-                this.securityRecommendations,
+                this.remediations,
+                this.highestVulnerabilitySeverity,
                 )];
         } else {
             return [];
