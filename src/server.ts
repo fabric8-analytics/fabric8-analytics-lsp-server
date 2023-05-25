@@ -43,8 +43,10 @@ let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
 
 let workspaceRoot: string;
+let crdaHost: string;
 connection.onInitialize((params): InitializeResult => {
     workspaceRoot = params.rootPath;
+    crdaHost = params.initializationOptions.crdaHost;
     return {
         capabilities: {
             textDocumentSync: documents.syncKind,
@@ -180,7 +182,7 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
     let headers = {};
     let body = '';
     if (reqData.ecosystem === 'maven') {
-        url = `http://crda-backend-dev-crda.apps.sssc-cl01.appeng.rhecoeng.com/api/v3/component-analysis/${reqData.ecosystem}`;
+        url = `${crdaHost}/api/v3/component-analysis/${reqData.ecosystem}`;
         headers = {
             'Content-Type': 'application/json',
         };
