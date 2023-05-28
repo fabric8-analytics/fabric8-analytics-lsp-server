@@ -44,9 +44,11 @@ documents.listen(connection);
 
 let workspaceRoot: string;
 let crdaHost: string;
+let triggerFullStackAnalysis: string;
 connection.onInitialize((params): InitializeResult => {
     workspaceRoot = params.rootPath;
     crdaHost = params.initializationOptions.crdaHost;
+    triggerFullStackAnalysis = params.initializationOptions.triggerFullStackAnalysis;
     return {
         capabilities: {
             textDocumentSync: documents.syncKind,
@@ -142,14 +144,15 @@ if (fs.existsSync(rc_file)) {
         config.server_url = `${rc.server}/api/v2`;
     }
 }
-const fullStackReportAction: CodeAction = {
+
+const fullStackReportAction = (): CodeAction => ({
   title: 'Detailed Vulnerability Report',
   kind: CodeActionKind.QuickFix,
   command: {
-    command: 'extension.fabric8AnalyticsWidgetFullStack',
+    command: triggerFullStackAnalysis,
     title: 'Analytics Report',
   }
-};
+});
 
 let DiagnosticsEngines = [SecurityEngine];
 
@@ -411,7 +414,7 @@ connection.onCodeAction((params, token): CodeAction[] => {
         }
     }
     if (config.provide_fullstack_action && hasAnalyticsDiagonostic) {
-        codeActions.push(fullStackReportAction);
+        codeActions.push(fullStackReportAction());
     }
     return codeActions;
 });
