@@ -18,7 +18,8 @@ export class Cache {
   // returns null as a value for dependency which is not in the cache.
   get(deps: Array<IHashableDependency>): Array<CachedItem> {
     return deps.map(d => {
-      const cached = this.cache.get(d.key());
+      const key = d.key();
+      const cached = this.cache.get(key.substring(0, key.lastIndexOf(":")));
       return {K: d, V: cached} as CachedItem;
     });
   }

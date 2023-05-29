@@ -318,7 +318,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     // Get and fire diagnostics for items found in Cache.
     const cache = globalCache(ecosystem);
     const cachedItems = cache.get(validPackages);
-    const cachedValues = cachedItems.filter(c => c.V !== undefined).map(c => c.V);
+    const cachedValues = Array.from(new Set(cachedItems.filter(c => c.V !== undefined).map(c => c.V)));
     const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
     connection.console.log(`cache hit: ${cachedValues.length} miss: ${missedItems.length}`);
     pipeline(cachedValues);
