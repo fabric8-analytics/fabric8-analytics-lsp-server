@@ -345,7 +345,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         if (ecosystem === 'maven') {
             dependencies = getDependencies(response);
         } else {
-            dependencies = response;
+            dependencies = Array.from(new Set(response.map(JSON.stringify))).map((item: string) => JSON.parse(item));
         }
         cache.add(dependencies);
         pipeline(dependencies);
