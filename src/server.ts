@@ -341,9 +341,14 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     }; 
     // Closure which adds response into cache before firing diagnostics.   
     const cacheAndRunPipeline = response => {
-      let dependencies = getDependencies(response);
-      cache.add(dependencies);
-      pipeline(dependencies);
+        let dependencies = [];
+        if (ecosystem === 'maven') {
+            dependencies = getDependencies(response);
+        } else {
+            dependencies = response;
+        }
+        cache.add(dependencies);
+        pipeline(dependencies);
     };
     const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
             map(request => fetchVulnerabilities(request, manifestHash, requestId).then(cacheAndRunPipeline));

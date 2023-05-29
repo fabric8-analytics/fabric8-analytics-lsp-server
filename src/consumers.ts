@@ -205,9 +205,6 @@ class AnalysisConsumer implements IConsumer {
             this.item = bind_object(data, this.issuesBinding);
             this.issuesCount = this.item !== null ? this.item.length : 0;
         }
-        if (this.item === null || this.item.length === 0) {
-            this.item = data;
-        }
         if (this.packageBinding !== null) {
             this.package = bind_object(data, this.packageBinding);
         }
