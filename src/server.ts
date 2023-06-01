@@ -28,7 +28,7 @@ import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator, GolangVulner
 import { AnalyticsSource } from './vulnerability';
 import { config } from './config';
 import { globalCache as GlobalCache } from './cache';
-import { TextDocumentSyncKind, Connection } from 'vscode-languageserver';
+import { TextDocumentSyncKind, Connection, DidChangeConfigurationNotification } from 'vscode-languageserver';
 import {
     TextDocument
 } from 'vscode-languageserver-textdocument';
@@ -45,13 +45,27 @@ const connection: Connection = createConnection(ProposedFeatures.all);
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 documents.listen(connection);
 
-let workspaceRoot: string;
-let crdaHost: string;
 let triggerFullStackAnalysis: string;
+let hasConfigurationCapability: boolean = false;
+
+interface DependencyAnalyticsSettings {
+    crdaHost: string;
+    crdaSnykToken: string;
+}
+
+const defaultSettings: DependencyAnalyticsSettings = {
+    crdaHost: config.crda_api_url,
+    crdaSnykToken: config.crda_snyk_token
+};
+
+let globalSettings: DependencyAnalyticsSettings = defaultSettings;
+
 connection.onInitialize((params): InitializeResult => {
-    workspaceRoot = params.rootPath;
-    crdaHost = params.initializationOptions.crdaHost;
+    let capabilities = params.capabilities;
     triggerFullStackAnalysis = params.initializationOptions.triggerFullStackAnalysis;
+    hasConfigurationCapability = !!(
+        capabilities.workspace && !!capabilities.workspace.configuration
+    );
     return {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
@@ -187,10 +201,16 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
     let headers = {};
     let body = '';
     if (reqData.ecosystem === 'maven') {
-        url = `${crdaHost}/api/v3/component-analysis/${reqData.ecosystem}`;
+        url = `${globalSettings.crdaHost}/component-analysis/${reqData.ecosystem}`;
         headers = {
             'Content-Type': 'application/json',
         };
+
+        if(globalSettings.crdaSnykToken !== '') {
+            headers = { ...headers, 
+                'Crda-Snyk-Token': globalSettings.crdaSnykToken
+            };
+        }
         body = JSON.stringify(reqData.package_versions);
     } else {
         url = config.server_url;
@@ -389,6 +409,14 @@ files.on(EventStream.Diagnostics, '^go\\.mod$', (uri, name, contents) => {
 });
 
 let checkDelay;
+
+connection.onInitialized(() => {
+    if (hasConfigurationCapability) {
+        // Register for all configuration changes.
+        connection.client.register(DidChangeConfigurationNotification.type, undefined);
+    }
+});
+
 connection.onDidSaveTextDocument((params) => {
     clearTimeout(checkDelay);
     server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
@@ -401,6 +429,17 @@ connection.onDidChangeTextDocument((params) => {
     checkDelay = setTimeout(() => {
         server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
     }, 500);
+});
+
+connection.onDidChangeConfiguration(() => {
+    if (hasConfigurationCapability) {
+        server.connection.workspace.getConfiguration().then((data) => {
+            globalSettings = ({
+                crdaHost: data.dependencyAnalytics.crdaHost,
+                crdaSnykToken: data.dependencyAnalytics.crdaSnykToken
+            });
+        });
+    }
 });
 
 connection.onDidOpenTextDocument((params) => {
