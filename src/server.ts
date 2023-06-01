@@ -9,8 +9,11 @@ import * as uuid from 'uuid';
 import * as crypto from 'crypto';
 
 import {
-      IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-      TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
+    createConnection,
+    TextDocuments, InitializeResult,
+    CodeLens, CodeAction, CodeActionKind,
+    ProposedFeatures
+} from 'vscode-languageserver/node';
 import fetch from 'node-fetch';
 import url from 'url';
 
@@ -19,27 +22,27 @@ import { DependencyCollector as GoMod } from './collector/go.mod';
 import { DependencyCollector as PackageJson } from './collector/package.json';
 import { DependencyCollector as PomXml } from './collector/pom.xml';
 import { DependencyCollector as RequirementsTxt } from './collector/requirements.txt';
-import { IDependencyCollector, IHashableDependency, SimpleDependency, DependencyMap } from './collector';
+import { IDependencyCollector, SimpleDependency, DependencyMap } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from './vulnerability';
 import { config } from './config';
 import { globalCache as GlobalCache } from './cache';
+import { TextDocumentSyncKind, Connection } from 'vscode-languageserver';
+import {
+    TextDocument
+} from 'vscode-languageserver-textdocument';
 
 enum EventStream {
-  Invalid,
-  Diagnostics,
-  CodeLens
+    Invalid,
+    Diagnostics,
+    CodeLens
 }
 
-let connection: IConnection = null;
-/* use stdio for transfer if applicable */
-if (process.argv.indexOf('--stdio') === -1) {
-    connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
-} else {
-    connection = createConnection();
-}
-let documents: TextDocuments = new TextDocuments();
+// Create a connection for the server, using Node's IPC as a transport.
+// Also include all preview / proposed LSP features.
+const connection: Connection = createConnection(ProposedFeatures.all);
+const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 documents.listen(connection);
 
 let workspaceRoot: string;
@@ -51,7 +54,7 @@ connection.onInitialize((params): InitializeResult => {
     triggerFullStackAnalysis = params.initializationOptions.triggerFullStackAnalysis;
     return {
         capabilities: {
-            textDocumentSync: documents.syncKind,
+            textDocumentSync: TextDocumentSyncKind.Incremental,
             codeActionProvider: true
         }
     };
@@ -62,7 +65,7 @@ interface IFileHandlerCallback {
 }
 
 interface IAnalysisFileHandler {
-    matcher:  RegExp;
+    matcher: RegExp;
     stream: EventStream;
     callback: IFileHandlerCallback;
 }
@@ -101,17 +104,16 @@ class AnalysisFiles implements IAnalysisFiles {
     }
 }
 
-interface IAnalysisLSPServer
-{
-    connection: IConnection;
-    files:      IAnalysisFiles;
+interface IAnalysisLSPServer {
+    connection: Connection;
+    files: IAnalysisFiles;
 
     handle_file_event(uri: string, contents: string): void;
     handle_code_lens_event(uri: string): CodeLens[];
 }
 
 class AnalysisLSPServer implements IAnalysisLSPServer {
-    constructor(public connection: IConnection, public files: IAnalysisFiles) {}
+    constructor(public connection: Connection, public files: IAnalysisFiles) { }
 
     handle_file_event(uri: string, contents: string): void {
         let path_name = url.parse(uri).pathname;
@@ -146,12 +148,12 @@ if (fs.existsSync(rc_file)) {
 }
 
 const fullStackReportAction = (): CodeAction => ({
-  title: 'Detailed Vulnerability Report',
-  kind: CodeActionKind.QuickFix,
-  command: {
-    command: triggerFullStackAnalysis,
-    title: 'Analytics Report',
-  }
+    title: 'Detailed Vulnerability Report',
+    kind: CodeActionKind.QuickFix,
+    command: {
+        command: triggerFullStackAnalysis,
+        title: 'Analytics Report',
+    }
 });
 
 let DiagnosticsEngines = [SecurityEngine];
@@ -160,12 +162,12 @@ let DiagnosticsEngines = [SecurityEngine];
 const getCAmsg = (deps, diagnostics, totalCount): string => {
     let msg = `Scanned ${deps.length} ${deps.length === 1 ? 'dependency' : 'dependencies'}, `;
 
-    if(diagnostics.length > 0) {
+    if (diagnostics.length > 0) {
         const vulStr = (count: number) => count === 1 ? 'Vulnerability' : 'Vulnerabilities';
         const advStr = (count: number) => count === 1 ? 'Advisory' : 'Advisories';
         const vulnCount = totalCount.vulnerabilityCount || totalCount.issuesCount || 0;
-        const knownVulnMsg =  !vulnCount || `${vulnCount} Known Security ${vulStr(vulnCount)}`;
-        const advisoryMsg =  !totalCount.advisoryCount || `${totalCount.advisoryCount} Security ${advStr(totalCount.advisoryCount)}`;
+        const knownVulnMsg = !vulnCount || `${vulnCount} Known Security ${vulStr(vulnCount)}`;
+        const advisoryMsg = !totalCount.advisoryCount || `${totalCount.advisoryCount} Security ${advStr(totalCount.advisoryCount)}`;
         let summaryMsg = [knownVulnMsg, advisoryMsg].filter(x => x !== true).join(' and ');
         summaryMsg += (totalCount.exploitCount > 0) ? ` with ${totalCount.exploitCount} Exploitable ${vulStr(totalCount.exploitCount)}` : '';
         summaryMsg += ((vulnCount + totalCount.advisoryCount) > 0) ? ' along with quick fixes' : '';
@@ -220,9 +222,9 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
     }
 
     try {
-        const response = await fetch(url , {
+        const response = await fetch(url, {
             method: 'post',
-            body:    body,
+            body: body,
             headers: headers,
         });
 
@@ -234,7 +236,7 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
             connection.console.warn(`fetch error. http status ${response.status}`);
             return response.status;
         }
-    } catch(err) {
+    } catch (err) {
         connection.console.warn(`Exception while fetch: ${err}`);
     }
 };
@@ -250,7 +252,7 @@ class TotalCount {
 /* Runs DiagnosticPileline to consume dependencies and generate Diagnostic[] */
 function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount, ecosystem: string) {
     dependencies.forEach(d => {
-        const packages = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency( d.ref.name, d.ref.version)) : pkgMap.get(new SimpleDependency( d.package, d.version));
+        const packages = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency(d.ref.name, d.ref.version)) : pkgMap.get(new SimpleDependency(d.package, d.version));
         packages.forEach(pkg => {
             let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
             pipeline.run(d);
@@ -279,14 +281,14 @@ function slicePayload(payload, batchSize, ecosystem): any {
     return reqData;
 }
 
-const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+const regexVersion = new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
     // clear all diagnostics
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
     connection.sendNotification('caNotification', {
-      data: caDefaultMsg,
-      done: false,
-      uri: diagnosticFilePath,
+        data: caDefaultMsg,
+        done: false,
+        uri: diagnosticFilePath,
     });
 
     let deps = null;
@@ -298,8 +300,8 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     } catch (error) {
         connection.console.warn(`Error: ${error}`);
         connection.sendNotification('caError', {
-          data: error,
-          uri: diagnosticFilePath,
+            data: error,
+            uri: diagnosticFilePath,
         });
         return;
     }
@@ -327,10 +329,10 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const requestPayload = missedItems.map(d => {
         if (ecosystem === 'maven') {
             return { name: d.name.value, version: d.version.value };
-          } else {
+        } else {
             return { package: d.name.value, version: d.version.value };
-          }
-        });
+        }
+    });
     // check for dependencies
     const getDependencies = response => {
         if (response.dependencies && response.dependencies.length > 0) {
@@ -338,7 +340,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         } else {
             return [];
         }
-    }; 
+    };
     // Closure which adds response into cache before firing diagnostics.   
     const cacheAndRunPipeline = response => {
         let dependencies = [];
@@ -351,21 +353,21 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         pipeline(dependencies);
     };
     const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
-            map(request => fetchVulnerabilities(request, manifestHash, requestId).then(cacheAndRunPipeline));
+        map(request => fetchVulnerabilities(request, manifestHash, requestId).then(cacheAndRunPipeline));
 
     await Promise.allSettled(allRequests);
     const end = new Date().getTime();
 
     connection.console.log(`fetch vulns took ${end - start} ms`);
     connection.sendNotification('caNotification', {
-      data: getCAmsg(deps, diagnostics, totalCount),
-      diagCount : diagnostics.length || 0,
-      vulnCount: totalCount,
-      depCount: deps.length || 0,
-      done: true,
-      uri: diagnosticFilePath,
-      cacheHitCount: cachedValues.length,
-      cacheMissCount: missedItems.length,
+        data: getCAmsg(deps, diagnostics, totalCount),
+        diagCount: diagnostics.length || 0,
+        vulnCount: totalCount,
+        depCount: deps.length || 0,
+        done: true,
+        uri: diagnosticFilePath,
+        cacheHitCount: cachedValues.length,
+        cacheMissCount: missedItems.length,
     });
 };
 
