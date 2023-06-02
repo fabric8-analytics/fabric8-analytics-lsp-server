@@ -201,7 +201,7 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
     let headers = {};
     let body = '';
     if (reqData.ecosystem === 'maven') {
-        url = `${globalSettings.crdaHost}/component-analysis/${reqData.ecosystem}`;
+        url = `${globalSettings.crdaHost}/api/v3/component-analysis/${reqData.ecosystem}`;
         headers = {
             'Content-Type': 'application/json',
         };
@@ -250,10 +250,23 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
 
         connection.console.log(`fetching vuln for ${reqData.package_versions.length} packages`);
         if (response.ok) {
-            const respData = await response.json();
+            let ko = new Array();
+            const respData = await response.json()
+            respData.summary.providerStatuses.forEach(ps => {
+                    if(!ps.ok) {
+                        ko.push(ps.provider);
+                    }
+                });
+            if (ko.length !== 0) {
+                const errMsg = `The component analysis couldn't fetch data from the following providers: [${ko}]`;
+                connection.console.warn(errMsg);
+                connection.sendNotification('caTokenWarning', errMsg);
+            }
             return respData;
         } else {
-            connection.console.warn(`fetch error. http status ${response.status}`);
+            const errMsg = `fetch error. http status ${response.status}`;
+            connection.console.warn(errMsg);
+            connection.sendNotification('caTokenWarning', errMsg);
             return response.status;
         }
     } catch (err) {
