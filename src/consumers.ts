@@ -7,7 +7,7 @@ import { IDependency } from './collector';
 import { get_range } from './utils';
 import { Vulnerability } from './vulnerability';
 import { VulnerabilityAggregator } from './aggregators';
-import { Diagnostic, CodeAction, CodeActionKind, IConnection } from 'vscode-languageserver';
+import { Diagnostic, CodeAction, CodeActionKind } from 'vscode-languageserver';
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor {

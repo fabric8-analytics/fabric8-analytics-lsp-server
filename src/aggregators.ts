@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { Vulnerability } from './vulnerability';
-import compareVersions from 'compare-versions';
+import { compareVersions } from 'compare-versions';
 
 const severity = ['low', 'medium', 'high', 'critical'];
 

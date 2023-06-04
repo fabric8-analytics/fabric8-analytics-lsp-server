@@ -7,6 +7,8 @@
 
 class Config
 {
+    crda_api_url:             string;
+    crda_snyk_token:          string;
     server_url:               string;
     api_token:                string;
     three_scale_user_token:   string;
@@ -21,6 +23,8 @@ class Config
 
     constructor() {
         // TODO: this needs to be configurable
+        this.crda_api_url = process.env.CRDA_API_URL || 'crda-api-url-not-available-in-lsp';
+        this.crda_snyk_token = process.env.CRDA_SNYK_TOKEN || 'crda-snyk-token-not-available-in-lsp';
         this.server_url = process.env.RECOMMENDER_API_URL || 'api-url-not-available-in-lsp';
         this.api_token = process.env.RECOMMENDER_API_TOKEN || 'token-not-available-in-lsp';
         this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || '';

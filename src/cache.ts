@@ -1,6 +1,6 @@
 'use strict';
 
-import LRUCache from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 import { IHashableDependency, SimpleDependency } from './collector';
 
 export interface CachedItem {
@@ -11,15 +11,15 @@ export interface CachedItem {
 export class Cache {
   private cache: LRUCache<string, any>;
 
-  constructor(max: number, maxAge: number) {
-    this.cache = new LRUCache<string, any>({max, maxAge});
+  constructor(max: number, ttl: number) {
+    this.cache = new LRUCache<string, any>({max, ttl});
   }
 
   // returns null as a value for dependency which is not in the cache.
   get(deps: Array<IHashableDependency>): Array<CachedItem> {
     return deps.map(d => {
       const key = d.key();
-      const cached = this.cache.get(key.substring(0, key.lastIndexOf(":")));
+      const cached = this.cache.get(key.substring(0, key.lastIndexOf(':')));
       return {K: d, V: cached} as CachedItem;
     });
   }
