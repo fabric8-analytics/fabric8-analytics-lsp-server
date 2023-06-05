@@ -250,17 +250,19 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
 
         connection.console.log(`fetching vuln for ${reqData.package_versions.length} packages`);
         if (response.ok) {
-            let ko = new Array();
-            const respData = await response.json()
-            respData.summary.providerStatuses.forEach(ps => {
-                    if(!ps.ok) {
-                        ko.push(ps.provider);
-                    }
-                });
-            if (ko.length !== 0) {
-                const errMsg = `The component analysis couldn't fetch data from the following providers: [${ko}]`;
-                connection.console.warn(errMsg);
-                connection.sendNotification('caTokenWarning', errMsg);
+            const respData = await response.json();
+            if (reqData.ecosystem === 'maven') {
+                let ko = new Array();
+                respData.summary.providerStatuses.forEach(ps => {
+                        if(!ps.ok) {
+                            ko.push(ps.provider);
+                        }
+                    });
+                if (ko.length !== 0) {
+                    const errMsg = `The component analysis couldn't fetch data from the following providers: [${ko}]`;
+                    connection.console.warn(errMsg);
+                    connection.sendNotification('caTokenWarning', errMsg);
+                }
             }
             return respData;
         } else {
@@ -404,6 +406,37 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     });
 };
 
+const parseFileDataContent = (params: any, fileData: any): string => {
+
+    // Split the file data content into lines
+    const lines = fileData.split('\n');
+
+    // init modified file data
+    let modifiedFileData = fileData;
+
+    for (let cc of params.contentChanges) {
+        // Get the change details from params.contentChanges[cc]
+        const text = cc.text;
+        const rangeStartLine = cc.range.start.line;
+        const rangeStartCharacter = cc.range.start.character;
+        const rangeEndCharacter = cc.range.end.character;
+
+        // Find the start line and parse line range 
+        let lineContent = lines[rangeStartLine];
+        let updatedLineContent = `${lineContent.substring(0, rangeStartCharacter)}${text !== '' ? text : ''}${lineContent.substring(rangeEndCharacter)}`;
+
+        // Update the line with the modified content
+        lines[rangeStartLine] = updatedLineContent;
+    }
+    
+    // Join the modified lines back into file data content format
+    modifiedFileData = lines.join('\n');
+
+    // Return the modified file data content
+    return modifiedFileData;
+
+};
+
 files.on(EventStream.Diagnostics, '^package\\.json$', (uri, name, contents) => {
     sendDiagnostics('npm', uri, contents, new PackageJson());
 });
@@ -437,7 +470,7 @@ connection.onDidSaveTextDocument((params) => {
 
 connection.onDidChangeTextDocument((params) => {
     /* Update internal state for code lenses */
-    server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
+    server.files.file_data[params.textDocument.uri] = parseFileDataContent(params, server.files.file_data[params.textDocument.uri]);
     clearTimeout(checkDelay);
     checkDelay = setTimeout(() => {
         server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);

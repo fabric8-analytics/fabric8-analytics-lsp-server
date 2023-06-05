@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { SecurityEngine, DiagnosticsPipeline } from '../src/consumers';
 import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from '../src/aggregators';
+import { Diagnostic } from 'vscode-languageserver';
 
 const config = {};
 const diagnosticFilePath = "a/b/c/d";
@@ -24,7 +25,7 @@ const dependency = {
 describe('Response consumer test', () => {
     it('Consume response for free-users', () => {
         let DiagnosticsEngines = [SecurityEngine];
-        let diagnostics = [];
+        let diagnostics: Diagnostic[] = [];
         let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package_unknown": false,
@@ -62,7 +63,7 @@ describe('Response consumer test', () => {
 
     it('Consume response for registered-users', () => {
         let DiagnosticsEngines = [SecurityEngine];
-        let diagnostics = [];
+        let diagnostics: Diagnostic[] = [];
         let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package_unknown": false,
@@ -101,7 +102,7 @@ describe('Response consumer test', () => {
 
     it('Consume response for multiple packages', () => {
         let DiagnosticsEngines = [SecurityEngine];
-        let diagnostics = [];
+        let diagnostics: Diagnostic[] = [];
         let packageAggregator = new GolangVulnerabilityAggregator();
         var response = {
             "package_unknown": false,
@@ -170,7 +171,7 @@ describe('Response consumer test', () => {
 
     it('Consume response for free-users with only security advisories', () => {
         let DiagnosticsEngines = [SecurityEngine];
-        let diagnostics = [];
+        let diagnostics: Diagnostic[] = [];
         let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package_unknown": false,
@@ -208,7 +209,7 @@ describe('Response consumer test', () => {
 
     it('Consume response without vulnerability', () => {
         let DiagnosticsEngines = [SecurityEngine];
-        let diagnostics = [];
+        let diagnostics: Diagnostic[] = [];
         let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package": "lodash",
@@ -221,7 +222,7 @@ describe('Response consumer test', () => {
         pipeline.run(response);
         const secEng = pipeline.items[0] as SecurityEngine;
 
-        expect(diagnostics.length).equal(1);
+        expect(diagnostics.length).equal(0);
         expect(secEng.vulnerabilityCount).equal(null);
         expect(secEng.advisoryCount).equal(null);
         expect(secEng.exploitCount).equal(null);
@@ -229,7 +230,7 @@ describe('Response consumer test', () => {
 
     it('Consume invalid response', () => {
         let DiagnosticsEngines = [SecurityEngine];
-        let diagnostics = [];
+        let diagnostics: Diagnostic[] = [];
         let packageAggregator = new NoopVulnerabilityAggregator();
         const response = {
             "package_unknown": false,
@@ -237,7 +238,7 @@ describe('Response consumer test', () => {
             "version": "1.2.3",
             "recommended_versions": "2.3.4",
             "registration_link": "https://abc.io/login",
-            "vulnerability": [],
+            "vulnerability": null,
             "message": "abc - 1.2.3 has 1 security advisory. Recommendation: use version 2.3.4. ",
             "highest_severity": "critical",
             "known_security_vulnerability_count": 0,
@@ -247,6 +248,6 @@ describe('Response consumer test', () => {
         let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(response);
 
-        expect(diagnostics.length).equal(1);
+        expect(diagnostics.length).equal(0);
     });
 });

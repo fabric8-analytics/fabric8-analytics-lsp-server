@@ -58,7 +58,7 @@
   },
   "scripts": {
     "build": "tsc -p .",
-    "test": "nyc mocha",
+    "test": "nyc mocha --config=./test/mocha.config.json",
     "prepare": "npm run build",
     "lint": "tslint -c tslint.json src/*.ts"
   },

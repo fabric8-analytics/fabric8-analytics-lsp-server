@@ -1,14 +1,19 @@
 'use strict';
 
 import { expect } from 'chai';
-import { Cache, CachedItem, globalCache } from '../src/cache';
-import { SimpleDependency } from '../src/collector';
+import { Cache, globalCache } from '../src/cache';
+import { Dependency, IPosition, ValueType, Variant, KeyValueEntry } from '../src/collector';
 
 describe('LRU Cache test', () => {
 
-  const deps: Array<SimpleDependency> = [
-    new SimpleDependency('foo', '1.0'),
-    new SimpleDependency('bar', '2.0')
+  const pos: IPosition = {
+    line: 123,
+    column: 123
+  }; 
+
+  const deps: Array<Dependency> = [
+    new Dependency(new KeyValueEntry('foo', pos, new Variant(ValueType.String, '1.0'), pos)),
+    new Dependency(new KeyValueEntry('bar', pos, new Variant(ValueType.String, '2.0'), pos))
   ];
 
   it('classification on empty cache, empty input', async () => {
@@ -82,8 +87,11 @@ describe('LRU Cache test', () => {
       {package: 'bar', version: '2.0', extra: 'got bar@2.0'},
       {package: 'jaz', version: '3.0', extra: 'got jaz@3.0'}
     ];
+
+    const newDep: Dependency = new Dependency(new KeyValueEntry('jaz', pos, new Variant(ValueType.String, '3.0'), pos));
+
     cache.add(response);
-    const cachedItems = cache.get([...deps, new SimpleDependency('jaz', '3.0')]);
+    const cachedItems = cache.get([...deps, newDep]);
     const cachedValues = cachedItems.filter(c => c.V !== undefined).map(c => c.V);
     const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
     expect(cachedValues).is.eql(response.slice(1));
@@ -91,8 +99,8 @@ describe('LRU Cache test', () => {
   });
 
   it('globalCache check', () => {
-    const abc = globalCache('abc', 0, 0);
-    const xyz = globalCache('xyz', 0, 0);
+    const abc = globalCache('abc', 1, 1);
+    const xyz = globalCache('xyz', 1, 1);
     expect(abc).to.equal(globalCache('abc', 10, 20));
     expect(xyz).to.equal(globalCache('xyz', 10, 20));
     expect(abc).not.to.equal(globalCache('xyz', 10, 20));
