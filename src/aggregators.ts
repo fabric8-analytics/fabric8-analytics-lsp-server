@@ -30,12 +30,19 @@ class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
 /* Maven Vulnerability aggregator class */
 class MavenVulnerabilityAggregator implements VulnerabilityAggregator {
     isNewVulnerability: boolean;
+    vulnerabilities: Map<string, Vulnerability> = new Map<string, Vulnerability>();
 
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Make it a new vulnerability always and set ecosystem for vulnerability.
         this.isNewVulnerability = true;
+        const key = `${newVulnerability.refName}:${newVulnerability.refVersion}@${newVulnerability.range.start.line}`
+        const v = this.vulnerabilities.get(key);
+        if (v) {
+            this.isNewVulnerability = false;
+            return v;
+        }
         newVulnerability.ecosystem = 'maven';
-
+        this.vulnerabilities.set(key, newVulnerability);
         return newVulnerability;
     }
 }

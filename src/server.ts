@@ -3,6 +3,7 @@
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
+
 import * as path from 'path';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
@@ -16,7 +17,6 @@ import {
 } from 'vscode-languageserver/node';
 import fetch from 'node-fetch';
 import url from 'url';
-
 
 import { DependencyCollector as GoMod } from './collector/go.mod';
 import { DependencyCollector as PackageJson } from './collector/package.json';
@@ -32,6 +32,8 @@ import { TextDocumentSyncKind, Connection, DidChangeConfigurationNotification } 
 import {
     TextDocument
 } from 'vscode-languageserver-textdocument';
+
+import { execSync } from 'child_process';
 
 enum EventStream {
     Invalid,
@@ -51,11 +53,13 @@ let hasConfigurationCapability: boolean = false;
 interface DependencyAnalyticsSettings {
     crdaHost: string;
     crdaSnykToken: string;
+    mvnExecutable: string;
 }
 
 const defaultSettings: DependencyAnalyticsSettings = {
     crdaHost: config.crda_api_url,
-    crdaSnykToken: config.crda_snyk_token
+    crdaSnykToken: config.crda_snyk_token,
+    mvnExecutable: config.mvn_executable
 };
 
 let globalSettings: DependencyAnalyticsSettings = defaultSettings;
@@ -68,7 +72,7 @@ connection.onInitialize((params): InitializeResult => {
     );
     return {
         capabilities: {
-            textDocumentSync: TextDocumentSyncKind.Incremental,
+            textDocumentSync: TextDocumentSyncKind.Full,
             codeActionProvider: true
         }
     };
@@ -206,8 +210,9 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
             'Content-Type': 'application/json',
         };
 
-        if(globalSettings.crdaSnykToken !== '') {
-            headers = { ...headers, 
+        if (globalSettings.crdaSnykToken !== '') {
+            headers = {
+                ...headers,
                 'Crda-Snyk-Token': globalSettings.crdaSnykToken
             };
         }
@@ -254,21 +259,21 @@ const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestI
             if (reqData.ecosystem === 'maven') {
                 let ko = new Array();
                 respData.summary.providerStatuses.forEach(ps => {
-                        if(!ps.ok) {
-                            ko.push(ps.provider);
-                        }
-                    });
+                    if (!ps.ok) {
+                        ko.push(ps.provider);
+                    }
+                });
                 if (ko.length !== 0) {
                     const errMsg = `The component analysis couldn't fetch data from the following providers: [${ko}]`;
                     connection.console.warn(errMsg);
-                    connection.sendNotification('caTokenWarning', errMsg);
+                    connection.sendNotification('caSimpleWarning', errMsg);
                 }
             }
             return respData;
         } else {
             const errMsg = `fetch error. http status ${response.status}`;
             connection.console.warn(errMsg);
-            connection.sendNotification('caTokenWarning', errMsg);
+            connection.sendNotification('caSimpleWarning', errMsg);
             return response.status;
         }
     } catch (err) {
@@ -287,8 +292,8 @@ class TotalCount {
 /* Runs DiagnosticPileline to consume dependencies and generate Diagnostic[] */
 function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount, ecosystem: string) {
     dependencies.forEach(d => {
-        const packages = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency(d.ref.name, d.ref.version)) : pkgMap.get(new SimpleDependency(d.package, d.version));
-        packages.forEach(pkg => {
+        const pkg = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency(d.ref.name, d.ref.version)) : pkgMap.get(new SimpleDependency(d.package, d.version));
+        if (pkg !== undefined) {
             let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
             pipeline.run(d);
             for (const item of pipeline.items) {
@@ -298,7 +303,7 @@ function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFil
                 totalCount.exploitCount += secEng.exploitCount;
                 totalCount.issuesCount += secEng.issuesCount;
             }
-        });
+        }
     });
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
     connection.console.log(`sendDiagnostics: ${diagnostics?.length}`);
@@ -355,7 +360,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     // Get and fire diagnostics for items found in Cache.
     const cache = globalCache(ecosystem);
     const cachedItems = cache.get(validPackages);
-    const cachedValues = Array.from(new Set(cachedItems.filter(c => c.V !== undefined).map(c => c.V)));
+    const cachedValues = Array.from(cachedItems.filter(c => c.V !== undefined).map(c => c.V));
     const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
     connection.console.log(`cache hit: ${cachedValues.length} miss: ${missedItems.length}`);
     pipeline(cachedValues);
@@ -406,43 +411,45 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     });
 };
 
-const parseFileDataContent = (params: any, fileData: any): string => {
-
-    // Split the file data content into lines
-    const lines = fileData.split('\n');
-
-    // init modified file data
-    let modifiedFileData = fileData;
-
-    for (let cc of params.contentChanges) {
-        // Get the change details from params.contentChanges[cc]
-        const text = cc.text;
-        const rangeStartLine = cc.range.start.line;
-        const rangeStartCharacter = cc.range.start.character;
-        const rangeEndCharacter = cc.range.end.character;
-
-        // Find the start line and parse line range 
-        let lineContent = lines[rangeStartLine];
-        let updatedLineContent = `${lineContent.substring(0, rangeStartCharacter)}${text !== '' ? text : ''}${lineContent.substring(rangeEndCharacter)}`;
-
-        // Update the line with the modified content
-        lines[rangeStartLine] = updatedLineContent;
-    }
-    
-    // Join the modified lines back into file data content format
-    modifiedFileData = lines.join('\n');
-
-    // Return the modified file data content
-    return modifiedFileData;
-
-};
+function sendDiagnosticsWithEffectivePom(uri, original: string) {
+    let tempTarget = uri.replace('file://', '').replace('pom.xml', '');
+    const effectivePomPath = path.join(tempTarget, 'target', 'effective-pom.xml');
+    const tmpPomPath = path.join(tempTarget, 'target', 'in-memory-pom.xml');
+    fs.writeFile(tmpPomPath, original, (error) => {
+        if (error) {
+            server.connection.sendNotification('caError', error);
+        } else {
+            try {
+                execSync(`${globalSettings.mvnExecutable} help:effective-pom -Doutput=${effectivePomPath} --quiet -f ${tmpPomPath}`);
+                try {
+                    const data = fs.readFileSync(effectivePomPath, 'utf8');
+                    sendDiagnostics('maven', uri, data, new PomXml(original));
+                } catch (error) {
+                    server.connection.sendNotification('caError', error.message);
+                }
+            } catch (error) {
+                // Ignore. Non parseable pom and fall back to original content
+                server.connection.sendNotification('caSimpleWarning', "Full component analysis cannot be performed until the Pom is valid.");
+                connection.console.info("Unable to parse effective pom. Cause: " + error.message);
+                sendDiagnostics('maven', uri, original, new PomXml(original));
+            } finally {
+                if (fs.existsSync(tmpPomPath)) {
+                    fs.rmSync(tmpPomPath);
+                }
+                if (fs.existsSync(effectivePomPath)) {
+                    fs.rmSync(effectivePomPath);
+                }
+            }
+        }
+    });
+}
 
 files.on(EventStream.Diagnostics, '^package\\.json$', (uri, name, contents) => {
     sendDiagnostics('npm', uri, contents, new PackageJson());
 });
 
 files.on(EventStream.Diagnostics, '^pom\\.xml$', (uri, name, contents) => {
-    sendDiagnostics('maven', uri, contents, new PomXml());
+    sendDiagnosticsWithEffectivePom(uri, contents);
 });
 
 files.on(EventStream.Diagnostics, '^requirements\\.txt$', (uri, name, contents) => {
@@ -470,7 +477,7 @@ connection.onDidSaveTextDocument((params) => {
 
 connection.onDidChangeTextDocument((params) => {
     /* Update internal state for code lenses */
-    server.files.file_data[params.textDocument.uri] = parseFileDataContent(params, server.files.file_data[params.textDocument.uri]);
+    server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
     clearTimeout(checkDelay);
     checkDelay = setTimeout(() => {
         server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
@@ -482,7 +489,8 @@ connection.onDidChangeConfiguration(() => {
         server.connection.workspace.getConfiguration().then((data) => {
             globalSettings = ({
                 crdaHost: data.dependencyAnalytics.crdaHost,
-                crdaSnykToken: data.dependencyAnalytics.crdaSnykToken
+                crdaSnykToken: data.dependencyAnalytics.crdaSnykToken,
+                mvnExecutable: data.maven.executable.path || 'mvn'
             });
         });
     }
@@ -492,7 +500,7 @@ connection.onDidOpenTextDocument((params) => {
     server.handle_file_event(params.textDocument.uri, params.textDocument.text);
 });
 
-connection.onCodeAction((params, token): CodeAction[] => {
+connection.onCodeAction((params): CodeAction[] => {
     let codeActions: CodeAction[] = [];
     let hasAnalyticsDiagonostic: boolean = false;
     for (let diagnostic of params.context.diagnostics) {

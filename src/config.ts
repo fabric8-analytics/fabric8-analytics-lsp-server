@@ -20,6 +20,7 @@ class Config
     golang_executable:        string;
     utm_source:               string;
     telemetry_id:             string;
+    mvn_executable:           string;
 
     constructor() {
         // TODO: this needs to be configurable
@@ -36,6 +37,7 @@ class Config
         this.golang_executable = process.env.GOLANG_EXECUTABLE || 'go';
         this.utm_source = process.env.UTM_SOURCE || '';
         this.telemetry_id = process.env.TELEMETRY_ID || '';
+        this.mvn_executable = process.env.MVN_EXECUTABLE || 'mvn';
     }
 }
 

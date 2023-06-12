@@ -5,7 +5,7 @@
 'use strict';
 import { Stream, Readable } from 'stream';
 import { Position, Range } from 'vscode-languageserver';
-import { IPositionedString, IPosition } from './collector';
+import { IPositionedString, IPosition, IDependency } from './collector';
 import { config } from './config';
 
 export let stream_from_string = (s: string): Stream => {
@@ -47,10 +47,17 @@ export let to_lsp_position = (pos: IPosition): Position => {
   return _to_lsp_position_che(pos);
 };
 
-export let get_range = (ps: IPositionedString): Range => {
-  return _get_range_che(ps);
+export let get_range = (dep: IDependency): Range => {
+  if (dep.version.position.line !== 0) {
+    return _get_range_che(dep.version);
+  } else {
+    return dep.context.range;
+  }
+  
 };
 
 export let getGoLangImportsCmd = (): string => {
   return `${config.golang_executable} list -mod=readonly -f "{{.Imports}}" ./...`;
 };
+
+export const VERSION_TEMPLATE: string = '__VERSION__';
