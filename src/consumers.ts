@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { IDependency } from './collector';
-import { get_range } from './utils';
+import { get_range, VERSION_TEMPLATE } from './utils';
 import { Vulnerability } from './vulnerability';
 import { VulnerabilityAggregator } from './aggregators';
 import { Diagnostic, CodeAction, CodeActionKind } from 'vscode-languageserver';
@@ -73,8 +73,8 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
     run(data: any): Vulnerability[] {
         for (let item of this.items) {
             if (item.consume(data)) {
-                for (let d of item.produce()) {
-                    const aggVulnerability = this.vulnerabilityAggregator.aggregate(d);
+                for (let vulnerability of item.produce()) {
+                    const aggVulnerability = this.vulnerabilityAggregator.aggregate(vulnerability);
                     const aggDiagnostic = aggVulnerability.getDiagnostic();
                     
                     if (aggVulnerability.ecosystem === 'maven') {
@@ -90,7 +90,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                             };
                             codeAction.edit.changes[this.uri] = [{
                                 range: aggDiagnostic.range,
-                                newText: aggVulnerability.recommendationVersion
+                                newText: vulnerability.replacement.replace(VERSION_TEMPLATE, aggVulnerability.recommendationVersion)
                             }];
                             // We will have line|start as key instead of message
                             codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
@@ -109,7 +109,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                                 };
                                 codeAction.edit.changes[this.uri] = [{
                                     range: aggDiagnostic.range,
-                                    newText: version
+                                    newText: vulnerability.replacement.replace(VERSION_TEMPLATE, version)
                                 }];
                                 // We will have line|start as key instead of message
                                 codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
@@ -298,7 +298,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
                 this.exploitCount, 
                 this.highestSeverity,
                 this.changeTo, 
-                get_range(this.context.version),
+                get_range(this.context),
                 this.issuesCount,
                 this.refName,
                 this.refVersion,
@@ -307,6 +307,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
                 this.recommendationVersion,
                 this.remediations,
                 this.highestVulnerabilitySeverity,
+                this.context.context ? this.context.context.value : null
                 )];
         } else {
             return [];

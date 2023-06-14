@@ -19,6 +19,19 @@ const dependency = {
       line: 20,
       column: 17
     }
+  },
+  context: {
+    value: "abc1.2.3",
+    range: {
+        start: {
+            line: 20,
+            character: 6
+        },
+        end: {
+            line: 20,
+            character:17
+        }
+    }
   }
 };
 

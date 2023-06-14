@@ -19,7 +19,7 @@ export class Cache {
   get(deps: Array<IHashableDependency>): Array<CachedItem> {
     return deps.map(d => {
       const key = d.key();
-      const cached = this.cache.get(key.substring(0, key.lastIndexOf(':')));
+      const cached = this.cache.get(key);
       return {K: d, V: cached} as CachedItem;
     });
   }
