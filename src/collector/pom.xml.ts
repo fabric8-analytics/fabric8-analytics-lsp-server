@@ -8,11 +8,11 @@ export class DependencyCollector implements IDependencyCollector {
     private xmlDocAst: XMLDocument;
     private originalDeps: Array<XMLElement>;
 
-    constructor(originalContents: string, public classes: Array<string> = ["dependencies"]) {
+    constructor(originalContents: string, enforceVersions: boolean, public classes: Array<string> = ["dependencies"]) {
         const { cst, tokenVector } = parse(originalContents);
         const originalXmlDocAst = buildAst(cst as DocumentCstNode, tokenVector);
         if (originalXmlDocAst.rootElement) {
-            this.originalDeps = this.getXMLDependencies(originalXmlDocAst, false);
+            this.originalDeps = this.getXMLDependencies(originalXmlDocAst, enforceVersions);
         }
     }
 

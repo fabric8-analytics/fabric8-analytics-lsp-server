@@ -8,7 +8,7 @@ describe('Maven pom.xml parser test', () => {
     it('tests pom.xml with empty string', async () => {
         const pom = `
         `;
-        const deps = await new DependencyCollector(pom).collect(pom);
+        const deps = await new DependencyCollector(pom, false).collect(pom);
         expect(deps.length).equal(0);
     });
 
@@ -17,7 +17,7 @@ describe('Maven pom.xml parser test', () => {
 
         </project>
        `;
-        const deps = await new DependencyCollector(pom).collect(pom);
+        const deps = await new DependencyCollector(pom, false).collect(pom);
         expect(deps.length).equal(0);
     });
 
@@ -28,7 +28,7 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
         </project>
         `;
-        const deps = await new DependencyCollector(pom).collect(pom);
+        const deps = await new DependencyCollector(pom, false).collect(pom);
         expect(deps.length).equal(0);
     });
 
@@ -50,7 +50,7 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </project>
         `;
-        const deps = await new DependencyCollector(pom).collect(pom);
+        const deps = await new DependencyCollector(pom, false).collect(pom);
         expect(deps).is.eql([{
             name: { value: 'foo:bar', position: { line: 10, column: 17 } },
             version: { value: '2.4', position: { line: 13, column: 30 } },
@@ -98,7 +98,7 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </project>
         `;
-        const deps = await new DependencyCollector(original).collect(effective);
+        const deps = await new DependencyCollector(original, false).collect(effective);
         expect(deps).is.eql([{
             name: { value: 'foo:bar', position: { line: 10, column: 17 } },
             version: { value: '2.4', position: { line: 13, column: 30 } },
@@ -148,7 +148,7 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </project>
         `;
-        const deps = await new DependencyCollector(original).collect(effective);
+        const deps = await new DependencyCollector(original, false).collect(effective);
         expect(deps).is.eql([{
             name: { value: 'foo:bar', position: { line: 10, column: 17 } },
             version: { value: '2.4', position: { line: 13, column: 30 } },
@@ -213,7 +213,7 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </project>
         `;
-        const deps = await new DependencyCollector(original).collect(effective);
+        const deps = await new DependencyCollector(original, false).collect(effective);
         expect(deps).is.eql([{
             name: { value: 'foo:bar', position: { line: 10, column: 17 } },
             version: { value: '2.4', position: { line: 0, column: 0 } },
@@ -281,7 +281,7 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </project>
         `;
-        const deps = await new DependencyCollector(pom).collect(pom);
+        const deps = await new DependencyCollector(pom, false).collect(pom);
         expect(deps).is.eql([{
             name: { value: 'plugins:a', position: { line: 5, column: 21 } },
             version: { value: '2.3', position: { line: 8, column: 34 } }
@@ -323,7 +323,7 @@ describe('Maven pom.xml parser test', () => {
                 </dependencies>
             </project>
         `;
-        const deps = await new DependencyCollector(pom).collect(pom);
+        const deps = await new DependencyCollector(pom, false).collect(pom);
         expect(deps.length).equal(0);
     });
 
@@ -353,7 +353,7 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </project>
         `;
-        const deps = await new DependencyCollector(pom).collect(pom);
+        const deps = await new DependencyCollector(pom, false).collect(pom);
         expect(deps).is.eql([{
             name: { value: 'c:ab-cd', position: { line: 4, column: 17 } },
             version: { value: '2.3', position: { line: 7, column: 30 } }
@@ -397,7 +397,7 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </project>
         `
-        const deps = await new DependencyCollector(pom).collect(pom);
+        const deps = await new DependencyCollector(pom, false).collect(pom);
         expect(deps).is.eql([{
             name: { value: 'c:ab-cd', position: { line: 21, column: 17 } },
             version: { value: '2.3', position: { line: 24, column: 30 } }
@@ -459,7 +459,7 @@ describe('Maven pom.xml parser test', () => {
             </dependencies>
          </project>
         `;
-        const deps = await new DependencyCollector(original).collect(effective);
+        const deps = await new DependencyCollector(original, false).collect(effective);
         expect(deps).is.eql([{
             name: { value: 'c:ab-cd', position: { line: 4, column: 17 } },
             version: { value: '2.3', position: { line: 7, column: 30 } }
@@ -526,7 +526,37 @@ describe('Maven pom.xml parser test', () => {
             </dependencyManagement>
          </project>
         `;
-        const deps = await new DependencyCollector(pom).collect(pom);
+        const deps = await new DependencyCollector(pom, false).collect(pom);
         expect(deps.length).equal(0);
+    });
+
+    it('ignores versions when the effective pom is not valid', async () => {
+        const original = `
+        <project>
+            <dependencies>
+                <dependency>
+                    <groupId>c</groupId>
+                    <artifactId>ab-cd</artifactId>
+                    <version>2.3</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>foo</groupId>
+                    <artifactId>bar</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>foo</groupId>
+                    <artifactId>baz</artifactId>
+                    <version>2.4</version>
+                </dependency>
+            </dependencies>
+         </project>
+        `;
+
+        const deps = await new DependencyCollector(original, true).collect(original);
+        expect(deps).is.eql([{
+            name: { value: 'foo:baz', position: { line: 14, column: 17 } },
+            version: { value: '2.4', position: { line: 17, column: 30 } }
+        }]);
     });
 });

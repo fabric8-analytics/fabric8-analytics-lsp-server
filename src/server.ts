@@ -423,7 +423,7 @@ function sendDiagnosticsWithEffectivePom(uri, original: string) {
                 execSync(`${globalSettings.mvnExecutable} help:effective-pom -Doutput='${effectivePomPath}' --quiet -f '${tmpPomPath}'`);
                 try {
                     const data = fs.readFileSync(effectivePomPath, 'utf8');
-                    sendDiagnostics('maven', uri, data, new PomXml(original));
+                    sendDiagnostics('maven', uri, data, new PomXml(original, false));
                 } catch (error) {
                     server.connection.sendNotification('caError', error.message);
                 }
@@ -431,7 +431,7 @@ function sendDiagnosticsWithEffectivePom(uri, original: string) {
                 // Ignore. Non parseable pom and fall back to original content
                 server.connection.sendNotification('caSimpleWarning', "Full component analysis cannot be performed until the Pom is valid.");
                 connection.console.info("Unable to parse effective pom. Cause: " + error.message);
-                sendDiagnostics('maven', uri, original, new PomXml(original));
+                sendDiagnostics('maven', uri, original, new PomXml(original, true));
             } finally {
                 if (fs.existsSync(tmpPomPath)) {
                     fs.rmSync(tmpPomPath);
