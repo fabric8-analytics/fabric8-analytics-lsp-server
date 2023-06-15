@@ -412,7 +412,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
 };
 
 function sendDiagnosticsWithEffectivePom(uri, original: string) {
-    let tempTarget = uri.replace('file://', '').replace('pom.xml', '');
+    let tempTarget = uri.replace('file://', '').replaceAll('%20', ' ').replace('pom.xml', '');
     const effectivePomPath = path.join(tempTarget, 'target', 'effective-pom.xml');
     const tmpPomPath = path.join(tempTarget, 'target', 'in-memory-pom.xml');
     fs.writeFile(tmpPomPath, original, (error) => {
@@ -420,7 +420,7 @@ function sendDiagnosticsWithEffectivePom(uri, original: string) {
             server.connection.sendNotification('caError', error);
         } else {
             try {
-                execSync(`${globalSettings.mvnExecutable} help:effective-pom -Doutput=${effectivePomPath} --quiet -f ${tmpPomPath}`);
+                execSync(`${globalSettings.mvnExecutable} help:effective-pom -Doutput='${effectivePomPath}' --quiet -f '${tmpPomPath}'`);
                 try {
                     const data = fs.readFileSync(effectivePomPath, 'utf8');
                     sendDiagnostics('maven', uri, data, new PomXml(original));

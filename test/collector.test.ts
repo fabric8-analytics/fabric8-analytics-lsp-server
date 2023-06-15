@@ -24,7 +24,7 @@ describe('Collector util test', () => {
 
   it('create map', async () => {
     const map = new DependencyMap(reqDeps);
-    expect(map.get(resDeps[0])).to.eql([reqDeps[0]]);
-    expect(map.get(resDeps[1])).to.eql([reqDeps[1]]);
+    expect(map.get(resDeps[0])).to.eql(reqDeps[0]);
+    expect(map.get(resDeps[1])).to.eql(reqDeps[1]);
   });
 })
