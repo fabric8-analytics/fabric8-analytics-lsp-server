@@ -415,6 +415,9 @@ function sendDiagnosticsWithEffectivePom(uri, original: string) {
     let tempTarget = uri.replace('file://', '').replaceAll('%20', ' ').replace('pom.xml', '');
     const effectivePomPath = path.join(tempTarget, 'target', 'effective-pom.xml');
     const tmpPomPath = path.join(tempTarget, 'target', 'in-memory-pom.xml');
+    if (!fs.existsSync(path.dirname(tmpPomPath))) {
+        fs.mkdirSync(path.dirname(tmpPomPath), { recursive: true});
+    }
     fs.writeFile(tmpPomPath, original, (error) => {
         if (error) {
             server.connection.sendNotification('caError', error);
