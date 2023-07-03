@@ -34,6 +34,8 @@ import {
 } from 'vscode-languageserver-textdocument';
 
 import { execSync } from 'child_process';
+import crda from '@RHEcosystemAppEng/crda-javascript-api';
+
 
 enum EventStream {
     Invalid,
@@ -51,13 +53,11 @@ let triggerFullStackAnalysis: string;
 let hasConfigurationCapability: boolean = false;
 
 interface DependencyAnalyticsSettings {
-    crdaHost: string;
     crdaSnykToken: string;
     mvnExecutable: string;
 }
 
 const defaultSettings: DependencyAnalyticsSettings = {
-    crdaHost: config.crda_api_url,
     crdaSnykToken: config.crda_snyk_token,
     mvnExecutable: config.mvn_executable
 };
@@ -134,7 +134,7 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
     constructor(public connection: Connection, public files: IAnalysisFiles) { }
 
     handle_file_event(uri: string, contents: string): void {
-        let path_name = url.parse(uri).pathname;
+        let path_name = new URL(uri).pathname;
         let file_name = path.basename(path_name);
 
         this.files.file_data[uri] = contents;
@@ -200,84 +200,82 @@ const getCAmsg = (deps, diagnostics, totalCount): string => {
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
 
 /* Fetch Vulnerabilities by component-analysis batch api-call */
-const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestId: string) => {
-    let url = '';
-    let headers = {};
-    let body = '';
-    if (reqData.ecosystem === 'maven') {
-        url = `${globalSettings.crdaHost}/api/v3/component-analysis/${reqData.ecosystem}`;
-        headers = {
-            'Content-Type': 'application/json',
-        };
-
+const fetchVulnerabilities = async (ecosystem: string, reqData: any, manifestHash: string, requestId: string) => {
+    
+    if (ecosystem === 'maven') {
+        const options = {};
         if (globalSettings.crdaSnykToken !== '') {
-            headers = {
-                ...headers,
-                'Crda-Snyk-Token': globalSettings.crdaSnykToken
-            };
+            options['CRDA_SNYK_TOKEN'] = globalSettings.crdaSnykToken;
         }
-        body = JSON.stringify(reqData.package_versions);
+
+        try {
+            // Get component analysis in JSON format
+            let componentAnalysisJson = await crda.componentAnalysis('pom.xml', reqData, options)
+
+            // Check vulnerability providers
+            let ko = new Array();
+            componentAnalysisJson.summary.providerStatuses.forEach(ps => {
+                if (!ps.ok) {
+                    ko.push(ps.provider);
+                }
+            });
+            if (ko.length !== 0) {
+                const errMsg = `The component analysis couldn't fetch data from the following providers: [${ko}]`;
+                connection.console.warn(errMsg);
+                connection.sendNotification('caSimpleWarning', errMsg);
+            }
+
+            return componentAnalysisJson;
+        } catch (error) {
+            const errMsg = `fetch error. ${error}`;
+            connection.console.warn(errMsg);
+            connection.sendNotification('caSimpleWarning', errMsg);
+            return error;
+        }
     } else {
-        url = config.server_url;
+        let url = config.server_url;
         if (config.three_scale_user_token) {
             url += `/component-analyses/?user_key=${config.three_scale_user_token}`;
         } else {
             url += `/component-analyses`;
         }
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + config.api_token,
-            'X-Request-Id': requestId,
-        };
-
         url += `&utm_content=${manifestHash}`;
-
         if (config.utm_source) {
             url += `&utm_source=${config.utm_source}`;
         }
 
+        let headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + config.api_token,
+            'X-Request-Id': requestId,
+        };
         if (config.uuid) {
             headers['uuid'] = config.uuid;
         }
-
         if (config.telemetry_id) {
             headers['X-Telemetry-Id'] = config.telemetry_id;
         }
-        body = JSON.stringify(reqData);
-    }
 
-    try {
-        const response = await fetch(url, {
-            method: 'post',
-            body: body,
-            headers: headers,
-        });
+        try {
+            const response = await fetch(url, {
+                method: 'post',
+                body: JSON.stringify(reqData),
+                headers: headers,
+            });
 
-        connection.console.log(`fetching vuln for ${reqData.package_versions.length} packages`);
-        if (response.ok) {
-            const respData = await response.json();
-            if (reqData.ecosystem === 'maven') {
-                let ko = new Array();
-                respData.summary.providerStatuses.forEach(ps => {
-                    if (!ps.ok) {
-                        ko.push(ps.provider);
-                    }
-                });
-                if (ko.length !== 0) {
-                    const errMsg = `The component analysis couldn't fetch data from the following providers: [${ko}]`;
-                    connection.console.warn(errMsg);
-                    connection.sendNotification('caSimpleWarning', errMsg);
-                }
+            connection.console.log(`fetching vuln for ${reqData.package_versions.length} packages`);
+            if (response.ok) {
+                const respData = await response.json();
+                return respData;
+            } else {
+                const errMsg = `fetch error. http status ${response.status}`;
+                connection.console.warn(errMsg);
+                connection.sendNotification('caSimpleWarning', errMsg);
+                return response.status;
             }
-            return respData;
-        } else {
-            const errMsg = `fetch error. http status ${response.status}`;
-            connection.console.warn(errMsg);
-            connection.sendNotification('caSimpleWarning', errMsg);
-            return response.status;
+        } catch (err) {
+            connection.console.warn(`Exception while fetch: ${err}`);
         }
-    } catch (err) {
-        connection.console.warn(`Exception while fetch: ${err}`);
     }
 };
 
@@ -290,9 +288,9 @@ class TotalCount {
 }
 
 /* Runs DiagnosticPileline to consume dependencies and generate Diagnostic[] */
-function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount, ecosystem: string) {
+function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount) {
     dependencies.forEach(d => {
-        const pkg = (ecosystem === 'maven') ? pkgMap.get(new SimpleDependency(d.ref.name, d.ref.version)) : pkgMap.get(new SimpleDependency(d.package, d.version));
+        const pkg = pkgMap.get(new SimpleDependency(d.package || d.ref.name, d.version || d.ref.version));
         if (pkg !== undefined) {
             let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
             pipeline.run(d);
@@ -310,19 +308,39 @@ function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFil
 }
 
 /* Slice payload in each chunk size of @batchSize */
-function slicePayload(payload, batchSize, ecosystem): any {
+function slicePayload(payload, batchSize): any {
     let reqData = [];
     for (let i = 0; i < payload.length; i += batchSize) {
         reqData.push({
-            'ecosystem': ecosystem,
             'package_versions': payload.slice(i, i + batchSize)
         });
     }
     return reqData;
 }
 
-const regexVersion = new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
+
+    // check for dependencies
+    const getDependencies = response => {
+        if (response.dependencies && response.dependencies.length > 0) {
+            return response.dependencies;
+        } else {
+            return [];
+        }
+    };
+
+    // Closure which adds response into cache before firing diagnostics.   
+    const cacheAndRunPipeline = response => {
+        let dependencies = [];
+        if (ecosystem === 'maven') {
+            dependencies = getDependencies(response);
+        } else {
+            dependencies = Array.from(new Set(response.map(JSON.stringify))).map((item: string) => JSON.parse(item));
+            cache.add(dependencies);
+        }
+        pipeline(dependencies);
+    };
+
     // clear all diagnostics
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
     connection.sendNotification('caNotification', {
@@ -331,6 +349,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         uri: diagnosticFilePath,
     });
 
+    // collect dependencies from manifest
     let deps = null;
     try {
         const start = new Date().getTime();
@@ -346,56 +365,43 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         return;
     }
 
+    // init dependency analysis components
+    const regexVersion = new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
     let validPackages = ecosystem === 'golang' ? deps : deps.filter(d => regexVersion.test(d.version.value.trim()));
     let packageAggregator = ecosystem === 'golang' ? new GolangVulnerabilityAggregator() : (ecosystem === 'maven' ? new MavenVulnerabilityAggregator() : new NoopVulnerabilityAggregator());
     const pkgMap = new DependencyMap(validPackages);
-    const batchSize = 10;
     const diagnostics = [];
     const totalCount = new TotalCount();
     const start = new Date().getTime();
     const manifestHash = crypto.createHash('sha256').update(diagnosticFilePath).digest('hex');
     const requestId = uuid.v4();
-    // Closure which captures common arg to runPipeline.
-    const pipeline = dependencies => runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount, ecosystem);
-    // Get and fire diagnostics for items found in Cache.
     const cache = globalCache(ecosystem);
-    const cachedItems = cache.get(validPackages);
-    const cachedValues = Array.from(cachedItems.filter(c => c.V !== undefined).map(c => c.V));
-    const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
-    connection.console.log(`cache hit: ${cachedValues.length} miss: ${missedItems.length}`);
-    pipeline(cachedValues);
+    let cachedValues = [];
+    let missedItems = [];
+    // Closure which captures common arg to runPipeline.
+    const pipeline = dependencies => runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
+        
+    if (ecosystem == 'maven') { 
+        const request = fetchVulnerabilities(ecosystem, contents, manifestHash, requestId).then(cacheAndRunPipeline);
+        await request;
+    } else {
+        // Get and fire diagnostics for items found in Cache.
+        const cachedItems = cache.get(validPackages);
+        cachedValues = Array.from(cachedItems.filter(c => c.V !== undefined).map(c => c.V));
+        missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
+        connection.console.log(`cache hit: ${cachedValues.length} miss: ${missedItems.length}`);
+        pipeline(cachedValues);
 
-    // Construct request payload for items not in Cache.
-    const requestPayload = missedItems.map(d => {
-        if (ecosystem === 'maven') {
-            return { name: d.name.value, version: d.version.value };
-        } else {
+        // Construct request payload for items not in Cache.
+        const requestPayload = missedItems.map(d => {
             return { package: d.name.value, version: d.version.value };
-        }
-    });
-    // check for dependencies
-    const getDependencies = response => {
-        if (response.dependencies && response.dependencies.length > 0) {
-            return response.dependencies;
-        } else {
-            return [];
-        }
-    };
-    // Closure which adds response into cache before firing diagnostics.   
-    const cacheAndRunPipeline = response => {
-        let dependencies = [];
-        if (ecosystem === 'maven') {
-            dependencies = getDependencies(response);
-        } else {
-            dependencies = Array.from(new Set(response.map(JSON.stringify))).map((item: string) => JSON.parse(item));
-        }
-        cache.add(dependencies);
-        pipeline(dependencies);
-    };
-    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
-        map(request => fetchVulnerabilities(request, manifestHash, requestId).then(cacheAndRunPipeline));
-
-    await Promise.allSettled(allRequests);
+        });
+        
+        const batchSize = 10;
+        const allRequests = slicePayload(requestPayload, batchSize).
+            map(request => fetchVulnerabilities(ecosystem, request, manifestHash, requestId).then(cacheAndRunPipeline));
+        await Promise.allSettled(allRequests);
+    }
     const end = new Date().getTime();
 
     connection.console.log(`fetch vulns took ${end - start} ms`);
@@ -491,7 +497,6 @@ connection.onDidChangeConfiguration(() => {
     if (hasConfigurationCapability) {
         server.connection.workspace.getConfiguration().then((data) => {
             globalSettings = ({
-                crdaHost: data.dependencyAnalytics.crdaHost,
                 crdaSnykToken: data.dependencyAnalytics.crdaSnykToken,
                 mvnExecutable: data.maven.executable.path || 'mvn'
             });
