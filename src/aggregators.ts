@@ -35,7 +35,7 @@ class MavenVulnerabilityAggregator implements VulnerabilityAggregator {
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Make it a new vulnerability always and set ecosystem for vulnerability.
         this.isNewVulnerability = true;
-        const key = `${newVulnerability.refName}:${newVulnerability.refVersion}@${newVulnerability.range.start.line}`
+        const key = `${newVulnerability.refName}:${newVulnerability.refVersion}@${newVulnerability.range.start.line}`;
         const v = this.vulnerabilities.get(key);
         if (v) {
             this.isNewVulnerability = false;

@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-import { Range } from "vscode-languageserver";
+import { Range } from 'vscode-languageserver';
 
 /* Determine what is the value */
 export enum ValueType {

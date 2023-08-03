@@ -34,7 +34,7 @@ import {
 } from 'vscode-languageserver-textdocument';
 
 import { execSync } from 'child_process';
-import crda from '@RHEcosystemAppEng/crda-javascript-api';
+import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
 
 
 enum EventStream {
@@ -53,12 +53,12 @@ let triggerFullStackAnalysis: string;
 let hasConfigurationCapability: boolean = false;
 
 interface DependencyAnalyticsSettings {
-    crdaSnykToken: string;
+    exhortSnykToken: string;
     mvnExecutable: string;
 }
 
 const defaultSettings: DependencyAnalyticsSettings = {
-    crdaSnykToken: config.crda_snyk_token,
+    exhortSnykToken: config.exhort_snyk_token,
     mvnExecutable: config.mvn_executable
 };
 
@@ -204,13 +204,13 @@ const fetchVulnerabilities = async (ecosystem: string, reqData: any, manifestHas
     
     if (ecosystem === 'maven') {
         const options = {};
-        if (globalSettings.crdaSnykToken !== '') {
-            options['CRDA_SNYK_TOKEN'] = globalSettings.crdaSnykToken;
+        if (globalSettings.exhortSnykToken !== '') {
+            options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
         }
 
         try {
             // Get component analysis in JSON format
-            let componentAnalysisJson = await crda.componentAnalysis('pom.xml', reqData, options)
+            let componentAnalysisJson = await exhort.componentAnalysis('pom.xml', reqData, options);
 
             // Check vulnerability providers
             let ko = new Array();
@@ -381,7 +381,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     // Closure which captures common arg to runPipeline.
     const pipeline = dependencies => runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
         
-    if (ecosystem == 'maven') { 
+    if (ecosystem === 'maven') { 
         const request = fetchVulnerabilities(ecosystem, contents, manifestHash, requestId).then(cacheAndRunPipeline);
         await request;
     } else {
@@ -438,8 +438,8 @@ function sendDiagnosticsWithEffectivePom(uri, original: string) {
                 }
             } catch (error) {
                 // Ignore. Non parseable pom and fall back to original content
-                server.connection.sendNotification('caSimpleWarning', "Full component analysis cannot be performed until the Pom is valid.");
-                connection.console.info("Unable to parse effective pom. Cause: " + error.message);
+                server.connection.sendNotification('caSimpleWarning', 'Full component analysis cannot be performed until the Pom is valid.');
+                connection.console.info('Unable to parse effective pom. Cause: ' + error.message);
                 sendDiagnostics('maven', uri, original, new PomXml(original, true));
             } finally {
                 if (fs.existsSync(tmpPomPath)) {
@@ -497,7 +497,7 @@ connection.onDidChangeConfiguration(() => {
     if (hasConfigurationCapability) {
         server.connection.workspace.getConfiguration().then((data) => {
             globalSettings = ({
-                crdaSnykToken: data.dependencyAnalytics.crdaSnykToken,
+                exhortSnykToken: data.dependencyAnalytics.exhortSnykToken,
                 mvnExecutable: data.maven.executable.path || 'mvn'
             });
         });
