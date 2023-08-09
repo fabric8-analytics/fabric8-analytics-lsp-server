@@ -117,20 +117,13 @@ export class Dependency implements IHashableDependency {
   }
 }
 
-/* Dependency from name, version without position */
-export class SimpleDependency extends Dependency {
-  constructor(name: string, version: string) {
-    super(new KeyValueEntry(name, null, new Variant(ValueType.String, version), null));
-  }
-}
-
 export class DependencyMap {
   mapper: Map<string, IHashableDependency>;
   constructor(deps: Array<IHashableDependency>) {
     this.mapper = new Map(deps.map(d => [d.key(), d]));
   }
 
-  public get(dep: IHashableDependency): IHashableDependency {
-    return this.mapper.get(dep.key());
+  public get(key: string): IHashableDependency {
+    return this.mapper.get(key);
   }
 }

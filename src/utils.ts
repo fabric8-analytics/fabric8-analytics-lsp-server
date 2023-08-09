@@ -19,17 +19,6 @@ export let stream_from_string = (s: string): Stream => {
  * so we have to use different functions for computing the
  * positions and ranges so that the lines are rendered properly.
  */
-let _to_lsp_position_vscode = (pos: IPosition): Position => {
-  return {line: pos.line/2, character: pos.column - 1};
-};
-
-let _get_range_vscode = (ps: IPositionedString): Range => {
-  let length = ps.value.length;
-  return {
-      start: to_lsp_position(ps.position),
-      end: {line: ps.position.line/2, character: ps.position.column + length - 1}
-  };
-};
 
 let _to_lsp_position_che = (pos: IPosition): Position => {
   return {line: pos.line - 1, character: pos.column - 1};
