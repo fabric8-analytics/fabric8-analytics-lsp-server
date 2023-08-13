@@ -13,7 +13,6 @@ import {
     CodeLens, CodeAction, CodeActionKind,
     ProposedFeatures
 } from 'vscode-languageserver/node';
-import url from 'url';
 
 import { DependencyCollector as PackageJson } from './collector/package.json';
 import { DependencyCollector as PomXml } from './collector/pom.xml';
@@ -45,10 +44,12 @@ documents.listen(connection);
 
 // Set up the connection's initialization event handler.
 let triggerFullStackAnalysis: string;
+let triggerRHRepositoryRecommendationNotification: string;
 let hasConfigurationCapability: boolean = false;
 connection.onInitialize((params): InitializeResult => {
     let capabilities = params.capabilities;
     triggerFullStackAnalysis = params.initializationOptions.triggerFullStackAnalysis;
+    triggerRHRepositoryRecommendationNotification = params.initializationOptions.triggerRHRepositoryRecommendationNotification;
     hasConfigurationCapability = !!(
         capabilities.workspace && !!capabilities.workspace.configuration
     );
@@ -156,15 +157,6 @@ if (fs.existsSync(rc_file)) {
         config.server_url = `${rc.server}/api/v2`;
     }
 }
-
-const fullStackReportAction = (): CodeAction => ({
-    title: 'Detailed Vulnerability Report',
-    kind: CodeActionKind.QuickFix,
-    command: {
-        command: triggerFullStackAnalysis,
-        title: 'Analytics Report',
-    }
-});
 
 let DiagnosticsEngines = [SecurityEngine];
 
@@ -404,12 +396,30 @@ connection.onDidChangeConfiguration(() => {
     }
 });
 
+const fullStackReportAction = (): CodeAction => ({
+    title: 'Detailed Vulnerability Report',
+    kind: CodeActionKind.QuickFix,
+    command: {
+        command: triggerFullStackAnalysis,
+        title: 'Analytics Report',
+    }
+});
+
+
 connection.onCodeAction((params): CodeAction[] => {
     let codeActions: CodeAction[] = [];
     let hasAnalyticsDiagonostic: boolean = false;
     for (let diagnostic of params.context.diagnostics) {
         let codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
-        if (codeAction !== null && codeAction !== undefined) {
+        if (codeAction) {
+            
+            if (path.basename(params.textDocument.uri) == 'pom.xml') {
+                codeAction.command = {
+                title: "RedHat repository recommendation",
+                command: triggerRHRepositoryRecommendationNotification,
+                };   
+            }
+
             codeActions.push(codeAction);
 
         }

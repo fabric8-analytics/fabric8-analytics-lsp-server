@@ -96,7 +96,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                     }
                     if (Object.keys(aggVulnerability.remediations).length > 0 && aggVulnerability.issuesCount > 0) {
                         for (const cve of Object.keys(aggVulnerability.remediations)) {
-                            let version = aggVulnerability.remediations[cve]['mavenPackage'].split('@')[1];
+                            let version = aggVulnerability.remediations[cve][`${aggVulnerability.ecosystem}Package`].split('@')[1];
                             let codeAction: CodeAction = {
                                 title: `Switch to version ${version} for ${cve}`,
                                 diagnostics: [aggDiagnostic],
