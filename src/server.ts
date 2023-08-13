@@ -183,7 +183,7 @@ const getCAmsg = (deps, diagnostics, totalCount): string => {
 function runPipeline(dependencies, ecosystem, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount) {
     dependencies.forEach(d => {
         // match dependency with dependency from package map
-        const pkg = pkgMap.get(d.ref.replace(`pkg:${ecosystem}/`, '').replace('/', ':'));
+        const pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${ecosystem}/`, '').replace('/', ':'));
         // if dependency mached, run diagnostic
         if (pkg !== undefined) {
             let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
@@ -271,7 +271,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     }
 
     // map dependencies
-    const regexVersion = new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+    const regexVersion = new RegExp(/^(~|\^)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
     const validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
     const pkgMap = new DependencyMap(validPackages);
 

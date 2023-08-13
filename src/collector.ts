@@ -113,7 +113,7 @@ export class Dependency implements IHashableDependency {
   }
 
   key(): string {
-    return `${this.name.value}@${this.version.value}`;
+    return `${this.name.value}`;
   }
 }
 
