@@ -4,9 +4,6 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { Vulnerability } from './vulnerability';
-import { compareVersions } from 'compare-versions';
-
-const severity = ['low', 'medium', 'high', 'critical'];
 
 /* VulnerabilityAggregator */
 interface VulnerabilityAggregator {
@@ -21,7 +18,7 @@ class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Make it a new vulnerability always and set ecosystem for vulnerability.
         this.isNewVulnerability = true;
-        newVulnerability.ecosystem = '';
+        newVulnerability.ecosystem = newVulnerability.ref.split(':')[1].split('/')[0];
 
         return newVulnerability;
     }

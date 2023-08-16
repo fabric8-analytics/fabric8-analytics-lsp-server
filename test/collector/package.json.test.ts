@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { DependencyCollector } from '../../src/collector/package.json';
 
-describe('npm package.json parser test', () => {
+describe('NPM package.json parser test', () => {
     const collector = new DependencyCollector();
 
     it('tests empty package.json file content', async () => {

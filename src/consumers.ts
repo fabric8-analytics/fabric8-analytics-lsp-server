@@ -94,8 +94,9 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                         // We will have line|start as key instead of message
                         codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
                     }
-                    if (Object.keys(aggVulnerability.remediations).length > 0 && aggVulnerability.issuesCount > 0) {
+                    if (aggVulnerability.remediations && Object.keys(aggVulnerability.remediations).length > 0 && aggVulnerability.issuesCount > 0) {
                         for (const cve of Object.keys(aggVulnerability.remediations)) {
+                            
                             let version = aggVulnerability.remediations[cve][`${aggVulnerability.ecosystem}Package`].split('@')[1];
                             let codeAction: CodeAction = {
                                 title: `Switch to version ${version} for ${cve}`,

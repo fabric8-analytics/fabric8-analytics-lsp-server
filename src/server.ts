@@ -150,13 +150,6 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
 
 let files: IAnalysisFiles = new AnalysisFiles();
 let server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
-let rc_file = path.join(config.home_dir, '.analysis_rc');
-if (fs.existsSync(rc_file)) {
-    let rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
-    if ('server' in rc) {
-        config.server_url = `${rc.server}/api/v2`;
-    }
-}
 
 let DiagnosticsEngines = [SecurityEngine];
 
@@ -413,9 +406,9 @@ connection.onCodeAction((params): CodeAction[] => {
         let codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
         if (codeAction) {
             
-            if (path.basename(params.textDocument.uri) == 'pom.xml') {
+            if (path.basename(params.textDocument.uri) === 'pom.xml') {
                 codeAction.command = {
-                title: "RedHat repository recommendation",
+                title: 'RedHat repository recommendation',
                 command: triggerRHRepositoryRecommendationNotification,
                 };   
             }

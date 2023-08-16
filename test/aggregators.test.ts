@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { Diagnostic, DiagnosticSeverity, Range } from 'vscode-languageserver';
-import { GolangVulnerabilityAggregator, NoopVulnerabilityAggregator } from '../src/aggregators';
+import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator } from '../src/aggregators';
 import { Vulnerability } from '../src/vulnerability';
 
 const dummyRange: Range = {
@@ -12,182 +12,74 @@ const dummyRange: Range = {
         line: 3,
         character: 10
     }
-};
+}
+
+const AnalyticsSource = '\nDependency Analytics Plugin [Powered by Snyk]';;
 
 describe('Noop vulnerability aggregator tests', () => {
 
-    it('Test noop aggregator with one vulnerability', async () => {
-        let pckg = new Vulnerability("abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
+    it('Test Noop aggregator', async () => {
         let noopVulnerabilityAggregator = new NoopVulnerabilityAggregator();
-        pckg = noopVulnerabilityAggregator.aggregate(pckg);
+        let vulnerability = new Vulnerability(dummyRange, 0, 'pkg:npm/MockPkg@1.2.3', null, '', '', null, '');
+        let aggVulnerability = noopVulnerabilityAggregator.aggregate(vulnerability);
 
-        const msg = "abc: 1.4.3\nKnown security vulnerability: 2\nSecurity advisory: 1\nExploits: 1\nHighest severity: high\nRecommendation: 2.3.1";
+        const msg = 'pkg:npm/MockPkg@1.2.3\nRecommendation: No RedHat packages to recommend';
         let expectedDiagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Error,
+            severity: DiagnosticSeverity.Information,
             range: dummyRange,
             message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
+            source: AnalyticsSource,
         };
 
-        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
-    });
-
-    it('Test noop aggregator with two vulnerability', async () => {
-        let pckg1 = new Vulnerability("abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        let noopVulnerabilityAggregator = new NoopVulnerabilityAggregator();
-        var pckg = noopVulnerabilityAggregator.aggregate(pckg1);
-
-        let pckg2 = new Vulnerability("abc/pck", "2.4.3", 1, 3, 2, 2, "low", "3.3.1", dummyRange);
-        pckg = noopVulnerabilityAggregator.aggregate(pckg2);
-
-        const msg = "abc/pck: 2.4.3\nKnown security vulnerability: 3\nSecurity advisory: 2\nExploits: 2\nHighest severity: low\nRecommendation: 3.3.1";
-        let expectedDiagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Error,
-            range: dummyRange,
-            message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
-        };
-
-        // Noop should not aggregate any data, it should be same as PCKG2
-        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
+        expect(noopVulnerabilityAggregator.isNewVulnerability).to.equal(true);
+        expect(aggVulnerability.ecosystem).is.eql('npm')
+        expect(aggVulnerability.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 });
 
-describe('Golang vulnerability aggregator tests', () => {
-    it('Test golang aggregator with one vulnerability', async () => {
-        let pckg = new Vulnerability("github.com/abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
-        pckg = golangVulnerabilityAggregator.aggregate(pckg);
+describe('Maven vulnerability aggregator tests', () => {
 
-        const msg = "github.com/abc: 1.4.3\nNumber of packages: 1\nKnown security vulnerability: 2\nSecurity advisory: 1\nExploits: 1\nHighest severity: high\nRecommendation: 2.3.1";
+    it('Test Maven aggregator with one vulnerability', async () => {
+        let mavenVulnerabilityAggregator = new MavenVulnerabilityAggregator();
+        let vulnerability = new Vulnerability(dummyRange, 0, 'pkg:maven/MockPkg@1.2.3', null, '', '', null, '');
+        let aggVulnerability = mavenVulnerabilityAggregator.aggregate(vulnerability);
+
+        const msg = 'pkg:maven/MockPkg@1.2.3\nRecommendation: No RedHat packages to recommend';
         let expectedDiagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Error,
+            severity: DiagnosticSeverity.Information,
             range: dummyRange,
             message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
+            source: AnalyticsSource,
         };
 
-        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
+        expect(mavenVulnerabilityAggregator.isNewVulnerability).to.equal(true);
+        expect(aggVulnerability.ecosystem).is.eql('maven')
+        expect(aggVulnerability.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
     });
 
-    it('Test golang aggregator with two vulnerability', async () => {
-        let pckg1 = new Vulnerability("github.com/abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
-        var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
+    it('Test Maven aggregator with two identical vulnerability', async () => {
+        let mavenVulnerabilityAggregator = new MavenVulnerabilityAggregator();
+        let vulnerability1 = new Vulnerability(dummyRange, 0, 'pkg:maven/MockPkg@1.2.3', null, '', '', null, '');
+        let aggVulnerability1 = mavenVulnerabilityAggregator.aggregate(vulnerability1);
+        let vulnerability2 = new Vulnerability(dummyRange, 0, 'pkg:maven/MockPkg@1.2.3', null, '', '', null, '');
+        let aggVulnerability2 = mavenVulnerabilityAggregator.aggregate(vulnerability2);
 
-        let pckg2 = new Vulnerability("github.com/abc/pck1@github.com/abc", "1.4.3", 1, 3, 2, 2, "low", "3.3.1", dummyRange);
-        pckg = golangVulnerabilityAggregator.aggregate(pckg2);
-
-        const msg = "github.com/abc: 1.4.3\nNumber of packages: 2\nKnown security vulnerability: 5\nSecurity advisory: 3\nExploits: 3\nHighest severity: high\nRecommendation: 3.3.1";
-        let expectedDiagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Error,
-            range: dummyRange,
-            message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
-        };
-
-        // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
+        expect(mavenVulnerabilityAggregator.isNewVulnerability).to.equal(false);
+        expect(mavenVulnerabilityAggregator.vulnerabilities.size).to.equal(1);
+        expect(aggVulnerability1.ecosystem).is.eql('maven')
+        expect(aggVulnerability2.ecosystem).is.eql('maven')
     });
 
-    it('Test golang aggregator with empty old rec version', async () => {
-        let pckg1 = new Vulnerability("github.com/abc", "1.4.3", 1, 2, 1, 1, "low", "", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
-        var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
+    it('Test Maven aggregator with two different vulnerability', async () => {
+        let mavenVulnerabilityAggregator = new MavenVulnerabilityAggregator();
+        let vulnerability1 = new Vulnerability(dummyRange, 0, 'pkg:maven/MockPkg1@1.2.3', null, '', '', null, '');
+        let aggVulnerability1 = mavenVulnerabilityAggregator.aggregate(vulnerability1);
+        let vulnerability2 = new Vulnerability(dummyRange, 0, 'pkg:maven/MockPkg2@1.2.3', null, '', '', null, '');
+        let aggVulnerability2 = mavenVulnerabilityAggregator.aggregate(vulnerability2);
 
-        let pckg2 = new Vulnerability("github.com/abc/pck1@github.com/abc", "1.4.3", 1, 3, 2, 2, "low", "3.3.1", dummyRange);
-        pckg = golangVulnerabilityAggregator.aggregate(pckg2);
-
-        const msg = "github.com/abc: 1.4.3\nNumber of packages: 2\nKnown security vulnerability: 5\nSecurity advisory: 3\nExploits: 3\nHighest severity: low\nRecommendation: 3.3.1";
-        let expectedDiagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Error,
-            range: dummyRange,
-            message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
-        };
-
-        // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
+        expect(mavenVulnerabilityAggregator.isNewVulnerability).to.equal(true);
+        expect(mavenVulnerabilityAggregator.vulnerabilities.size).to.equal(2);
+        expect(aggVulnerability1.ecosystem).is.eql('maven')
+        expect(aggVulnerability2.ecosystem).is.eql('maven')
     });
-
-    it('Test golang aggregator with null old rec version', async () => {
-        let pckg1 = new Vulnerability("github.com/abc", "1.4.3", 1, 2, 1, 1, "medium", null, dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
-        var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
-
-        let pckg2 = new Vulnerability("github.com/abc/pck1@github.com/abc", "1.4.3", 1, 3, 2, 2, "low", "3.3.1", dummyRange);
-        pckg = golangVulnerabilityAggregator.aggregate(pckg2);
-
-        const msg = "github.com/abc: 1.4.3\nNumber of packages: 2\nKnown security vulnerability: 5\nSecurity advisory: 3\nExploits: 3\nHighest severity: medium\nRecommendation: 3.3.1";
-        let expectedDiagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Error,
-            range: dummyRange,
-            message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
-        };
-
-        // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
-    });
-
-    it('Test golang aggregator for vulnerability and module response out of order', async () => {
-        let pckg1 = new Vulnerability("github.com/abc/pck1@github.com/abc", "1.4.3", 1, 2, 1, 1, "high", "2.3.1", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
-        var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
-
-        let pckg2 = new Vulnerability("github.com/abc", "1.4.3", 1, 3, 2, 2, "critical", "3.3.1", dummyRange);
-        pckg = golangVulnerabilityAggregator.aggregate(pckg2);
-
-        const msg = "github.com/abc: 1.4.3\nNumber of packages: 2\nKnown security vulnerability: 5\nSecurity advisory: 3\nExploits: 3\nHighest severity: critical\nRecommendation: 3.3.1";
-        let expectedDiagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Error,
-            range: dummyRange,
-            message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
-        };
-
-        // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
-    });
-
-    it('Test golang aggregator with first package has null values', async () => {
-        let pckg1 = new Vulnerability("github.com/abc", "1.4.3", 1, null, null, null, "high", null, dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
-        var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
-
-        let pckg2 = new Vulnerability("github.com/abc/pck1@github.com/abc", "1.4.3", 1, 3, 2, 2, "low", "1.6.1", dummyRange);
-        pckg = golangVulnerabilityAggregator.aggregate(pckg2);
-
-        const msg = "github.com/abc: 1.4.3\nNumber of packages: 2\nKnown security vulnerability: 3\nSecurity advisory: 2\nExploits: 2\nHighest severity: high\nRecommendation: 1.6.1";
-        let expectedDiagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Error,
-            range: dummyRange,
-            message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
-        };
-
-        // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
-    });
-
-    it('Test golang aggregator with second package has null values', async () => {
-        let pckg1 = new Vulnerability("github.com/abc", "1.4.3", 1, 3, 2, 2, "low", "1.6.1", dummyRange);
-        let golangVulnerabilityAggregator = new GolangVulnerabilityAggregator();
-        var pckg = golangVulnerabilityAggregator.aggregate(pckg1);
-
-        let pckg2 = new Vulnerability("github.com/abc/pck1@github.com/abc", "1.4.3", 1, null, null, null, "high", null, dummyRange);
-        pckg = golangVulnerabilityAggregator.aggregate(pckg2);
-
-        const msg = "github.com/abc: 1.4.3\nNumber of packages: 2\nKnown security vulnerability: 3\nSecurity advisory: 2\nExploits: 2\nHighest severity: high\nRecommendation: 1.6.1";
-        let expectedDiagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Error,
-            range: dummyRange,
-            message: msg,
-            source: '\nDependency Analytics Plugin [Powered by Snyk]',
-        };
-
-        // Golang should aggregate both data togather.
-        expect(pckg.getDiagnostic().toString().replace(/\s/g, "")).is.eql(expectedDiagnostic.toString().replace(/\s/g, ""));
-    });
-
 });
