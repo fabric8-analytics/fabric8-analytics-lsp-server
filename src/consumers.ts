@@ -81,7 +81,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                         let codeAction: CodeAction = {
                             title: `Switch to version ${aggVulnerability.recommendationVersion}`,
                             diagnostics: [aggDiagnostic],
-                            kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
+                            kind: CodeActionKind.QuickFix,
                             edit: {
                                 changes: {
                                 }
@@ -91,7 +91,6 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                             range: aggDiagnostic.range,
                             newText: vulnerability.replacement.replace(VERSION_TEMPLATE, aggVulnerability.recommendationVersion)
                         }];
-                        // We will have line|start as key instead of message
                         codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
                     }
                     if (aggVulnerability.remediations && Object.keys(aggVulnerability.remediations).length > 0 && aggVulnerability.issuesCount > 0) {
@@ -101,7 +100,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                             let codeAction: CodeAction = {
                                 title: `Switch to version ${version} for ${cve}`,
                                 diagnostics: [aggDiagnostic],
-                                kind: CodeActionKind.QuickFix,  // Provide a QuickFix option if recommended version is available
+                                kind: CodeActionKind.QuickFix,
                                 edit: {
                                     changes: {
                                     }
@@ -111,7 +110,6 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                                 range: aggDiagnostic.range,
                                 newText: vulnerability.replacement.replace(VERSION_TEMPLATE, version)
                             }];
-                            // We will have line|start as key instead of message
                             codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
                         }
                     }
@@ -131,7 +129,6 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
                 }
             }
         }
-        // This is not used by any one.
         return [];
     }
 }
