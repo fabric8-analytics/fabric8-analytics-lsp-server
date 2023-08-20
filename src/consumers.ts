@@ -44,25 +44,25 @@ interface IPipelineItem<T> extends IConsumer, IProducer<T> { }
 
 /* House bunches of `IPipelineItem`'s */
 interface IPipeline<T> {
-    items: Array<IPipelineItem<T>>;
+    item: IPipelineItem<T>;
     run(data: any): T;
 }
 
 /* Diagnostics producer type */
-type DiagnosticProducer = IProducer<Vulnerability[]>;
+type DiagnosticProducer = IProducer<Vulnerability>;
 
 /* Diagnostics pipeline implementation */
-class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
+class DiagnosticsPipeline implements IPipeline<Vulnerability>
 {
-    items: Array<IPipelineItem<Vulnerability[]>>;
+    item: IPipelineItem<Vulnerability>;
     dependency: IDependency;
     config: any;
     diagnostics: Array<Diagnostic>;
     uri: string;
     vulnerabilityAggregator: VulnerabilityAggregator;
-    constructor(classes: Array<any>, dependency: IDependency, config: any, diags: Array<Diagnostic>,
+    constructor(engine: any, dependency: IDependency, config: any, diags: Array<Diagnostic>,
         vulnerabilityAggregator: VulnerabilityAggregator, uri: string) {
-        this.items = classes.map((i) => { return new i(dependency, config); });
+        this.item = new engine(dependency, config);
         this.dependency = dependency;
         this.config = config;
         this.diagnostics = diags;
@@ -70,66 +70,58 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability[]>
         this.vulnerabilityAggregator = vulnerabilityAggregator;
     }
 
-    run(data: any): Vulnerability[] {
-        for (let item of this.items) {
-            if (item.consume(data)) {
-                for (let vulnerability of item.produce()) {
-                    const aggVulnerability = this.vulnerabilityAggregator.aggregate(vulnerability);
+    run(data: any): Vulnerability {
+        if (this.item.consume(data)) {
+            let vulnerability = this.item.produce();
+            if (vulnerability) {
+                const aggVulnerability = this.vulnerabilityAggregator.aggregate(vulnerability);
+                if (this.vulnerabilityAggregator.isNewVulnerability) {
                     const aggDiagnostic = aggVulnerability.getDiagnostic();
                     
-                    if (aggVulnerability.recommendation !== null && aggVulnerability.issuesCount === 0) {
-                        let codeAction: CodeAction = {
-                            title: `Switch to version ${aggVulnerability.recommendationVersion}`,
-                            diagnostics: [aggDiagnostic],
-                            kind: CodeActionKind.QuickFix,
-                            edit: {
-                                changes: {
-                                }
-                            }
-                        };
-                        codeAction.edit.changes[this.uri] = [{
-                            range: aggDiagnostic.range,
-                            newText: vulnerability.replacement.replace(VERSION_TEMPLATE, aggVulnerability.recommendationVersion)
-                        }];
-                        codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
-                    }
-                    if (aggVulnerability.remediations && Object.keys(aggVulnerability.remediations).length > 0 && aggVulnerability.issuesCount > 0) {
-                        for (const cve of Object.keys(aggVulnerability.remediations)) {
+                    // if (aggVulnerability.recommendation !== null && aggVulnerability.issuesCount === 0) {
+                    //     let codeAction: CodeAction = {
+                    //         title: `Switch to version ${aggVulnerability.recommendationVersion}`,
+                    //         diagnostics: [aggDiagnostic],
+                    //         kind: CodeActionKind.QuickFix,
+                    //         edit: {
+                    //             changes: {
+                    //             }
+                    //         }
+                    //     };
+                    //     codeAction.edit.changes[this.uri] = [{
+                    //         range: aggDiagnostic.range,
+                    //         newText: vulnerability.replacement.replace(VERSION_TEMPLATE, aggVulnerability.recommendationVersion)
+                    //     }];
+                    //     codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
+                    // }
+                    // if (aggVulnerability.remediations && Object.keys(aggVulnerability.remediations).length > 0 && aggVulnerability.issuesCount > 0) {
+                    //     for (const cve of Object.keys(aggVulnerability.remediations)) {
                             
-                            let version = aggVulnerability.remediations[cve][`${aggVulnerability.ecosystem}Package`].split('@')[1];
-                            let codeAction: CodeAction = {
-                                title: `Switch to version ${version} for ${cve}`,
-                                diagnostics: [aggDiagnostic],
-                                kind: CodeActionKind.QuickFix,
-                                edit: {
-                                    changes: {
-                                    }
-                                }
-                            };
-                            codeAction.edit.changes[this.uri] = [{
-                                range: aggDiagnostic.range,
-                                newText: vulnerability.replacement.replace(VERSION_TEMPLATE, version)
-                            }];
-                            codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
-                        }
-                    }
+                    //         let version = aggVulnerability.remediations[cve][`${aggVulnerability.ecosystem}Package`].split('@')[1];
+                    //         let codeAction: CodeAction = {
+                    //             title: `Switch to version ${version} for ${cve}`,
+                    //             diagnostics: [aggDiagnostic],
+                    //             kind: CodeActionKind.QuickFix,
+                    //             edit: {
+                    //                 changes: {
+                    //                 }
+                    //             }
+                    //         };
+                    //         codeAction.edit.changes[this.uri] = [{
+                    //             range: aggDiagnostic.range,
+                    //             newText: vulnerability.replacement.replace(VERSION_TEMPLATE, version)
+                    //         }];
+                    //         codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
+                    //     }
+                    // }
 
-                    if (this.vulnerabilityAggregator.isNewVulnerability) {
+                    if (aggDiagnostic) {
                         this.diagnostics.push(aggDiagnostic);
-                    } else {
-                        // Update the existing diagnostic object based on range values
-                        this.diagnostics.forEach((diag, index) => {
-                            if (diag.range.start.line === aggVulnerability.range.start.line &&
-                                diag.range.start.character === aggVulnerability.range.start.character) {
-                                this.diagnostics[index] = aggDiagnostic;
-                                return;
-                            }
-                        });
                     }
                 }
             }
         }
-        return [];
+        return;
     }
 }
 
@@ -138,18 +130,18 @@ class AnalysisConsumer implements IConsumer {
     item: any;
     binding: IBindingDescriptor;
     refBinding: IBindingDescriptor;
-    recommendationBinding: IBindingDescriptor;
-    recommendationNameBinding: IBindingDescriptor;
-    recommendationVersionBinding: IBindingDescriptor;
-    remediationsBinding: IBindingDescriptor;
+    // recommendationBinding: IBindingDescriptor;
+    // recommendationNameBinding: IBindingDescriptor;
+    // recommendationVersionBinding: IBindingDescriptor;
+    // remediationsBinding: IBindingDescriptor;
     highestVulnerabilityBinding: IBindingDescriptor;
     highestVulnerabilitySeverityBinding: IBindingDescriptor;
     issuesCount: number = 0;
     ref: string = null;
-    recommendation: any = null;
-    recommendationName: string = null;
-    recommendationVersion: string = null;
-    remediations: any = null;
+    // recommendation: any = null;
+    // recommendationName: string = null;
+    // recommendationVersion: string = null;
+    // remediations: any = null;
     highestVulnerability: any = null;
     highestVulnerabilitySeverity: string = null;
     constructor(public config: any) { }
@@ -161,18 +153,18 @@ class AnalysisConsumer implements IConsumer {
         if (this.refBinding !== null) {
             this.ref = bind_object(data, this.refBinding);
         }
-        if (this.recommendationBinding !== null) {
-            this.recommendation = bind_object(data, this.recommendationBinding);
-        }
-        if (this.recommendation !== null && this.recommendationNameBinding !== null) {
-            this.recommendationName = bind_object(data, this.recommendationNameBinding);
-        }
-        if (this.recommendation !== null && this.recommendationVersionBinding !== null) {
-            this.recommendationVersion = bind_object(data, this.recommendationVersionBinding);
-        }
-        if (this.remediationsBinding !== null) {
-            this.remediations = bind_object(data, this.remediationsBinding);
-        }
+        // if (this.recommendationBinding !== null) {
+        //     this.recommendation = bind_object(data, this.recommendationBinding);
+        // }
+        // if (this.recommendation !== null && this.recommendationNameBinding !== null) {
+        //     this.recommendationName = bind_object(data, this.recommendationNameBinding);
+        // }
+        // if (this.recommendation !== null && this.recommendationVersionBinding !== null) {
+        //     this.recommendationVersion = bind_object(data, this.recommendationVersionBinding);
+        // }
+        // if (this.remediationsBinding !== null) {
+        //     this.remediations = bind_object(data, this.remediationsBinding);
+        // }
         if (this.highestVulnerabilityBinding !== null) {
             this.highestVulnerability = bind_object(data, this.highestVulnerabilityBinding);
         }
@@ -189,30 +181,26 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
         super(config);
         this.binding = { path: ['issues'] };
         this.refBinding = { path: ['ref'] };
-        this.recommendationBinding = { path: ['recommendation'] };
-        this.recommendationNameBinding = { path: ['recommendation', 'name'] };
-        this.recommendationVersionBinding = { path: ['recommendation', 'version'] };
-        this.remediationsBinding = { path: ['remediations'] };
+        // this.recommendationBinding = { path: ['recommendation'] };
+        // this.recommendationNameBinding = { path: ['recommendation', 'name'] };
+        // this.recommendationVersionBinding = { path: ['recommendation', 'version'] };
+        // this.remediationsBinding = { path: ['remediations'] };
         this.highestVulnerabilityBinding = { path: ['highestVulnerability'] };
         this.highestVulnerabilitySeverityBinding = { path: ['highestVulnerability', 'severity'] };
     }
 
-    produce(): Vulnerability[] {
-        if (this.item !== null) {
-            return [new Vulnerability(
-                get_range(this.context),
-                this.issuesCount,
-                this.ref,
-                this.recommendation,
-                this.recommendationName,
-                this.recommendationVersion,
-                this.remediations,
-                this.highestVulnerabilitySeverity,
-                this.context.context ? this.context.context.value : null
-                )];
-        } else {
-            return [];
-        }
+    produce(): Vulnerability {
+        return new Vulnerability(
+            get_range(this.context),
+            this.issuesCount,
+            this.ref,
+            // this.recommendation,
+            // this.recommendationName,
+            // this.recommendationVersion,
+            // this.remediations,
+            this.highestVulnerabilitySeverity,
+            this.context.context ? this.context.context.value : null
+            );
     }
 }
 

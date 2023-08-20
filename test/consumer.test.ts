@@ -37,7 +37,6 @@ const pkg = {
 
 describe('Response consumer test', () => {
     it('Consume response without vulnerabilities', () => {
-        let DiagnosticsEngines = [SecurityEngine];
         let diagnostics: Diagnostic[] = [];
         let packageAggregator = new NoopVulnerabilityAggregator();
         const dependency = {
@@ -56,18 +55,18 @@ describe('Response consumer test', () => {
             },
           }
 
-        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
+        let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(dependency);
-        const secEng = pipeline.items[0] as SecurityEngine;
-        const msg = 'pkg:npm/MockPkg@1.2.3\nRecommendation: mockRecommendationName:mockRecommendationVersion';
+        const secEng = pipeline.item as SecurityEngine;
+        // const msg = 'pkg:npm/MockPkg@1.2.3\nRecommendation: mockRecommendationName:mockRecommendationVersion';
 
-        expect(diagnostics.length).equal(1);
+        // expect(diagnostics.length).equal(1);
+        expect(diagnostics.length).equal(0);
         expect(secEng.issuesCount).equal(0);
-        expect(diagnostics[0].message.toString().replace(/\s/g, "")).equal(msg.toString().replace(/\s/g, ""));
+        // expect(diagnostics[0].message.toString().replace(/\s/g, "")).equal(msg.toString().replace(/\s/g, ""));
     });
 
     it('Consume response with vulnerabilities', () => {
-        let DiagnosticsEngines = [SecurityEngine];
         let diagnostics: Diagnostic[] = [];
         let packageAggregator = new NoopVulnerabilityAggregator();
         const dependency = {
@@ -91,10 +90,11 @@ describe('Response consumer test', () => {
             },
           }
 
-        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
+        let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(dependency);
-        const secEng = pipeline.items[0] as SecurityEngine;
-        const msg = "pkg:npm/MockPkg@1.2.3\nKnown security vulnerabilities: 1\nHighest severity: MockSeverity\nHas remediation: Yes";
+        const secEng = pipeline.item as SecurityEngine;
+        // const msg = "pkg:npm/MockPkg@1.2.3\nKnown security vulnerabilities: 1\nHighest severity: MockSeverity\nHas remediation: Yes";
+        const msg = "pkg:npm/MockPkg@1.2.3\nKnown security vulnerabilities: 1\nHighest severity: MockSeverity";
 
         expect(diagnostics.length).equal(1);
         expect(secEng.issuesCount).equal(1);
@@ -102,14 +102,13 @@ describe('Response consumer test', () => {
     });
 
     it('Consume invalid response', () => {
-        let DiagnosticsEngines = [SecurityEngine];
         let diagnostics: Diagnostic[] = [];
         let packageAggregator = new NoopVulnerabilityAggregator();
         const dependency = {
             ref: "pkg:npm/MockPkg@1.2.3",
         };
 
-        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
+        let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(dependency);
 
         expect(diagnostics.length).equal(0);

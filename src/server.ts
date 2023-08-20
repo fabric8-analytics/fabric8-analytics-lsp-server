@@ -151,8 +151,6 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
 let files: IAnalysisFiles = new AnalysisFiles();
 let server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
 
-let DiagnosticsEngines = [SecurityEngine];
-
 // total counts of known security vulnerabilities
 class TotalCount {
     issuesCount: number = 0;
@@ -179,12 +177,10 @@ function runPipeline(dependencies, ecosystem, diagnostics, packageAggregator, di
         const pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${ecosystem}/`, '').replace('/', ':'));
         // if dependency mached, run diagnostic
         if (pkg !== undefined) {
-            let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
+            let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
             pipeline.run(d);
-            for (const item of pipeline.items) {
-                const secEng = item as SecurityEngine;
-                totalCount.issuesCount += secEng.issuesCount;
-            }
+            const secEng = pipeline.item as SecurityEngine;
+            totalCount.issuesCount += secEng.issuesCount;
         }
     });
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
