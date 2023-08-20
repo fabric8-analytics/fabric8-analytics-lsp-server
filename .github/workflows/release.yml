@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - refactor/crda-1.5-javascript-api
 jobs:
   release:
     name: Release

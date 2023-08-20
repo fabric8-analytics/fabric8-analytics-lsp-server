@@ -29,8 +29,8 @@ let bind_object = (obj: any, desc: IBindingDescriptor) => {
 
 /* Arbitrary metadata consumer interface */
 interface IConsumer {
-    binding: IBindingDescriptor;
-    item: any;
+    refbinding: IBindingDescriptor;
+    ref: any;
     consume(data: any): boolean;
 }
 
@@ -73,51 +73,49 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability>
     run(data: any): Vulnerability {
         if (this.item.consume(data)) {
             let vulnerability = this.item.produce();
-            if (vulnerability) {
-                const aggVulnerability = this.vulnerabilityAggregator.aggregate(vulnerability);
-                if (this.vulnerabilityAggregator.isNewVulnerability) {
-                    const aggDiagnostic = aggVulnerability.getDiagnostic();
-                    
-                    // if (aggVulnerability.recommendation !== null && aggVulnerability.issuesCount === 0) {
-                    //     let codeAction: CodeAction = {
-                    //         title: `Switch to version ${aggVulnerability.recommendationVersion}`,
-                    //         diagnostics: [aggDiagnostic],
-                    //         kind: CodeActionKind.QuickFix,
-                    //         edit: {
-                    //             changes: {
-                    //             }
-                    //         }
-                    //     };
-                    //     codeAction.edit.changes[this.uri] = [{
-                    //         range: aggDiagnostic.range,
-                    //         newText: vulnerability.replacement.replace(VERSION_TEMPLATE, aggVulnerability.recommendationVersion)
-                    //     }];
-                    //     codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
-                    // }
-                    // if (aggVulnerability.remediations && Object.keys(aggVulnerability.remediations).length > 0 && aggVulnerability.issuesCount > 0) {
-                    //     for (const cve of Object.keys(aggVulnerability.remediations)) {
-                            
-                    //         let version = aggVulnerability.remediations[cve][`${aggVulnerability.ecosystem}Package`].split('@')[1];
-                    //         let codeAction: CodeAction = {
-                    //             title: `Switch to version ${version} for ${cve}`,
-                    //             diagnostics: [aggDiagnostic],
-                    //             kind: CodeActionKind.QuickFix,
-                    //             edit: {
-                    //                 changes: {
-                    //                 }
-                    //             }
-                    //         };
-                    //         codeAction.edit.changes[this.uri] = [{
-                    //             range: aggDiagnostic.range,
-                    //             newText: vulnerability.replacement.replace(VERSION_TEMPLATE, version)
-                    //         }];
-                    //         codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
-                    //     }
-                    // }
+            const aggVulnerability = this.vulnerabilityAggregator.aggregate(vulnerability);
+            if (this.vulnerabilityAggregator.isNewVulnerability) {
+                const aggDiagnostic = aggVulnerability.getDiagnostic();
+                
+                // if (aggVulnerability.recommendation !== null && aggVulnerability.issuesCount === 0) {
+                //     let codeAction: CodeAction = {
+                //         title: `Switch to version ${aggVulnerability.recommendationVersion}`,
+                //         diagnostics: [aggDiagnostic],
+                //         kind: CodeActionKind.QuickFix,
+                //         edit: {
+                //             changes: {
+                //             }
+                //         }
+                //     };
+                //     codeAction.edit.changes[this.uri] = [{
+                //         range: aggDiagnostic.range,
+                //         newText: vulnerability.replacement.replace(VERSION_TEMPLATE, aggVulnerability.recommendationVersion)
+                //     }];
+                //     codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
+                // }
+                // if (aggVulnerability.remediations && Object.keys(aggVulnerability.remediations).length > 0 && aggVulnerability.issuesCount > 0) {
+                //     for (const cve of Object.keys(aggVulnerability.remediations)) {
+                        
+                //         let version = aggVulnerability.remediations[cve][`${aggVulnerability.ecosystem}Package`].split('@')[1];
+                //         let codeAction: CodeAction = {
+                //             title: `Switch to version ${version} for ${cve}`,
+                //             diagnostics: [aggDiagnostic],
+                //             kind: CodeActionKind.QuickFix,
+                //             edit: {
+                //                 changes: {
+                //                 }
+                //             }
+                //         };
+                //         codeAction.edit.changes[this.uri] = [{
+                //             range: aggDiagnostic.range,
+                //             newText: vulnerability.replacement.replace(VERSION_TEMPLATE, version)
+                //         }];
+                //         codeActionsMap[aggDiagnostic.range.start.line + '|' + aggDiagnostic.range.start.character] = codeAction;
+                //     }
+                // }
 
-                    if (aggDiagnostic) {
-                        this.diagnostics.push(aggDiagnostic);
-                    }
+                if (aggDiagnostic) {
+                    this.diagnostics.push(aggDiagnostic);
                 }
             }
         }
@@ -127,17 +125,17 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability>
 
 /* A consumer that uses the binding interface to consume a metadata object */
 class AnalysisConsumer implements IConsumer {
-    item: any;
-    binding: IBindingDescriptor;
-    refBinding: IBindingDescriptor;
+    refbinding: IBindingDescriptor;
+    issuesBinding: IBindingDescriptor;
     // recommendationBinding: IBindingDescriptor;
     // recommendationNameBinding: IBindingDescriptor;
     // recommendationVersionBinding: IBindingDescriptor;
     // remediationsBinding: IBindingDescriptor;
     highestVulnerabilityBinding: IBindingDescriptor;
     highestVulnerabilitySeverityBinding: IBindingDescriptor;
-    issuesCount: number = 0;
     ref: string = null;
+    issues: any = null;
+    issuesCount: number = 0;
     // recommendation: any = null;
     // recommendationName: string = null;
     // recommendationVersion: string = null;
@@ -146,12 +144,12 @@ class AnalysisConsumer implements IConsumer {
     highestVulnerabilitySeverity: string = null;
     constructor(public config: any) { }
     consume(data: any): boolean {
-        if (this.binding !== null) {
-            this.item = bind_object(data, this.binding);
-            this.issuesCount = this.item !== null ? this.item.length : 0;
+        if (this.refbinding !== null) {
+            this.ref = bind_object(data, this.refbinding);
         }
-        if (this.refBinding !== null) {
-            this.ref = bind_object(data, this.refBinding);
+        if (this.issuesBinding !== null) {
+            this.issues = bind_object(data, this.issuesBinding);
+            this.issuesCount = this.issues !== null ? this.issues.length : 0;
         }
         // if (this.recommendationBinding !== null) {
         //     this.recommendation = bind_object(data, this.recommendationBinding);
@@ -171,7 +169,7 @@ class AnalysisConsumer implements IConsumer {
         if (this.highestVulnerability !== null && this.highestVulnerabilitySeverityBinding !== null) {
             this.highestVulnerabilitySeverity = bind_object(data, this.highestVulnerabilitySeverityBinding);
         }
-        return this.item !== null;
+        return this.ref !== null;
     }
 }
 
@@ -179,8 +177,8 @@ class AnalysisConsumer implements IConsumer {
 class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
     constructor(public context: IDependency, config: any) {
         super(config);
-        this.binding = { path: ['issues'] };
-        this.refBinding = { path: ['ref'] };
+        this.refbinding = { path: ['ref'] };
+        this.issuesBinding = { path: ['issues'] };
         // this.recommendationBinding = { path: ['recommendation'] };
         // this.recommendationNameBinding = { path: ['recommendation', 'name'] };
         // this.recommendationVersionBinding = { path: ['recommendation', 'version'] };
@@ -192,8 +190,8 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
     produce(): Vulnerability {
         return new Vulnerability(
             get_range(this.context),
-            this.issuesCount,
             this.ref,
+            this.issuesCount,
             // this.recommendation,
             // this.recommendationName,
             // this.recommendationVersion,

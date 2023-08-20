@@ -3,17 +3,9 @@
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
-import { Stream, Readable } from 'stream';
 import { Position, Range } from 'vscode-languageserver';
 import { IPositionedString, IPosition, IDependency } from './collector';
 import { config } from './config';
-
-export let stream_from_string = (s: string): Stream => {
-  let stream = new Readable();
-  stream.push(s);
-  stream.push(null);
-  return stream;
-};
 
 /* VSCode and Che transmit the file buffer in a different manner,
  * so we have to use different functions for computing the
