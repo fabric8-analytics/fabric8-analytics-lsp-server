@@ -58,7 +58,7 @@ describe('Response consumer test', () => {
         let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(dependency);
         const secEng = pipeline.item as SecurityEngine;
-        // const msg = 'pkg:npm/MockPkg@1.2.3\nRecommendation: mockRecommendationName:mockRecommendationVersion';
+        // const msg = 'MockPkg@1.2.3\nRecommendation: mockRecommendationName:mockRecommendationVersion';
 
         // expect(diagnostics.length).equal(1);
         expect(diagnostics.length).equal(0);
@@ -93,8 +93,8 @@ describe('Response consumer test', () => {
         let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
         pipeline.run(dependency);
         const secEng = pipeline.item as SecurityEngine;
-        // const msg = "pkg:npm/MockPkg@1.2.3\nKnown security vulnerabilities: 1\nHighest severity: MockSeverity\nHas remediation: Yes";
-        const msg = "pkg:npm/MockPkg@1.2.3\nKnown security vulnerabilities: 1\nHighest severity: MockSeverity";
+        // const msg = "MockPkg@1.2.3\nKnown security vulnerabilities: 1\nHighest severity: MockSeverity\nHas remediation: Yes";
+        const msg = "MockPkg@1.2.3\nKnown security vulnerabilities: 1\nHighest severity: MockSeverity";
 
         expect(diagnostics.length).equal(1);
         expect(secEng.issuesCount).equal(1);
