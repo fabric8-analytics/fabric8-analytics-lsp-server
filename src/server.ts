@@ -152,17 +152,17 @@ let files: IAnalysisFiles = new AnalysisFiles();
 let server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
 
 // total counts of known security vulnerabilities
-class TotalCount {
+class VulnCount {
     issuesCount: number = 0;
 }
 // Generate summary notification message for vulnerability analysis
-const getCAmsg = (deps, diagnostics, totalCount): string => {
+const getCAmsg = (deps, diagnostics, vulnCount): string => {
     let msg = `Scanned ${deps.length} ${deps.length === 1 ? 'dependency' : 'dependencies'}, `;
 
     if (diagnostics.length > 0) {
-        const vulnCount = totalCount.issuesCount;
+        const c = vulnCount.issuesCount;
         const vulStr = (count: number) => count === 1 ? 'Vulnerability' : 'Vulnerabilities';
-        msg = vulnCount > 0 ? `flagged ${vulnCount} Known Security ${vulStr(vulnCount)} along with quick fixes` : 'No potential security vulnerabilities found';
+        msg = c > 0 ? `flagged ${c} Known Security ${vulStr(c)} along with quick fixes` : 'No potential security vulnerabilities found';
     } else {
         msg += `No potential security vulnerabilities found`;
     }
@@ -171,7 +171,7 @@ const getCAmsg = (deps, diagnostics, totalCount): string => {
 };
 
 /* Runs DiagnosticPileline to consume dependencies and generate Diagnostic[] */
-function runPipeline(dependencies, ecosystem, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount) {
+function runPipeline(dependencies, ecosystem, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, vulnCount) {
     dependencies.forEach(d => {
         // match dependency with dependency from package map
         const pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${ecosystem}/`, '').replace('/', ':'));
@@ -180,7 +180,7 @@ function runPipeline(dependencies, ecosystem, diagnostics, packageAggregator, di
             let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
             pipeline.run(d);
             const secEng = pipeline.item as SecurityEngine;
-            totalCount.issuesCount += secEng.issuesCount;
+            vulnCount.issuesCount += secEng.issuesCount;
         }
     });
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
@@ -232,7 +232,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
         if (response.dependencies && response.dependencies.length > 0) {
             deps = response.dependencies;
         }
-        runPipeline(deps, ecosystem, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
+        runPipeline(deps, ecosystem, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, vulnCount);
     };
 
     // clear all diagnostics
@@ -269,7 +269,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
 
     // init tracking components
     const diagnostics = [];
-    const totalCount = new TotalCount();
+    const vulnCount = new VulnCount();
     const start = new Date().getTime();
         
     // fetch vulnerabilities
@@ -280,12 +280,11 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const end = new Date().getTime();
     connection.console.log(`fetch vulns took ${end - start} ms`);
     connection.sendNotification('caNotification', {
-        data: getCAmsg(deps, diagnostics, totalCount),
-        diagCount: diagnostics.length || 0,
-        vulnCount: totalCount,
-        depCount: deps.length || 0,
+        data: getCAmsg(deps, diagnostics, vulnCount),
         done: true,
         uri: diagnosticFilePath,
+        diagCount: diagnostics.length || 0,
+        vulnCount: vulnCount.issuesCount,
     });
 };
 
