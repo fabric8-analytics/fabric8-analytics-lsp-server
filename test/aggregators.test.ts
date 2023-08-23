@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { Diagnostic, DiagnosticSeverity, Range } from 'vscode-languageserver';
+import { Range } from 'vscode-languageserver';
 import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator } from '../src/aggregators';
 import { Vulnerability } from '../src/vulnerability';
 

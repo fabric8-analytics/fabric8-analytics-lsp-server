@@ -1,14 +1,14 @@
 'use strict';
 import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
-import { parse, DocumentCstNode } from "@xml-tools/parser";
-import { buildAst, accept, XMLElement, XMLDocument } from "@xml-tools/ast";
+import { parse, DocumentCstNode } from '@xml-tools/parser';
+import { buildAst, accept, XMLElement, XMLDocument } from '@xml-tools/ast';
 import { VERSION_TEMPLATE } from '../utils';
 
 export class DependencyCollector implements IDependencyCollector {
     private xmlDocAst: XMLDocument;
     private originalDeps: Array<XMLElement>;
 
-    constructor(originalContents: string, enforceVersions: boolean, public classes: Array<string> = ["dependencies"]) {
+    constructor(originalContents: string, enforceVersions: boolean, public classes: Array<string> = ['dependencies']) {
         const { cst, tokenVector } = parse(originalContents);
         const originalXmlDocAst = buildAst(cst as DocumentCstNode, tokenVector);
         if (originalXmlDocAst.rootElement) {
@@ -68,7 +68,7 @@ export class DependencyCollector implements IDependencyCollector {
             dep.context_range = {
                 start: { line: original.element.position.startLine - 1, character: original.element.position.startColumn - 1 },
                 end: { line: original.element.position.endLine - 1, character: original.element.position.endColumn }
-            }
+            };
             dep.value = new Variant(ValueType.String, resolved.version.textContents[0].text);
 
             if (original.version) {
@@ -79,7 +79,7 @@ export class DependencyCollector implements IDependencyCollector {
                 dep.context = dependencyTemplate(original.element);
             }
             return new Dependency(dep);
-        }
+        };
 
         const dependencyTemplate = (original: XMLElement): string => {
             let template = '<dependency>';
@@ -98,7 +98,7 @@ export class DependencyCollector implements IDependencyCollector {
             }
             template += `${original.textContents[idx].text}</dependency>`;
             return template;
-        }
+        };
 
         const getMapKey = (element: PomDependency): string => {
             return `${element.groupId.textContents[0].text}:${element.artifactId.textContents[0].text}`;
@@ -124,7 +124,7 @@ export class DependencyCollector implements IDependencyCollector {
                 });
             }
             return result;
-        }
+        };
 
         if (this.originalDeps) {
             const toPomDep = (nodes: XMLElement[]): Array<PomDependency> => nodes
@@ -159,7 +159,7 @@ export class DependencyCollector implements IDependencyCollector {
             validElementNames.push('version');
         }
 
-        return this.findRootNodes(doc, "dependencies")
+        return this.findRootNodes(doc, 'dependencies')
             //must not be a dependency under dependencyManagement
             .filter(e => {
                 const parentElement = e.parent as XMLElement | undefined;

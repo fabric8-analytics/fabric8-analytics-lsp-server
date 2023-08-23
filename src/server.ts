@@ -164,7 +164,7 @@ const getCAmsg = (deps, diagnostics, vulnCount): string => {
         const vulStr = (count: number) => count === 1 ? 'Vulnerability' : 'Vulnerabilities';
         msg = c > 0 ? `flagged ${c} Known Security ${vulStr(c)} along with quick fixes` : 'No potential security vulnerabilities found';
     } else {
-        msg += `No potential security vulnerabilities found`;
+        msg += 'No potential security vulnerabilities found';
     }
 
     return msg;

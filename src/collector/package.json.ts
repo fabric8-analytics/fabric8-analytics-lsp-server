@@ -4,7 +4,7 @@ import jsonAst from 'json-to-ast';
 import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
 
 export class DependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ["dependencies"]) {}
+    constructor(public classes: Array<string> = ['dependencies']) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
       let ast: any;
