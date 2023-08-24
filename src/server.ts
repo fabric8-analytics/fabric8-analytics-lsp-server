@@ -224,7 +224,7 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     }
 };
 
-const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
+const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, originalContents: string, effectiveContents: string, collector: IDependencyCollector) => {
 
     // get dependencies from response before firing diagnostics.   
     const getDepsAndRunPipeline = response => {
@@ -247,7 +247,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     let deps = null;
     try {
         const start = new Date().getTime();
-        deps = await collector.collect(contents);
+        deps = await collector.collect(effectiveContents ? effectiveContents : originalContents);
         const end = new Date().getTime();
         connection.console.log(`manifest parse took ${end - start} ms, found ${deps.length} deps`);
     } catch (error) {
@@ -273,7 +273,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     const start = new Date().getTime();
         
     // fetch vulnerabilities
-    const request = fetchVulnerabilities(path.basename(diagnosticFilePath), contents).then(getDepsAndRunPipeline);
+    const request = fetchVulnerabilities(path.basename(diagnosticFilePath), originalContents).then(getDepsAndRunPipeline);
     await request;
 
     // report results
@@ -288,22 +288,22 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, co
     });
 };
 
-function sendDiagnosticsWithEffectivePom(uri, original: string) {
+function sendDiagnosticsWithEffectivePom(uri, originalContents: string) {
     let tempTarget = uri.replace('file://', '').replaceAll('%20', ' ').replace('pom.xml', '');
     const effectivePomPath = path.join(tempTarget, 'target', 'effective-pom.xml');
     const tmpPomPath = path.join(tempTarget, 'target', 'in-memory-pom.xml');
     if (!fs.existsSync(path.dirname(tmpPomPath))) {
         fs.mkdirSync(path.dirname(tmpPomPath), { recursive: true});
     }
-    fs.writeFile(tmpPomPath, original, (error) => {
+    fs.writeFile(tmpPomPath, originalContents, (error) => {
         if (error) {
             server.connection.sendNotification('caError', error);
         } else {
             try {
                 execSync(`${globalSettings.mvnExecutable} help:effective-pom -Doutput='${effectivePomPath}' --quiet -f '${tmpPomPath}'`);
                 try {
-                    const data = fs.readFileSync(effectivePomPath, 'utf8');
-                    sendDiagnostics('maven', uri, data, new PomXml(original, false));
+                    const effectiveContents = fs.readFileSync(effectivePomPath, 'utf8');
+                    sendDiagnostics('maven', uri, originalContents, effectiveContents, new PomXml(originalContents, false));
                 } catch (error) {
                     server.connection.sendNotification('caError', error.message);
                 }
@@ -311,7 +311,7 @@ function sendDiagnosticsWithEffectivePom(uri, original: string) {
                 // Ignore. Non parseable pom and fall back to original content
                 server.connection.sendNotification('caSimpleWarning', 'Full component analysis cannot be performed until the Pom is valid.');
                 connection.console.info('Unable to parse effective pom. Cause: ' + error.message);
-                sendDiagnostics('maven', uri, original, new PomXml(original, true));
+                sendDiagnostics('maven', uri, originalContents, null, new PomXml(originalContents, true));
             } finally {
                 if (fs.existsSync(tmpPomPath)) {
                     fs.rmSync(tmpPomPath);
@@ -325,7 +325,7 @@ function sendDiagnosticsWithEffectivePom(uri, original: string) {
 }
 
 files.on(EventStream.Diagnostics, '^package\\.json$', (uri, name, contents) => {
-    sendDiagnostics('npm', uri, contents, new PackageJson());
+    sendDiagnostics('npm', uri, contents, null, new PackageJson());
 });
 
 files.on(EventStream.Diagnostics, '^pom\\.xml$', (uri, name, contents) => {

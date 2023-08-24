@@ -12,9 +12,7 @@ class Config
     forbidden_licenses:       Array<string>;
     no_crypto:                boolean;
     home_dir:                 string;
-    uuid:                     string;
     utm_source:               string;
-    telemetry_id:             string;
     mvn_executable:           string;
     golang_executable:        string;
 
@@ -25,9 +23,7 @@ class Config
         this.forbidden_licenses = [];
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
-        this.uuid = process.env.UUID || '';
         this.utm_source = process.env.UTM_SOURCE || '';
-        this.telemetry_id = process.env.TELEMETRY_ID || '';
         this.mvn_executable = process.env.MVN_EXECUTABLE || 'mvn';
         this.golang_executable = process.env.GOLANG_EXECUTABLE || 'go';
     }
