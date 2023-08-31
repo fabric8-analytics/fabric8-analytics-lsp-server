@@ -14,7 +14,7 @@ const dummyRange: Range = {
     }
 }
 
-const AnalyticsSource = '\nDependency Analytics Plugin [Powered by Snyk]';;
+const AnalyticsSource = '\nRed Hat Dependency Analytics Plugin [Powered by Snyk]';;
 
 describe('Noop vulnerability aggregator tests', () => {
 

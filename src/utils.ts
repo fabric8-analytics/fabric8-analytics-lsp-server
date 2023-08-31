@@ -37,8 +37,4 @@ export let get_range = (dep: IDependency): Range => {
   
 };
 
-export let getGoLangImportsCmd = (): string => {
-  return `${config.golang_executable} list -mod=readonly -f "{{.Imports}}" ./...`;
-};
-
 export const VERSION_TEMPLATE: string = '__VERSION__';

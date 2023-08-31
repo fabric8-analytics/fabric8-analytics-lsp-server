@@ -61,20 +61,22 @@ connection.onInitialize((params): InitializeResult => {
     };
 });
 
-// Defining settings for Dependency Analytics
-interface DependencyAnalyticsSettings {
+// Defining settings for Red Hat Dependency Analytics
+interface RedhatDependencyAnalyticsSettings {
     exhortSnykToken: string;
     mvnExecutable: string;
+    npmExecutable: string;
 }
 
-// Initializing default settings for Dependency Analytics
-const defaultSettings: DependencyAnalyticsSettings = {
+// Initializing default settings for Red Hat Dependency Analytics
+const defaultSettings: RedhatDependencyAnalyticsSettings = {
     exhortSnykToken: config.exhort_snyk_token,
-    mvnExecutable: config.mvn_executable
+    mvnExecutable: config.mvn_executable,
+    npmExecutable: config.npm_executable
 };
 
-// Creating a mutable variable to hold the global settings for Dependency Analytics.
-let globalSettings: DependencyAnalyticsSettings = defaultSettings;
+// Creating a mutable variable to hold the global settings for Red Hat Dependency Analytics.
+let globalSettings: RedhatDependencyAnalyticsSettings = defaultSettings;
 
 interface IFileHandlerCallback {
     (uri: string, name: string, contents: string): void;
@@ -192,6 +194,8 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     
     // set up configuration options for the component analysis request
     const options = {};
+    options['EXHORT_MVN_PATH'] = globalSettings.mvnExecutable;
+    options['EXHORT_NPM_PATH'] = globalSettings.npmExecutable;
     if (globalSettings.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
     }
@@ -219,7 +223,6 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     } catch (error) {
         const errMsg = `fetch error. ${error}`;
         connection.console.warn(errMsg);
-        connection.sendNotification('caSimpleWarning', errMsg);
         return error;
     }
 };
@@ -377,8 +380,9 @@ connection.onDidChangeConfiguration(() => {
         server.connection.workspace.getConfiguration().then((data) => {
             // Updating global settings based on the fetched configuration data.
             globalSettings = ({
-                exhortSnykToken: data.dependencyAnalytics.exhortSnykToken,
-                mvnExecutable: data.maven.executable.path || 'mvn'
+                exhortSnykToken: data.redHatDependencyAnalytics.exhortSnykToken,
+                mvnExecutable: data.maven.executable.path || 'mvn',
+                npmExecutable: data.npm.executable.path || 'npm'
             });
         });
     }

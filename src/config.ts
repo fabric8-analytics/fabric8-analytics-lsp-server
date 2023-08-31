@@ -14,7 +14,7 @@ class Config
     home_dir:                 string;
     utm_source:               string;
     mvn_executable:           string;
-    golang_executable:        string;
+    npm_executable:           string;
 
     constructor() {
         // TODO: this needs to be configurable
@@ -25,7 +25,7 @@ class Config
         this.home_dir = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
         this.utm_source = process.env.UTM_SOURCE || '';
         this.mvn_executable = process.env.MVN_EXECUTABLE || 'mvn';
-        this.golang_executable = process.env.GOLANG_EXECUTABLE || 'go';
+        this.npm_executable = process.env.NPM_EXECUTABLE || 'npm';
     }
 }
 

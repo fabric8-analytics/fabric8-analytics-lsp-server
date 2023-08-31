@@ -1,7 +1,6 @@
 'use strict';
 
 import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
-import { getGoLangImportsCmd } from '../utils';
 import { config } from '../config';
 import { exec } from 'child_process';
 import { dirname } from 'path';
@@ -140,22 +139,7 @@ export class DependencyCollector implements IDependencyCollector {
 
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            const sourceRootPath = fileURLToPath(dirname(this.manifestFile));
-            const cmd = getGoLangImportsCmd();
-            console.info(`Root path : '${sourceRootPath}' Cmd : '${cmd}'`);
-            exec(cmd,
-                { windowsHide: true, cwd: sourceRootPath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Command error [${error}], PATH: [${process.env['PATH']}] CWD: [${sourceRootPath}] CMD: [${cmd}]`);
-                    if (error.code === 127) { // Invalid command, go executable not found
-                        reject(`Unable to locate '${config.golang_executable}'`);
-                    } else {
-                        reject(`Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to know more`);
-                    }
-                } else {
-                    resolve(new Set(stdout.toString().replace('[', '').replace(']', '').split(' ')));
-                }
-            });
+            reject('Golang is not a supported packae manager');
         });
         const goImports: Set<string> = await promiseExec;
         let parser = new NaiveGomodParser(contents, goImports);

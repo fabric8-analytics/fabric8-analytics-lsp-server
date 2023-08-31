@@ -1,8 +1,8 @@
 {
   "name": "fabric8-analytics-lsp-server",
-  "description": "LSP Server for Dependency Analytics",
-  "version": "0.0.0-development",
-  "author": "Pavel Odvody",
+  "description": "LSP Server for Red Hat Dependency Analytics",
+  "version": "0.7.0",
+  "author": "Red Hat",
   "contributors": [
     {
       "name": "Michal Srb",
@@ -15,6 +15,10 @@
     {
       "name": "Jaivardhan Kumar",
       "email": "jakumar@redhat.com"
+    },
+    {
+      "name": "Ilona Shishov",
+      "email": "ishishov@redhat.com"
     }
   ],
   "license": "Apache-2.0",
