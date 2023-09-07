@@ -6,13 +6,8 @@ on:
   push:
     branches:
       - master
-    paths:
-      - ".github/workflows/**"
-      - "generated/**"
-      - "src/**"
-      - "package-lock.json"
-      - "package.json"
-      - "tsconfig.json"
+    paths-ignore:
+      - ".github/**"
 
 jobs:
   stage:
@@ -22,7 +17,7 @@ jobs:
     environment: staging
     name: Stage the project
     steps:
-      - name: Checkout sources
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Install node 18
