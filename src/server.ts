@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Pavel Odvody 2016
+ * Copyright (c) Red Hat
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
@@ -196,6 +196,7 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     const options = {};
     options['EXHORT_MVN_PATH'] = globalSettings.mvnExecutable;
     options['EXHORT_NPM_PATH'] = globalSettings.npmExecutable;
+    options['EXHORT_DEV_MODE'] = config.exhort_dev_mode;
     if (globalSettings.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
     }

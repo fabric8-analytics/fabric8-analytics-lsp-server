@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Dharmendra Patel 2020
+ * Copyright (c) Red Hat
  * Licensed under the Apache-2.0 License. See License.txt in the project root for 
  * license information.
  * ------------------------------------------------------------------------------------------ */
@@ -15,6 +15,7 @@ class Config
     utm_source:               string;
     mvn_executable:           string;
     npm_executable:           string;
+    exhort_dev_mode:          string;
 
     constructor() {
         // TODO: this needs to be configurable
@@ -26,6 +27,7 @@ class Config
         this.utm_source = process.env.UTM_SOURCE || '';
         this.mvn_executable = process.env.MVN_EXECUTABLE || 'mvn';
         this.npm_executable = process.env.NPM_EXECUTABLE || 'npm';
+        this.exhort_dev_mode = process.env.EXHORT_DEV_MODE || 'false';
     }
 }
 
