@@ -1,7 +1,7 @@
 {
   "name": "@IlonaShishov/fabric8-analytics-lsp-server",
   "description": "LSP Server for Red Hat Dependency Analytics",
-  "version": "0.7.1-ea.0",
+  "version": "0.7.1-ea.1",
   "author": "Red Hat",
   "contributors": [
     {
