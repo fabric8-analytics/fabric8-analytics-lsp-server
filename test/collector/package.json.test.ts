@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import { DependencyCollector } from '../../src/collector/package.json';
+const jsonToAst = require('json-to-ast');
 
-describe('npm package.json parser test', () => {
+describe('NPM package.json parser test', () => {
     const collector = new DependencyCollector();
 
     it('tests empty package.json file content', async () => {
@@ -10,9 +11,7 @@ describe('npm package.json parser test', () => {
     });
 
     it('tests empty package.json', async () => {
-        const deps = await collector.collect(`
-        {}
-        `);
+        const deps = await collector.collect(`{}`);
         expect(deps.length).equal(0);
     });
 

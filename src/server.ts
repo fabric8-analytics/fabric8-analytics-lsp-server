@@ -3,79 +3,104 @@
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
+
 import * as path from 'path';
 import * as fs from 'fs';
-import * as uuid from 'uuid';
-import * as crypto from "crypto";
 
 import {
-      IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-      TextDocuments, InitializeResult, CodeLens, CodeAction, CodeActionKind} from 'vscode-languageserver';
-import fetch from 'node-fetch';
-import url from 'url';
+    createConnection,
+    TextDocuments, InitializeResult,
+    CodeLens, CodeAction, CodeActionKind,
+    ProposedFeatures
+} from 'vscode-languageserver/node';
 
-
-import { DependencyCollector as GoMod } from './collector/go.mod';
 import { DependencyCollector as PackageJson } from './collector/package.json';
 import { DependencyCollector as PomXml } from './collector/pom.xml';
-import { DependencyCollector as RequirementsTxt } from './collector/requirements.txt';
-import { IDependencyCollector, IHashableDependency, SimpleDependency, DependencyMap } from './collector';
+import { IDependencyCollector, DependencyMap } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
-import { NoopVulnerabilityAggregator, GolangVulnerabilityAggregator } from './aggregators';
+import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from './vulnerability';
 import { config } from './config';
-import { globalCache as GlobalCache } from './cache';
+import { TextDocumentSyncKind, Connection, DidChangeConfigurationNotification } from 'vscode-languageserver';
+import {
+    TextDocument
+} from 'vscode-languageserver-textdocument';
+
+import { execSync } from 'child_process';
+import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
+
 
 enum EventStream {
-  Invalid,
-  Diagnostics,
-  CodeLens
-};
+    Invalid,
+    Diagnostics,
+    CodeLens
+}
 
-let connection: IConnection = null;
-/* use stdio for transfer if applicable */
-if (process.argv.indexOf('--stdio') == -1)
-    connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
-else
-    connection = createConnection()
-
-let documents: TextDocuments = new TextDocuments();
+// Create a connection for the server, using Node's IPC as a transport.
+// Include all preview / proposed LSP features.
+const connection: Connection = createConnection(ProposedFeatures.all);
+const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 documents.listen(connection);
 
-let workspaceRoot: string;
+// Set up the connection's initialization event handler.
+let triggerFullStackAnalysis: string;
+let triggerRHRepositoryRecommendationNotification: string;
+let hasConfigurationCapability: boolean = false;
 connection.onInitialize((params): InitializeResult => {
-    workspaceRoot = params.rootPath;
+    let capabilities = params.capabilities;
+    triggerFullStackAnalysis = params.initializationOptions.triggerFullStackAnalysis;
+    triggerRHRepositoryRecommendationNotification = params.initializationOptions.triggerRHRepositoryRecommendationNotification;
+    hasConfigurationCapability = !!(
+        capabilities.workspace && !!capabilities.workspace.configuration
+    );
     return {
         capabilities: {
-            textDocumentSync: documents.syncKind,
+            textDocumentSync: TextDocumentSyncKind.Full,
             codeActionProvider: true
         }
-    }
+    };
 });
+
+// Defining settings for Red Hat Dependency Analytics
+interface RedhatDependencyAnalyticsSettings {
+    exhortSnykToken: string;
+    mvnExecutable: string;
+    npmExecutable: string;
+}
+
+// Initializing default settings for Red Hat Dependency Analytics
+const defaultSettings: RedhatDependencyAnalyticsSettings = {
+    exhortSnykToken: config.exhort_snyk_token,
+    mvnExecutable: config.mvn_executable,
+    npmExecutable: config.npm_executable
+};
+
+// Creating a mutable variable to hold the global settings for Red Hat Dependency Analytics.
+let globalSettings: RedhatDependencyAnalyticsSettings = defaultSettings;
 
 interface IFileHandlerCallback {
     (uri: string, name: string, contents: string): void;
-};
+}
 
 interface IAnalysisFileHandler {
-    matcher:  RegExp;
+    matcher: RegExp;
     stream: EventStream;
     callback: IFileHandlerCallback;
-};
+}
 
 interface IAnalysisFiles {
     handlers: Array<IAnalysisFileHandler>;
     file_data: Map<string, string>;
     on(stream: EventStream, matcher: string, cb: IFileHandlerCallback): IAnalysisFiles;
     run(stream: EventStream, uri: string, file: string, contents: string): any;
-};
+}
 
 class AnalysisFileHandler implements IAnalysisFileHandler {
     matcher: RegExp;
     constructor(matcher: string, public stream: EventStream, public callback: IFileHandlerCallback) {
         this.matcher = new RegExp(matcher);
     }
-};
+}
 
 class AnalysisFiles implements IAnalysisFiles {
     handlers: Array<IAnalysisFileHandler>;
@@ -90,27 +115,26 @@ class AnalysisFiles implements IAnalysisFiles {
     }
     run(stream: EventStream, uri: string, file: string, contents: string): any {
         for (let handler of this.handlers) {
-            if (handler.stream == stream && handler.matcher.test(file)) {
+            if (handler.stream === stream && handler.matcher.test(file)) {
                 return handler.callback(uri, file, contents);
             }
         }
     }
-};
+}
 
-interface IAnalysisLSPServer
-{
-    connection: IConnection;
-    files:      IAnalysisFiles;
+interface IAnalysisLSPServer {
+    connection: Connection;
+    files: IAnalysisFiles;
 
     handle_file_event(uri: string, contents: string): void;
     handle_code_lens_event(uri: string): CodeLens[];
-};
+}
 
 class AnalysisLSPServer implements IAnalysisLSPServer {
-    constructor(public connection: IConnection, public files: IAnalysisFiles) {}
+    constructor(public connection: Connection, public files: IAnalysisFiles) { }
 
     handle_file_event(uri: string, contents: string): void {
-        let path_name = url.parse(uri).pathname;
+        let path_name = new URL(uri).pathname;
         let file_name = path.basename(path_name);
 
         this.files.file_data[uri] = contents;
@@ -119,262 +143,275 @@ class AnalysisLSPServer implements IAnalysisLSPServer {
     }
 
     handle_code_lens_event(uri: string): CodeLens[] {
-        let path_name = url.parse(uri).pathname;
+        let path_name = new URL(uri).pathname;
         let file_name = path.basename(path_name);
-        let lenses = [];
         let contents = this.files.file_data[uri];
         return this.files.run(EventStream.CodeLens, uri, file_name, contents);
     }
 }
 
-const maxCacheItems = 1000;
-const maxCacheAge = 30 * 60 * 1000;
-const globalCache = key => GlobalCache(key, maxCacheItems, maxCacheAge);
-
 let files: IAnalysisFiles = new AnalysisFiles();
 let server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
-let rc_file = path.join(config.home_dir, '.analysis_rc');
-if (fs.existsSync(rc_file)) {
-    let rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
-    if ('server' in rc) {
-        config.server_url = `${rc.server}/api/v2`;
-    }
+
+// total counts of known security vulnerabilities
+class VulnCount {
+    issuesCount: number = 0;
 }
-const fullStackReportAction: CodeAction = {
-  title: "Detailed Vulnerability Report",
-  kind: CodeActionKind.QuickFix,
-  command: {
-    command: "extension.fabric8AnalyticsWidgetFullStack",
-    title: "Analytics Report",
-  }
-};
+// Generate summary notification message for vulnerability analysis
+const getCAmsg = (deps, diagnostics, vulnCount): string => {
+    let msg = `Scanned ${deps.length} ${deps.length === 1 ? 'dependency' : 'dependencies'}, `;
 
-let DiagnosticsEngines = [SecurityEngine];
-
-/* Generate summarized notification message for vulnerability analysis */
-const getCAmsg = (deps, diagnostics, totalCount): string => {
-    let msg = `Scanned ${deps.length} ${deps.length == 1 ? 'dependency' : 'dependencies'}, `;
-
-    if(diagnostics.length > 0) {
-        const vulStr = (count: number) => count == 1 ? 'Vulnerability' : 'Vulnerabilities';
-        const advStr = (count: number) => count == 1 ? 'Advisory' : 'Advisories';
-        const knownVulnMsg =  !totalCount.vulnerabilityCount || `${totalCount.vulnerabilityCount} Known Security ${vulStr(totalCount.vulnerabilityCount)}`;
-        const advisoryMsg =  !totalCount.advisoryCount || `${totalCount.advisoryCount} Security ${advStr(totalCount.advisoryCount)}`;
-        let summaryMsg = [knownVulnMsg, advisoryMsg].filter(x => x !== true).join(' and ');
-        summaryMsg += (totalCount.exploitCount > 0) ? ` with ${totalCount.exploitCount} Exploitable ${vulStr(totalCount.exploitCount)}` : "";
-        summaryMsg += ((totalCount.vulnerabilityCount + totalCount.advisoryCount) > 0) ? " along with quick fixes" : "";
-        msg += summaryMsg ? ('flagged ' + summaryMsg) : 'No potential security vulnerabilities found';
+    if (diagnostics.length > 0) {
+        const c = vulnCount.issuesCount;
+        const vulStr = (count: number) => count === 1 ? 'Vulnerability' : 'Vulnerabilities';
+        msg = c > 0 ? `flagged ${c} Known Security ${vulStr(c)} along with quick fixes` : 'No potential security vulnerabilities found';
     } else {
-        msg += `No potential security vulnerabilities found`;
+        msg += 'No potential security vulnerabilities found';
     }
 
-    return msg
+    return msg;
 };
 
-const caDefaultMsg = 'Checking for security vulnerabilities ...';
-
-/* Fetch Vulnerabilities by component-analysis batch api-call */
-const fetchVulnerabilities = async (reqData: any, manifestHash: string, requestId: string) => {
-    let url = config.server_url;
-    if (config.three_scale_user_token) {
-        url += `/component-analyses/?user_key=${config.three_scale_user_token}`;
-    } else {
-        url += `/component-analyses`;
-    }
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + config.api_token,
-        'X-Request-Id': requestId,
-    };
-
-    url += `&utm_content=${manifestHash}`;
-
-    if (config.utm_source) {
-        url += `&utm_source=${config.utm_source}`;
-    }
-
-    if (config.uuid) {
-        headers['uuid'] = config.uuid;
-    }
-    
-    if (config.telemetry_id) {
-        headers['X-Telemetry-Id'] = config.telemetry_id;
-    }
-
-    try {
-        const response = await fetch(url , {
-            method: 'post',
-            body:    JSON.stringify(reqData),
-            headers: headers,
-        });
-
-        connection.console.log(`fetching vuln for ${reqData.package_versions.length} packages`);
-        if (response.ok) {
-            const respData = await response.json();
-            return respData;
-        } else {
-            connection.console.warn(`fetch error. http status ${response.status}`);
-            return response.status;
-        }
-    } catch(err) {
-        connection.console.warn(`Exception while fetch: ${err}`);
-    }
-};
-
-/* Total Counts of #Known Security Vulnerability and #Security Advisory */
-class TotalCount {
-    vulnerabilityCount: number = 0;
-    advisoryCount: number = 0;
-    exploitCount: number = 0;
-};
-
-/* Runs DiagnosticPileline to consume response and generate Diagnostic[] */
-function runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, totalCount) {
-    response.forEach(r => {
-        const dependency = pkgMap.get(new SimpleDependency(r.package, r.version));
-        let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics, packageAggregator, diagnosticFilePath);
-        pipeline.run(r);
-        for (const item of pipeline.items) {
-            const secEng = item as SecurityEngine;
-            totalCount.vulnerabilityCount += secEng.vulnerabilityCount;
-            totalCount.advisoryCount += secEng.advisoryCount;
-            totalCount.exploitCount += secEng.exploitCount;
+/* Runs DiagnosticPileline to consume dependencies and generate Diagnostic[] */
+function runPipeline(dependencies, ecosystem, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, vulnCount) {
+    dependencies.forEach(d => {
+        // match dependency with dependency from package map
+        const pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${ecosystem}/`, '').replace('/', ':'));
+        // if dependency mached, run diagnostic
+        if (pkg !== undefined) {
+            let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
+            pipeline.run(d);
+            const secEng = pipeline.item as SecurityEngine;
+            vulnCount.issuesCount += secEng.issuesCount;
         }
     });
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: diagnostics });
     connection.console.log(`sendDiagnostics: ${diagnostics?.length}`);
 }
 
-/* Slice payload in each chunk size of @batchSize */
-function slicePayload(payload, batchSize, ecosystem): any {
-    let reqData = [];
-    for (let i = 0; i < payload.length; i += batchSize) {
-        reqData.push({
-            "ecosystem": ecosystem,
-            "package_versions": payload.slice(i, i + batchSize)
-        });
+// Fetch Vulnerabilities by component analysis API call
+const fetchVulnerabilities = async (fileType: string, reqData: any) => {
+    
+    // set up configuration options for the component analysis request
+    const options = {};
+    options['EXHORT_MVN_PATH'] = globalSettings.mvnExecutable;
+    options['EXHORT_NPM_PATH'] = globalSettings.npmExecutable;
+    if (globalSettings.exhortSnykToken !== '') {
+        options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
     }
-    return reqData;
-}
 
-const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
-const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, contents: string, collector: IDependencyCollector) => {
+    try {
+
+        // get component analysis in JSON format
+        let componentAnalysisJson = await exhort.componentAnalysis(fileType, reqData, options);
+
+        // check vulnerability provider statuses
+        let ko = new Array();
+        componentAnalysisJson.summary.providerStatuses.forEach(ps => {
+            if (!ps.ok) {
+                ko.push(ps.provider);
+            }
+        });
+        // issue warning if failed to fetch data from providers
+        if (ko.length !== 0) {
+            const errMsg = `The component analysis couldn't fetch data from the following providers: [${ko}]`;
+            connection.console.warn(errMsg);
+            connection.sendNotification('caSimpleWarning', errMsg);
+        }
+
+        return componentAnalysisJson;
+    } catch (error) {
+        const errMsg = `fetch error. ${error}`;
+        connection.console.warn(errMsg);
+        return error;
+    }
+};
+
+const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, originalContents: string, effectiveContents: string, collector: IDependencyCollector) => {
+
+    // get dependencies from response before firing diagnostics.   
+    const getDepsAndRunPipeline = response => {
+        let deps = [];
+        if (response.dependencies && response.dependencies.length > 0) {
+            deps = response.dependencies;
+        }
+        runPipeline(deps, ecosystem, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, vulnCount);
+    };
+
     // clear all diagnostics
     connection.sendDiagnostics({ uri: diagnosticFilePath, diagnostics: [] });
     connection.sendNotification('caNotification', {
-      data: caDefaultMsg,
-      done: false,
-      uri: diagnosticFilePath,
+        data: 'Checking for security vulnerabilities ...',
+        done: false,
+        uri: diagnosticFilePath,
     });
 
+    // collect dependencies from manifest
     let deps = null;
     try {
         const start = new Date().getTime();
-        deps = await collector.collect(contents);
+        deps = await collector.collect(effectiveContents ? effectiveContents : originalContents);
         const end = new Date().getTime();
         connection.console.log(`manifest parse took ${end - start} ms, found ${deps.length} deps`);
     } catch (error) {
         connection.console.warn(`Error: ${error}`);
         connection.sendNotification('caError', {
-          data: error,
-          uri: diagnosticFilePath,
+            data: error,
+            uri: diagnosticFilePath,
         });
         return;
     }
 
-    let validPackages = deps;
-    let packageAggregator = null;
-    if (ecosystem != "golang") {
-        validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
-        packageAggregator = new NoopVulnerabilityAggregator();
-    } else {
-        packageAggregator = new GolangVulnerabilityAggregator();
-    }
+    // map dependencies
+    const regexVersion = new RegExp(/^(~|\^)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
+    const validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
     const pkgMap = new DependencyMap(validPackages);
-    const batchSize = 10;
+
+    // init aggregator
+    let packageAggregator = ecosystem === 'maven' ? new MavenVulnerabilityAggregator() : new NoopVulnerabilityAggregator();
+
+    // init tracking components
     const diagnostics = [];
-    const totalCount = new TotalCount();
+    const vulnCount = new VulnCount();
     const start = new Date().getTime();
-    const manifestHash = crypto.createHash("sha256").update(diagnosticFilePath).digest("hex");
-    const requestId = uuid.v4();
-    // Closure which captures common arg to runPipeline.
-    const pipeline = response => runPipeline(response, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, totalCount);
-    // Get and fire diagnostics for items found in Cache.
-    const cache = globalCache(ecosystem);
-    const cachedItems = cache.get(validPackages);
-    const cachedValues = cachedItems.filter(c => c.V !== undefined).map(c => c.V);
-    const missedItems = cachedItems.filter(c => c.V === undefined).map(c => c.K);
-    connection.console.log(`cache hit: ${cachedValues.length} miss: ${missedItems.length}`);
-    pipeline(cachedValues);
+        
+    // fetch vulnerabilities
+    const request = fetchVulnerabilities(path.basename(diagnosticFilePath), originalContents).then(getDepsAndRunPipeline);
+    await request;
 
-    // Construct request payload for items not in Cache.
-    const requestPayload = missedItems.map(d => ({package: d.name.value, version: d.version.value}));
-    // Closure which adds response into cache before firing diagnostics.
-    const cacheAndRunPipeline = response => {
-      cache.add(response);
-      pipeline(response);
-    }
-    const allRequests = slicePayload(requestPayload, batchSize, ecosystem).
-            map(request => fetchVulnerabilities(request, manifestHash, requestId).then(cacheAndRunPipeline));
-
-    await Promise.allSettled(allRequests);
+    // report results
     const end = new Date().getTime();
-
     connection.console.log(`fetch vulns took ${end - start} ms`);
     connection.sendNotification('caNotification', {
-      data: getCAmsg(deps, diagnostics, totalCount),
-      diagCount : diagnostics.length || 0,
-      vulnCount: totalCount,
-      depCount: deps.length || 0,
-      done: true,
-      uri: diagnosticFilePath,
-      cacheHitCount: cachedValues.length,
-      cacheMissCount: missedItems.length,
+        data: getCAmsg(deps, diagnostics, vulnCount),
+        done: true,
+        uri: diagnosticFilePath,
+        diagCount: diagnostics.length || 0,
+        vulnCount: vulnCount.issuesCount,
     });
 };
 
-files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
-    sendDiagnostics('npm', uri, contents, new PackageJson());
+function sendDiagnosticsWithEffectivePom(uri, originalContents: string) {
+    let tempTarget = uri.replace('file://', '').replaceAll('%20', ' ').replace('pom.xml', '');
+    const effectivePomPath = path.join(tempTarget, 'target', 'effective-pom.xml');
+    const tmpPomPath = path.join(tempTarget, 'target', 'in-memory-pom.xml');
+    if (!fs.existsSync(path.dirname(tmpPomPath))) {
+        fs.mkdirSync(path.dirname(tmpPomPath), { recursive: true});
+    }
+    fs.writeFile(tmpPomPath, originalContents, (error) => {
+        if (error) {
+            server.connection.sendNotification('caError', error);
+        } else {
+            try {
+                execSync(`${globalSettings.mvnExecutable} help:effective-pom -Doutput='${effectivePomPath}' --quiet -f '${tmpPomPath}'`);
+                try {
+                    const effectiveContents = fs.readFileSync(effectivePomPath, 'utf8');
+                    sendDiagnostics('maven', uri, originalContents, effectiveContents, new PomXml(originalContents, false));
+                } catch (error) {
+                    server.connection.sendNotification('caError', error.message);
+                }
+            } catch (error) {
+                // Ignore. Non parseable pom and fall back to original content
+                server.connection.sendNotification('caSimpleWarning', 'Full component analysis cannot be performed until the Pom is valid.');
+                connection.console.info('Unable to parse effective pom. Cause: ' + error.message);
+                sendDiagnostics('maven', uri, originalContents, null, new PomXml(originalContents, true));
+            } finally {
+                if (fs.existsSync(tmpPomPath)) {
+                    fs.rmSync(tmpPomPath);
+                }
+                if (fs.existsSync(effectivePomPath)) {
+                    fs.rmSync(effectivePomPath);
+                }
+            }
+        }
+    });
+}
+
+files.on(EventStream.Diagnostics, '^package\\.json$', (uri, name, contents) => {
+    sendDiagnostics('npm', uri, contents, null, new PackageJson());
 });
 
-files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
-    sendDiagnostics('maven', uri, contents, new PomXml());
+files.on(EventStream.Diagnostics, '^pom\\.xml$', (uri, name, contents) => {
+    sendDiagnosticsWithEffectivePom(uri, contents);
 });
 
-files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
-    sendDiagnostics('pypi', uri, contents, new RequirementsTxt());
-});
 
-files.on(EventStream.Diagnostics, "^go\\.mod$", (uri, name, contents) => {
-    connection.console.log("Using golang executable: " + config.golang_executable);
-    sendDiagnostics('golang', uri, contents, new GoMod(uri));
-});
-
+// TRIGGERS
 let checkDelay;
+
+// triggered when document is opened
+connection.onDidOpenTextDocument((params) => {
+    server.handle_file_event(params.textDocument.uri, params.textDocument.text);
+});
+
+// triggered when document is saved
 connection.onDidSaveTextDocument((params) => {
     clearTimeout(checkDelay);
     server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
 });
 
+// triggered when changes have been applied to document
 connection.onDidChangeTextDocument((params) => {
     /* Update internal state for code lenses */
     server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
     clearTimeout(checkDelay);
     checkDelay = setTimeout(() => {
-        server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri])
-    }, 500)
+        server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
+    }, 500);
 });
 
-connection.onDidOpenTextDocument((params) => {
-    server.handle_file_event(params.textDocument.uri, params.textDocument.text);
+// triggered when document is closed
+connection.onDidCloseTextDocument((params) => {
+    clearTimeout(checkDelay);
 });
 
-connection.onCodeAction((params, token): CodeAction[] => {
+// Registering a callback when the connection is fully initialized.
+connection.onInitialized(() => {
+    if (hasConfigurationCapability) {
+        // Register for all configuration changes.
+        connection.client.register(DidChangeConfigurationNotification.type, undefined);
+    }
+});
+
+// Registering a callback when the configuration changes.
+connection.onDidChangeConfiguration(() => {
+    if (hasConfigurationCapability) {
+        // Fetching the workspace configuration from the client.
+        server.connection.workspace.getConfiguration().then((data) => {
+            // Updating global settings based on the fetched configuration data.
+            globalSettings = ({
+                exhortSnykToken: data.redHatDependencyAnalytics.exhortSnykToken,
+                mvnExecutable: data.maven.executable.path || 'mvn',
+                npmExecutable: data.npm.executable.path || 'npm'
+            });
+        });
+    }
+});
+
+const fullStackReportAction = (): CodeAction => ({
+    title: 'Detailed Vulnerability Report',
+    kind: CodeActionKind.QuickFix,
+    command: {
+        command: triggerFullStackAnalysis,
+        title: 'Analytics Report',
+    }
+});
+
+
+connection.onCodeAction((params): CodeAction[] => {
     let codeActions: CodeAction[] = [];
     let hasAnalyticsDiagonostic: boolean = false;
     for (let diagnostic of params.context.diagnostics) {
-        let codeAction = codeActionsMap[diagnostic.range.start.line + "|" + diagnostic.range.start.character];
-        if (codeAction != null) {
+        let codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
+        if (codeAction) {
+            
+            if (path.basename(params.textDocument.uri) === 'pom.xml') {
+                codeAction.command = {
+                title: 'RedHat repository recommendation',
+                command: triggerRHRepositoryRecommendationNotification,
+                };   
+            }
+
             codeActions.push(codeAction);
 
         }
@@ -383,13 +420,9 @@ connection.onCodeAction((params, token): CodeAction[] => {
         }
     }
     if (config.provide_fullstack_action && hasAnalyticsDiagonostic) {
-        codeActions.push(fullStackReportAction);
+        codeActions.push(fullStackReportAction());
     }
     return codeActions;
-});
-
-connection.onDidCloseTextDocument((params) => {
-    clearTimeout(checkDelay);
 });
 
 connection.listen();

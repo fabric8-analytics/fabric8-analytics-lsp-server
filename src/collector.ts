@@ -4,6 +4,8 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
+import { Range } from 'vscode-languageserver';
+
 /* Determine what is the value */
 export enum ValueType {
   Invalid,
@@ -14,56 +16,68 @@ export enum ValueType {
   Object,
   Boolean,
   Null
-};
+}
 
 /* Value variant */
 export interface IVariant {
-  type:   ValueType;
+  type: ValueType;
   object: any;
 }
 
 /* Line and column inside the JSON file */
 export interface IPosition {
-  line:   number;
+  line: number;
   column: number;
-};
+}
 
 /* Key/Value entry with positions */
 export interface IKeyValueEntry {
-  key:            string;
-  value:          IVariant;
-  key_position:   IPosition;
+  key: string;
+  value: IVariant;
+  key_position: IPosition;
   value_position: IPosition;
-};
+  context: string;
+  context_range: Range;
+}
 
 export class KeyValueEntry implements IKeyValueEntry {
-  key:            string;
-  value:          IVariant;
-  key_position:   IPosition;
+  key: string;
+  value: IVariant;
+  key_position: IPosition;
   value_position: IPosition;
+  context: string;
+  context_range: Range;
 
-  constructor(k: string, pos: IPosition, v?: IVariant, v_pos?: IPosition) {
+  constructor(k: string, pos: IPosition, v?: IVariant, v_pos?: IPosition, c?: string, c_range?: Range) {
     this.key = k;
     this.key_position = pos;
     this.value = v;
     this.value_position = v_pos;
+    this.context = c;
+    this.context_range = c_range;
   }
 }
 
 export class Variant implements IVariant {
-  constructor(public type: ValueType, public object: any) {}
+  constructor(public type: ValueType, public object: any) { }
 }
 
 /* String value with position */
 export interface IPositionedString {
-  value:    string;
+  value: string;
   position: IPosition;
+}
+
+export interface IPositionedContext {
+  value: string;
+  range: Range;
 }
 
 /* Dependency specification */
 export interface IDependency {
   name: IPositionedString;
   version: IPositionedString;
+  context: IPositionedContext;
 }
 
 export interface IHashableDependency extends IDependency {
@@ -78,8 +92,9 @@ export interface IDependencyCollector {
 
 /* Dependency class that can be created from `IKeyValueEntry` */
 export class Dependency implements IHashableDependency {
-  name:    IPositionedString;
+  name: IPositionedString;
   version: IPositionedString;
+  context: IPositionedContext;
   constructor(dependency: IKeyValueEntry) {
     this.name = {
       value: dependency.key,
@@ -89,27 +104,26 @@ export class Dependency implements IHashableDependency {
       value: dependency.value.object,
       position: dependency.value_position
     };
+    if (dependency.context && dependency.context_range) {
+      this.context = {
+        value: dependency.context,
+        range: dependency.context_range
+      };
+    }
   }
 
   key(): string {
-    return `${this.name.value}@${this.version.value}`;
-  }
-}
-
-/* Dependency from name, version without position */
-export class SimpleDependency extends Dependency {
-  constructor(name: string, version: string) {
-    super(new KeyValueEntry(name, null, new Variant(ValueType.String, version), null));
+    return `${this.name.value}`;
   }
 }
 
 export class DependencyMap {
-   mapper: Map<string, IHashableDependency>;
-   constructor(deps: Array<IHashableDependency>) {
-     this.mapper = new Map(deps.map(d => [d.key(), d]));
-   }
+  mapper: Map<string, IHashableDependency>;
+  constructor(deps: Array<IHashableDependency>) {
+    this.mapper = new Map(deps.map(d => [d.key(), d]));
+  }
 
-   public get(dep: IHashableDependency): IHashableDependency {
-     return this.mapper.get(dep.key());
-   }
+  public get(key: string): IHashableDependency {
+    return this.mapper.get(key);
+  }
 }

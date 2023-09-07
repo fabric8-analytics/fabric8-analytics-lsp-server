@@ -10,7 +10,7 @@ class NaivePyParser {
     dependencies: Array<IDependency>;
 
     static parseDependencies(contents:string): Array<IDependency> {
-        const requirements = contents.split("\n");
+        const requirements = contents.split('\n');
         return requirements.reduce((dependencies, req, index) => {
             // skip any text after #
             if (req.includes('#')) {
@@ -38,7 +38,7 @@ class NaivePyParser {
 /* Process entries found in the txt files and collect all dependency
  * related information */
 export class DependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ["dependencies"]) {}
+    constructor(public classes: Array<string> = ['dependencies']) {}
 
     async collect(contents: string): Promise<Array<IDependency>> {
         let parser = new NaivePyParser(contents);
