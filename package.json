@@ -1,7 +1,7 @@
 {
-  "name": "fabric8-analytics-lsp-server",
+  "name": "@IlonaShishov/fabric8-analytics-lsp-server",
   "description": "LSP Server for Red Hat Dependency Analytics",
-  "version": "0.7.0",
+  "version": "0.7.1-ea.0",
   "author": "Red Hat",
   "contributors": [
     {
@@ -26,9 +26,9 @@
     "fabric8-analytics",
     "LSP"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/fabric8-analytics/fabric8-analytics-lsp-server.git"
+  "repository": "github:IlonaShishov/fabric8-analytics-lsp-server",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "main": "dist/server.js",
   "bin": "dist/server.js",
