@@ -13,7 +13,7 @@ jobs:
   stage:
     permissions: write-all
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'IlonaShishov'
+    if: github.repository_owner == 'fabric8-analytics'
     environment: staging
     name: Stage the project
     steps:

@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'IlonaShishov'
+    if: github.repository_owner == 'fabric8-analytics'
 
     steps:
     - name: Checkout repository
