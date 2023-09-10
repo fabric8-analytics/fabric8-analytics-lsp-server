@@ -1,0 +1,79 @@
+---
+name: Stage
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - ".github/**"
+
+jobs:
+  stage:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'fabric8-analytics'
+    environment: staging
+    name: Stage the project
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install node 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+          registry-url: 'https://npm.pkg.github.com'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create .npmrc
+        run: |
+          echo "@RHEcosystemAppEng:registry=https://npm.pkg.github.com" >> ~/.npmrc
+      
+      - name: Configure git
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Update package with new version
+        id: bump
+        run: |
+          echo "version=$(npm version prerelease --no-git-tag-version --preid ea)" >> "$GITHUB_OUTPUT"
+
+      - name: Install project modules
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Publish package
+        run: npm publish
+
+      - name: Commit and push package modifications
+        run: |
+          git add package.json
+          git add package-lock.json
+          git commit -m "build: updated package with ${{ steps.bump.outputs.version }} [skip ci]"
+          git push
+
+      - name: Create and push new tag
+        run: |
+          git tag ${{ steps.bump.outputs.version }} -m "${{ steps.bump.outputs.version }}"
+          git push origin ${{ steps.bump.outputs.version }}
+
+      - name: Create a release
+        uses: actions/github-script@v6.4.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const repo_name = context.payload.repository.full_name
+            const response = await github.request('POST /repos/' + repo_name + '/releases', {
+              tag_name: '${{ steps.bump.outputs.version }}',
+              name: '${{ steps.bump.outputs.version }}',
+              prerelease: true,
+              generate_release_notes: true
+            })
+            

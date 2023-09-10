@@ -1,7 +1,6 @@
 'use strict';
 
 import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
-import { getGoLangImportsCmd } from '../utils';
 import { config } from '../config';
 import { exec } from 'child_process';
 import { dirname } from 'path';
@@ -12,7 +11,7 @@ import { fileURLToPath } from 'url';
  * At the moment, using regex directly to extract version information without 'v' prefix. */
 //import semverRegex = require('semver-regex');
 function semVerRegExp(line: string): RegExpExecArray {
-    const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig
+    const regExp = /(?<=^v?|\sv?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*)(?:\.(?:0|[1-9]\d*|[\da-z-]*[a-z-][\da-z-]*))*)?(?:\+[\da-z-]+(?:\.[\da-z-]+)*)?(?=$|\s)/ig;
     return regExp.exec(line);
 }
 
@@ -45,7 +44,7 @@ class NaiveGomodParser {
     }
 
     static  applyReplaceMap(dep: IDependency, replaceMap: Map<string, IDependency>): IDependency {
-        let replaceDependency = replaceMap.get(dep.name.value + "@" + dep.version.value);
+        let replaceDependency = replaceMap.get(dep.name.value + '@' + dep.version.value);
         if (replaceDependency === undefined) {
             replaceDependency = replaceMap.get(dep.name.value);
             if(replaceDependency === undefined) {
@@ -57,12 +56,12 @@ class NaiveGomodParser {
 
     static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
         let replaceMap = new Map<string, IDependency>();
-        let goModDeps = contents.split("\n").reduce((dependencies, line, index) => {
+        let goModDeps = contents.split('\n').reduce((dependencies, line, index) => {
             // skip any text after '//'
-            if (line.includes("//")) {
-                line = line.split("//")[0];
+            if (line.includes('//')) {
+                line = line.split('//')[0];
             }
-            if (line.includes("=>")) {
+            if (line.includes('=>')) {
                 let replaceEntry = NaiveGomodParser.getReplaceMap(line, index);
                 if (replaceEntry) {
                     replaceMap.set(replaceEntry.key, replaceEntry.value);
@@ -94,12 +93,12 @@ class NaiveGomodParser {
             let exactMatchDep: Dependency = null;
             let moduleMatchDep: Dependency = null;
             goModDeps.forEach(goModDep => {
-                if (importStatement == goModDep.name.value) {
+                if (importStatement === goModDep.name.value) {
                     // Software stack uses the module
                     exactMatchDep = goModDep;
-                } else if (importStatement.startsWith(goModDep.name.value + "/")) {
+                } else if (importStatement.startsWith(goModDep.name.value + '/')) {
                     // Find longest module name that matches the import statement
-                    if (moduleMatchDep == null) {
+                    if (moduleMatchDep === null) {
                         moduleMatchDep = goModDep;
                     } else if (moduleMatchDep.name.value.length < goModDep.name.value.length) {
                         moduleMatchDep = goModDep;
@@ -107,7 +106,7 @@ class NaiveGomodParser {
                 }
             });
 
-            if (exactMatchDep == null && moduleMatchDep != null) {
+            if (exactMatchDep === null && moduleMatchDep !== null) {
                 // Software stack uses a package from the module
                 let replaceDependency = NaiveGomodParser.applyReplaceMap(moduleMatchDep, replaceMap);
                 if (replaceDependency !== moduleMatchDep) {
@@ -134,28 +133,13 @@ class NaiveGomodParser {
 /* Process entries found in the go.mod file and collect all dependency
  * related information */
 export class DependencyCollector implements IDependencyCollector {
-    constructor(private manifestFile: string, public classes: Array<string> = ["dependencies"]) {
+    constructor(private manifestFile: string, public classes: Array<string> = ['dependencies']) {
         this.manifestFile = manifestFile;
     }
 
     async collect(contents: string): Promise<Array<IDependency>> {
         let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            const sourceRootPath = fileURLToPath(dirname(this.manifestFile));
-            const cmd = getGoLangImportsCmd();
-            console.info(`Root path : '${sourceRootPath}' Cmd : '${cmd}'`);
-            exec(cmd,
-                { windowsHide: true, cwd: sourceRootPath, maxBuffer: 1024 * 1200 }, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Command error [${error}], PATH: [${process.env["PATH"]}] CWD: [${sourceRootPath}] CMD: [${cmd}]`)
-                    if (error.code == 127) { // Invalid command, go executable not found
-                        reject(`Unable to locate '${config.golang_executable}'`);
-                    } else {
-                        reject(`Unable to execute '${config.golang_executable} list' command, run '${config.golang_executable} mod tidy' to know more`);
-                    }
-                } else {
-                    resolve(new Set(stdout.toString().replace("[", "").replace("]", "").split(" ")));
-                }
-            });
+            reject('Golang is not a supported packae manager');
         });
         const goImports: Set<string> = await promiseExec;
         let parser = new NaiveGomodParser(contents, goImports);

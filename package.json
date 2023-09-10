@@ -1,20 +1,12 @@
 {
-  "name": "fabric8-analytics-lsp-server",
-  "description": "LSP Server for Dependency Analytics",
-  "version": "0.0.0-development",
-  "author": "Pavel Odvody",
+  "name": "@fabric8-analytics/fabric8-analytics-lsp-server",
+  "description": "LSP Server for Red Hat Dependency Analytics",
+  "version": "0.7.1-ea.3",
+  "author": "Red Hat",
   "contributors": [
     {
-      "name": "Michal Srb",
-      "email": "michal@redhat.com"
-    },
-    {
-      "name": "Jyasveer Gotta",
-      "email": "jgotta@redhat.com"
-    },
-    {
-      "name": "Jaivardhan Kumar",
-      "email": "jakumar@redhat.com"
+      "name": "Ilona Shishov",
+      "email": "ishishov@redhat.com"
     }
   ],
   "license": "Apache-2.0",
@@ -22,9 +14,9 @@
     "fabric8-analytics",
     "LSP"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/fabric8-analytics/fabric8-analytics-lsp-server.git"
+  "repository": "github:fabric8-analytics/fabric8-analytics-lsp-server",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "main": "dist/server.js",
   "bin": "dist/server.js",
@@ -32,35 +24,38 @@
     "dist"
   ],
   "dependencies": {
-    "@xml-tools/ast": "^5.0.3",
-    "@xml-tools/parser": "1.0.9",
-    "compare-versions": "3.6.0",
+    "@RHEcosystemAppEng/exhort-javascript-api": "^0.0.2-alpha.4",
+    "@xml-tools/ast": "^5.0.5",
+    "@xml-tools/parser": "^1.0.11",
+    "compare-versions": "^6.0.0-rc.1",
     "json-to-ast": "^2.1.0",
-    "lru-cache": "^6.0.0",
-    "node-fetch": "^2.6.0",
-    "vscode-languageserver": "^5.3.0-next.9"
+    "mkdirp": "^3.0.1",
+    "vscode-languageserver": "^8.1.0",
+    "vscode-languageserver-textdocument": "^1.0.8"
   },
   "devDependencies": {
-    "@semantic-release/exec": "^5.0.0",
-    "@types/chai": "^4.1.7",
-    "@types/lru-cache": "^5.1.0",
-    "@types/mocha": "^5.2.7",
-    "@types/node": "^12.7.5",
-    "@types/node-fetch": "^2.5.7",
-    "@types/uuid": "^8.3.0",
+    "@semantic-release/exec": "^6.0.3",
+    "@types/chai": "^4.3.5",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.2.5",
+    "@types/node-fetch": "^2.6.4",
+    "@types/uuid": "^9.0.1",
+    "@typescript-eslint/eslint-plugin": "^6.4.1",
+    "@typescript-eslint/parser": "^6.4.1",
     "chai": "^4.2.0",
+    "eslint": "^8.47.0",
     "fake-exec": "^1.1.0",
-    "mocha": "^6.2.0",
-    "nyc": "^14.1.1",
-    "pkg": "^4.4.9",
-    "semantic-release": "^17.1.0",
-    "ts-node": "^8.3.0",
-    "typescript": "^3.6.3"
+    "mocha": "^10.2.0",
+    "nyc": "^15.1.0",
+    "pkg": "^5.8.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
   },
   "scripts": {
     "build": "tsc -p .",
-    "test": "nyc mocha",
-    "prepare": "npm run build"
+    "test": "nyc mocha --config=./test/mocha.config.json",
+    "prepare": "npm run build",
+    "lint": "eslint -c .eslintrc.js --ext .ts src/"
   },
   "nyc": {
     "include": [

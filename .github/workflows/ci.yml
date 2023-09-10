@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'fabric8-analytics'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install node 18
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: npm
+        registry-url: 'https://npm.pkg.github.com'
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Create .npmrc
+      run: |
+        echo "@RHEcosystemAppEng:registry=https://npm.pkg.github.com" >> ~/.npmrc
+
+    - name: Install project modules
+      run: npm ci
+
+    - name: Lint code
+      run: npm run lint
+
+    - name: Run unit tests
+      run: npm test -- --coverage
+
+    - name: Upload coverage to codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
