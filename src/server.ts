@@ -14,9 +14,10 @@ import {
     ProposedFeatures
 } from 'vscode-languageserver/node';
 
-import { DependencyCollector as PackageJson } from './collector/package.json';
-import { DependencyCollector as PomXml } from './collector/pom.xml';
-import { IDependencyCollector, DependencyMap } from './collector';
+import { DependencyProvider as PackageJson } from './providers/package.json';
+import { DependencyProvider as PomXml } from './providers/pom.xml';
+import { DependencyProvider as GoMod } from './providers/go.mod';
+import { DependencyMap, IDependencyProvider } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator } from './aggregators';
 import { AnalyticsSource } from './vulnerability';
@@ -66,13 +67,15 @@ interface RedhatDependencyAnalyticsSettings {
     exhortSnykToken: string;
     mvnExecutable: string;
     npmExecutable: string;
+    goExecutable: string;
 }
 
 // Initializing default settings for Red Hat Dependency Analytics
 const defaultSettings: RedhatDependencyAnalyticsSettings = {
     exhortSnykToken: config.exhort_snyk_token,
     mvnExecutable: config.mvn_executable,
-    npmExecutable: config.npm_executable
+    npmExecutable: config.npm_executable,
+    goExecutable: config.go_executable,
 };
 
 // Creating a mutable variable to hold the global settings for Red Hat Dependency Analytics.
@@ -173,10 +176,13 @@ const getCAmsg = (deps, diagnostics, vulnCount): string => {
 };
 
 /* Runs DiagnosticPileline to consume dependencies and generate Diagnostic[] */
-function runPipeline(dependencies, ecosystem, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, vulnCount) {
+function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, vulnCount, provider: IDependencyProvider) {
     dependencies.forEach(d => {
         // match dependency with dependency from package map
-        const pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${ecosystem}/`, '').replace('/', ':'));
+        let pkg = pkgMap.get(d.ref.replace(`pkg:${provider.ecosystem}/`, ''));
+        if (pkg === undefined && provider.ecosystem === 'npm') {
+            pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${provider.ecosystem}/`, ''));
+        }
         // if dependency mached, run diagnostic
         if (pkg !== undefined) {
             let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
@@ -196,6 +202,7 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     const options = {};
     options['EXHORT_MVN_PATH'] = globalSettings.mvnExecutable;
     options['EXHORT_NPM_PATH'] = globalSettings.npmExecutable;
+    options['EXHORT_GO_PATH'] = globalSettings.goExecutable;
     options['EXHORT_DEV_MODE'] = config.exhort_dev_mode;
     if (globalSettings.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
@@ -228,7 +235,7 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     }
 };
 
-const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, originalContents: string, effectiveContents: string, collector: IDependencyCollector) => {
+const sendDiagnostics = async (diagnosticFilePath: string, originalContents: string, effectiveContents: string, provider: IDependencyProvider) => {
 
     // get dependencies from response before firing diagnostics.   
     const getDepsAndRunPipeline = response => {
@@ -236,7 +243,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, or
         if (response.dependencies && response.dependencies.length > 0) {
             deps = response.dependencies;
         }
-        runPipeline(deps, ecosystem, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, vulnCount);
+        runPipeline(deps, diagnostics, packageAggregator, diagnosticFilePath, pkgMap, vulnCount, provider);
     };
 
     // clear all diagnostics
@@ -251,7 +258,7 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, or
     let deps = null;
     try {
         const start = new Date().getTime();
-        deps = await collector.collect(effectiveContents ? effectiveContents : originalContents);
+        deps = await provider.collect(effectiveContents ? effectiveContents : originalContents);
         const end = new Date().getTime();
         connection.console.log(`manifest parse took ${end - start} ms, found ${deps.length} deps`);
     } catch (error) {
@@ -265,11 +272,11 @@ const sendDiagnostics = async (ecosystem: string, diagnosticFilePath: string, or
 
     // map dependencies
     const regexVersion = new RegExp(/^(~|\^)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
-    const validPackages = deps.filter(d => regexVersion.test(d.version.value.trim()));
+    const validPackages = provider.ecosystem === 'golang' ? deps : deps.filter(d => regexVersion.test(d.version.value.trim()));
     const pkgMap = new DependencyMap(validPackages);
 
     // init aggregator
-    let packageAggregator = ecosystem === 'maven' ? new MavenVulnerabilityAggregator() : new NoopVulnerabilityAggregator();
+    let packageAggregator = provider.ecosystem === 'maven' ? new MavenVulnerabilityAggregator(provider) : new NoopVulnerabilityAggregator(provider);
 
     // init tracking components
     const diagnostics = [];
@@ -307,7 +314,7 @@ function sendDiagnosticsWithEffectivePom(uri, originalContents: string) {
                 execSync(`${globalSettings.mvnExecutable} help:effective-pom -Doutput='${effectivePomPath}' --quiet -f '${tmpPomPath}'`);
                 try {
                     const effectiveContents = fs.readFileSync(effectivePomPath, 'utf8');
-                    sendDiagnostics('maven', uri, originalContents, effectiveContents, new PomXml(originalContents, false));
+                    sendDiagnostics(uri, originalContents, effectiveContents, new PomXml(originalContents, false));
                 } catch (error) {
                     server.connection.sendNotification('caError', error.message);
                 }
@@ -315,7 +322,7 @@ function sendDiagnosticsWithEffectivePom(uri, originalContents: string) {
                 // Ignore. Non parseable pom and fall back to original content
                 server.connection.sendNotification('caSimpleWarning', 'Full component analysis cannot be performed until the Pom is valid.');
                 connection.console.info('Unable to parse effective pom. Cause: ' + error.message);
-                sendDiagnostics('maven', uri, originalContents, null, new PomXml(originalContents, true));
+                sendDiagnostics(uri, originalContents, null, new PomXml(originalContents, true));
             } finally {
                 if (fs.existsSync(tmpPomPath)) {
                     fs.rmSync(tmpPomPath);
@@ -329,11 +336,15 @@ function sendDiagnosticsWithEffectivePom(uri, originalContents: string) {
 }
 
 files.on(EventStream.Diagnostics, '^package\\.json$', (uri, name, contents) => {
-    sendDiagnostics('npm', uri, contents, null, new PackageJson());
+    sendDiagnostics(uri, contents, null, new PackageJson());
 });
 
 files.on(EventStream.Diagnostics, '^pom\\.xml$', (uri, name, contents) => {
     sendDiagnosticsWithEffectivePom(uri, contents);
+});
+
+files.on(EventStream.Diagnostics, '^go\\.mod$', (uri, name, contents) => {
+    sendDiagnostics(uri, contents, null, new GoMod());
 });
 
 
@@ -382,8 +393,9 @@ connection.onDidChangeConfiguration(() => {
             // Updating global settings based on the fetched configuration data.
             globalSettings = ({
                 exhortSnykToken: data.redHatDependencyAnalytics.exhortSnykToken,
-                mvnExecutable: data.maven.executable.path || 'mvn',
-                npmExecutable: data.npm.executable.path || 'npm'
+                mvnExecutable: data.mvn.executable.path || 'mvn',
+                npmExecutable: data.npm.executable.path || 'npm',
+                goExecutable: data.go.executable.path || 'go',
             });
         });
     }

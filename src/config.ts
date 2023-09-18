@@ -15,6 +15,7 @@ class Config
     utm_source:               string;
     mvn_executable:           string;
     npm_executable:           string;
+    go_executable:            string;
     exhort_dev_mode:          string;
 
     constructor() {
@@ -27,6 +28,7 @@ class Config
         this.utm_source = process.env.UTM_SOURCE || '';
         this.mvn_executable = process.env.MVN_EXECUTABLE || 'mvn';
         this.npm_executable = process.env.NPM_EXECUTABLE || 'npm';
+        this.go_executable = process.env.GO_EXECUTABLE || 'go';
         this.exhort_dev_mode = process.env.EXHORT_DEV_MODE || 'false';
     }
 }

@@ -84,8 +84,9 @@ export interface IHashableDependency extends IDependency {
   key(): string;
 }
 
-/* Dependency collector interface */
-export interface IDependencyCollector {
+/* Ecosystem provider interface */
+export interface IDependencyProvider {
+  ecosystem: string;
   classes: Array<string>;
   collect(contents: string): Promise<Array<IDependency>>;
 }
@@ -113,7 +114,7 @@ export class Dependency implements IHashableDependency {
   }
 
   key(): string {
-    return `${this.name.value}`;
+    return `${this.name.value}${/^[~^]/.test(this.version.value) ? '' : `@${this.version.value}`}`;
   }
 }
 

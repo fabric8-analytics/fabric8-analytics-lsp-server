@@ -1,10 +1,13 @@
 'use strict';
 
 import jsonAst from 'json-to-ast';
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyProvider, Dependency } from '../collector';
 
-export class DependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ['dependencies']) {}
+export class DependencyProvider implements IDependencyProvider {
+    ecosystem: string;
+    constructor(public classes: Array<string> = ['dependencies']) {
+        this.ecosystem = 'npm';
+    }
 
     async collect(contents: string): Promise<Array<IDependency>> {
       let ast: any;

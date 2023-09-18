@@ -1,10 +1,6 @@
 'use strict';
 
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
-import { config } from '../config';
-import { exec } from 'child_process';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyProvider, Dependency } from '../collector';
 
 /* Please note :: There was issue with semverRegex usage in the code. During run time, it extracts
  * version with 'v' prefix, but this is not be behavior of semver in CLI and test environment.
@@ -16,8 +12,8 @@ function semVerRegExp(line: string): RegExpExecArray {
 }
 
 class NaiveGomodParser {
-    constructor(contents: string, goImports: Set<string>) {
-        this.dependencies = NaiveGomodParser.parseDependencies(contents, goImports);
+    constructor(contents: string) {
+        this.dependencies = NaiveGomodParser.parseDependencies(contents);
     }
 
     dependencies: Array<IDependency>;
@@ -54,13 +50,15 @@ class NaiveGomodParser {
         return replaceDependency;
     }
 
-    static parseDependencies(contents:string, goImports: Set<string>): Array<IDependency> {
+    static parseDependencies(contents:string): Array<IDependency> {
         let replaceMap = new Map<string, IDependency>();
         let goModDeps = contents.split('\n').reduce((dependencies, line, index) => {
+            
             // skip any text after '//'
             if (line.includes('//')) {
                 line = line.split('//')[0];
             }
+
             if (line.includes('=>')) {
                 let replaceEntry = NaiveGomodParser.getReplaceMap(line, index);
                 if (replaceEntry) {
@@ -68,7 +66,6 @@ class NaiveGomodParser {
                 }
             } else {
                 // Not using semver directly, look at comment on import statement.
-                //const version = semverRegex().exec(line)
                 const version = semVerRegExp(line);
                 // Skip lines without version string
                 if (version && version.length > 0) {
@@ -87,42 +84,10 @@ class NaiveGomodParser {
             return dependencies;
         }, []);
 
-        let goPackageDeps = [];
-
-        goImports.forEach(importStatement => {
-            let exactMatchDep: Dependency = null;
-            let moduleMatchDep: Dependency = null;
-            goModDeps.forEach(goModDep => {
-                if (importStatement === goModDep.name.value) {
-                    // Software stack uses the module
-                    exactMatchDep = goModDep;
-                } else if (importStatement.startsWith(goModDep.name.value + '/')) {
-                    // Find longest module name that matches the import statement
-                    if (moduleMatchDep === null) {
-                        moduleMatchDep = goModDep;
-                    } else if (moduleMatchDep.name.value.length < goModDep.name.value.length) {
-                        moduleMatchDep = goModDep;
-                    }
-                }
-            });
-
-            if (exactMatchDep === null && moduleMatchDep !== null) {
-                // Software stack uses a package from the module
-                let replaceDependency = NaiveGomodParser.applyReplaceMap(moduleMatchDep, replaceMap);
-                if (replaceDependency !== moduleMatchDep) {
-                    importStatement = importStatement.replace(moduleMatchDep.name.value, replaceDependency.name.value);
-                }
-                const entry: IKeyValueEntry = new KeyValueEntry(importStatement + '@' + replaceDependency.name.value, replaceDependency.name.position);
-                entry.value = new Variant(ValueType.String, replaceDependency.version.value);
-                entry.value_position = replaceDependency.version.position;
-                goPackageDeps.push(new Dependency(entry));
-            }
-        });
-
         goModDeps = goModDeps.map(goModDep => NaiveGomodParser.applyReplaceMap(goModDep, replaceMap));
 
         // Return modules present in go.mod and packages used in imports.
-        return [...goModDeps, ...goPackageDeps];
+        return [...goModDeps];
     }
 
     parse(): Array<IDependency> {
@@ -130,20 +95,15 @@ class NaiveGomodParser {
     }
 }
 
-/* Process entries found in the go.mod file and collect all dependency
- * related information */
-export class DependencyCollector implements IDependencyCollector {
-    constructor(private manifestFile: string, public classes: Array<string> = ['dependencies']) {
-        this.manifestFile = manifestFile;
+/* Process entries found in the go.mod file */
+export class DependencyProvider implements IDependencyProvider {
+    ecosystem: string;
+    constructor(public classes: Array<string> = ['dependencies']) {
+        this.ecosystem = 'golang';
     }
 
     async collect(contents: string): Promise<Array<IDependency>> {
-        let promiseExec = new Promise<Set<string>>((resolve, reject) => {
-            reject('Golang is not a supported packae manager');
-        });
-        const goImports: Set<string> = await promiseExec;
-        let parser = new NaiveGomodParser(contents, goImports);
+        let parser = new NaiveGomodParser(contents);
         return parser.parse();
     }
-
 }

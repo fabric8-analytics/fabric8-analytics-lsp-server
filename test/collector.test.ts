@@ -12,8 +12,8 @@ describe('Collector util test', () => {
 
   // define manifest dependencies
   const reqDeps: Array<Dependency> = [
-    new Dependency(new KeyValueEntry('mockGtoup1:mockArtifact1', pos, new Variant(ValueType.String, 'mockVersion1'), pos)),
-    new Dependency(new KeyValueEntry('mockGtoup2:mockArtifact2', pos, new Variant(ValueType.String, 'mockVersion2'), pos))
+    new Dependency(new KeyValueEntry('mockGtoup1/mockArtifact1', pos, new Variant(ValueType.String, 'mockVersion1'), pos)),
+    new Dependency(new KeyValueEntry('mockGtoup2/mockArtifact2', pos, new Variant(ValueType.String, 'mockVersion2'), pos))
   ];
 
   // define api response dependencies
@@ -25,7 +25,7 @@ describe('Collector util test', () => {
   it('create map for maven dependecies', async () => {
     const ecosystem = 'maven';
     const map = new DependencyMap(reqDeps);
-    expect(map.get(resDeps[0].ref.split('@')[0].replace(`pkg:${ecosystem}/`, '').replace('/', ':'))).to.eql(reqDeps[0]);
-    expect(map.get(resDeps[1].ref.split('@')[0].replace(`pkg:${ecosystem}/`, '').replace('/', ':'))).to.eql(reqDeps[1]);
+    expect(map.get(resDeps[0].ref.replace(`pkg:${ecosystem}/`, ''))).to.eql(reqDeps[0]);
+    expect(map.get(resDeps[1].ref.replace(`pkg:${ecosystem}/`, ''))).to.eql(reqDeps[1]);
   });
 })

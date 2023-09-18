@@ -1,11 +1,11 @@
 # Red Hat Dependency Analytics LSP Server
 
 ![Release](https://github.com/fabric8-analytics/fabric8-analytics-lsp-server/workflows/Release/badge.svg?branch=master)
-[![NPM Version](https://img.shields.io/npm/v/fabric8-analytics-lsp-server.svg)](https://www.npmjs.com/package/fabric8-analytics-lsp-server)
-![CI Build](https://github.com/fabric8-analytics/fabric8-analytics-lsp-server/workflows/CI%20Build/badge.svg?branch=master)
-[![codecov](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server/branch/master/graph/badge.svg?token=aVThXjheDf)](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server)
+![GitHub Package Version](https://img.shields.io/github/package-json/v/fabric8-analytics/fabric8-analytics-lsp-server/master?logo=github&label=GitHub%20Package)
+![CI](https://github.com/fabric8-analytics/fabric8-analytics-lsp-server/workflows/CI/badge.svg?branch=master)
+[![Codecov](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server/branch/master/graph/badge.svg?token=aVThXjheDf)](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server)
 
-Language Server(LSP) that can analyze your dependencies specified in `package.json` and `pom.xml`.
+Language Server(LSP) that can analyze your dependencies specified in `package.json`, `pom.xml` and `go.mod`.
 
 ## Build
 
@@ -21,9 +21,14 @@ npm test
 
 ## Release
 
-Semantic release are done via Github Actions using `semantic-release`.
-- merging each PR will result with an automatic build of master
-- and a release apatch, minor or major version. You should use correct [commit message](https://github.com/semantic-release/semantic-release#commit-message-format).
+Releases are done via Github Actions using `npm` to publish packages to `GitHub Packages`.
+- Upon merging a pull request into the master branch, an automated staging process for the master branch is initiated.
+- The version specified in the package.json file is adjusted in accordance with the predefined configuration, which may involve bumping it to a prerelease, patch, minor, or major version.
+- Subsequently, the project undergoes the building process.
+- A package is published to GitHub Packages, containing the latest modifications.
+- A commit is made, signifying the changes introduced in the package.
+- A tag is created, reflecting the updated version number.
+- Finally, a release is issued, accompanied by the appropriate version identification.
 
 ## Clients
 

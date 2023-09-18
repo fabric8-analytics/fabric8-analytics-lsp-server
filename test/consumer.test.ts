@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { DependencyProvider as PackageJson } from '../src/providers/package.json';
 import { SecurityEngine, DiagnosticsPipeline } from '../src/consumers';
 import { NoopVulnerabilityAggregator } from '../src/aggregators';
 import { Diagnostic } from 'vscode-languageserver';
@@ -38,7 +39,7 @@ const pkg = {
 describe('Response consumer test', () => {
     it('Consume response without vulnerabilities', () => {
         let diagnostics: Diagnostic[] = [];
-        let packageAggregator = new NoopVulnerabilityAggregator();
+        let packageAggregator = new NoopVulnerabilityAggregator(new PackageJson());
         const dependency = {
             ref: "pkg:npm/MockPkg@1.2.3",
             issues: [
@@ -68,7 +69,7 @@ describe('Response consumer test', () => {
 
     it('Consume response with vulnerabilities', () => {
         let diagnostics: Diagnostic[] = [];
-        let packageAggregator = new NoopVulnerabilityAggregator();
+        let packageAggregator = new NoopVulnerabilityAggregator(new PackageJson());
         const dependency = {
             ref: "pkg:npm/MockPkg@1.2.3",
             issues: [
@@ -103,7 +104,7 @@ describe('Response consumer test', () => {
 
     it('Consume invalid response', () => {
         let diagnostics: Diagnostic[] = [];
-        let packageAggregator = new NoopVulnerabilityAggregator();
+        let packageAggregator = new NoopVulnerabilityAggregator(new PackageJson());
         const dependency = {
             ref: "pkg:npm/MockPkg@1.2.3",
         };
