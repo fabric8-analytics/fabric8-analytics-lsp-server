@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import { DependencyCollector } from '../../src/collector/requirements.txt';
+import { DependencyProvider } from '../../src/providers/requirements.txt';
 
 describe('PyPi requirements.txt parser test', () => {
-    const collector = new DependencyCollector();
+    const collector = new DependencyProvider();
 
     it('tests valid requirements.txt', async () => {
         const deps = await collector.collect(`a==1

@@ -3,6 +3,7 @@
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
+import { IDependencyProvider } from './collector';
 import { Vulnerability } from './vulnerability';
 
 /* VulnerabilityAggregator */
@@ -14,11 +15,15 @@ interface VulnerabilityAggregator {
 /* Noop Vulnerability aggregator class */
 class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
     isNewVulnerability: boolean;
+    provider: IDependencyProvider;
+    constructor(provider: IDependencyProvider) {
+        this.provider = provider;
+    }
 
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Make it a new vulnerability always and set ecosystem for vulnerability.
         this.isNewVulnerability = true;
-        newVulnerability.ecosystem = newVulnerability.ref.split(':')[1].split('/')[0];
+        newVulnerability.provider = this.provider;
 
         return newVulnerability;
     }
@@ -28,6 +33,10 @@ class NoopVulnerabilityAggregator implements VulnerabilityAggregator {
 class MavenVulnerabilityAggregator implements VulnerabilityAggregator {
     isNewVulnerability: boolean;
     vulnerabilities: Map<string, Vulnerability> = new Map<string, Vulnerability>();
+    provider: IDependencyProvider;
+    constructor(provider: IDependencyProvider) {
+        this.provider = provider;
+    }
 
     aggregate(newVulnerability: Vulnerability): Vulnerability {
         // Make it a new vulnerability always and set ecosystem for vulnerability.
@@ -38,7 +47,7 @@ class MavenVulnerabilityAggregator implements VulnerabilityAggregator {
             this.isNewVulnerability = false;
             return v;
         }
-        newVulnerability.ecosystem = 'maven';
+        newVulnerability.provider = this.provider;
         this.vulnerabilities.set(key, newVulnerability);
         return newVulnerability;
     }

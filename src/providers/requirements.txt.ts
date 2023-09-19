@@ -1,6 +1,6 @@
 'use strict';
 
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyProvider, Dependency } from '../collector';
 
 class NaivePyParser {
     constructor(contents: string) {
@@ -37,12 +37,14 @@ class NaivePyParser {
 
 /* Process entries found in the txt files and collect all dependency
  * related information */
-export class DependencyCollector implements IDependencyCollector {
-    constructor(public classes: Array<string> = ['dependencies']) {}
+export class DependencyProvider implements IDependencyProvider {
+    ecosystem: string;
+    constructor(public classes: Array<string> = ['dependencies']) {
+        this.ecosystem = 'python';
+    }
 
     async collect(contents: string): Promise<Array<IDependency>> {
         let parser = new NaivePyParser(contents);
         return parser.parse();
     }
-
 }

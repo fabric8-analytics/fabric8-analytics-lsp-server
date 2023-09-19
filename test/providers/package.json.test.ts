@@ -1,9 +1,8 @@
 import { expect } from 'chai';
-import { DependencyCollector } from '../../src/collector/package.json';
-const jsonToAst = require('json-to-ast');
+import { DependencyProvider } from '../../src/providers/package.json';
 
 describe('NPM package.json parser test', () => {
-    const collector = new DependencyCollector();
+    const collector = new DependencyProvider();
 
     it('tests empty package.json file content', async () => {
         const deps = await collector.collect(``);
@@ -62,7 +61,7 @@ describe('NPM package.json parser test', () => {
     });
 
     it('tests single dependency as devDependencies', async () => {
-        let collector = new DependencyCollector(["devDependencies"]);
+        let collector = new DependencyProvider(["devDependencies"]);
         let deps = await collector.collect(`{
           "devDependencies": {
             "hello": "1.0"
@@ -76,7 +75,7 @@ describe('NPM package.json parser test', () => {
           version: {value: "1.0", position: {line: 3, column: 23}}
         }]);
 
-        collector = new DependencyCollector(["devDependencies", "dependencies"]);
+        collector = new DependencyProvider(["devDependencies", "dependencies"]);
         deps = await collector.collect(`{
           "devDependencies": {
             "hello": "1.0"

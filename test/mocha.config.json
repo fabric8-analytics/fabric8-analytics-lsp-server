@@ -3,5 +3,5 @@
   "fullTrace": true,
   "bail": true,
   "spec": "test/**/*.test.ts",
-  "ignore": ["test/collector/go.mod.test.ts", "test/collector/requirements.txt.test.ts"]
+  "ignore": ["test/collector/requirements.txt.test.ts"]
 }

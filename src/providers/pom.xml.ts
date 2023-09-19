@@ -1,14 +1,16 @@
 'use strict';
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyCollector, Dependency } from '../collector';
+import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyProvider, Dependency } from '../collector';
 import { parse, DocumentCstNode } from '@xml-tools/parser';
 import { buildAst, accept, XMLElement, XMLDocument } from '@xml-tools/ast';
 import { VERSION_TEMPLATE } from '../utils';
 
-export class DependencyCollector implements IDependencyCollector {
+export class DependencyProvider implements IDependencyProvider {
     private xmlDocAst: XMLDocument;
     private originalDeps: Array<XMLElement>;
+    ecosystem: string;
 
     constructor(originalContents: string, enforceVersions: boolean, public classes: Array<string> = ['dependencies']) {
+        this.ecosystem = 'maven';
         const { cst, tokenVector } = parse(originalContents);
         const originalXmlDocAst = buildAst(cst as DocumentCstNode, tokenVector);
         if (originalXmlDocAst.rootElement) {
@@ -62,7 +64,7 @@ export class DependencyCollector implements IDependencyCollector {
 
         const toDependency = (resolved: PomDependency, original: PomDependency): Dependency => {
             const dep: IKeyValueEntry = new KeyValueEntry(
-                `${original.groupId.textContents[0].text}:${original.artifactId.textContents[0].text}`,
+                `${original.groupId.textContents[0].text}/${original.artifactId.textContents[0].text}`,
                 { line: original.element.position.startLine, column: original.element.position.startColumn }
             );
             dep.context_range = {
@@ -101,7 +103,7 @@ export class DependencyCollector implements IDependencyCollector {
         };
 
         const getMapKey = (element: PomDependency): string => {
-            return `${element.groupId.textContents[0].text}:${element.artifactId.textContents[0].text}`;
+            return `${element.groupId.textContents[0].text}/${element.artifactId.textContents[0].text}`;
         };
 
         const buildDependencyMap = (original: Array<PomDependency>, resolved: Array<PomDependency>): Array<PomDependency> => {
