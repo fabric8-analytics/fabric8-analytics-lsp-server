@@ -43,7 +43,7 @@ describe('Noop vulnerability aggregator tests', () => {
 describe('Maven vulnerability aggregator tests', () => {
 
     it('Test Maven aggregator with one vulnerability', async () => {
-        let mavenVulnerabilityAggregator = new MavenVulnerabilityAggregator(new PomXml('', false));
+        let mavenVulnerabilityAggregator = new MavenVulnerabilityAggregator(new PomXml());
         // let vulnerability = new Vulnerability(dummyRange, 'pkg:maven/MockPkg@1.2.3', 0, null, '', '', null, '');
         let vulnerability = new Vulnerability(dummyRange, 'pkg:maven/MockPkg@1.2.3', 0, '');
         let aggVulnerability = mavenVulnerabilityAggregator.aggregate(vulnerability);
@@ -62,7 +62,7 @@ describe('Maven vulnerability aggregator tests', () => {
     });
 
     it('Test Maven aggregator with two identical vulnerability', async () => {
-        let mavenVulnerabilityAggregator = new MavenVulnerabilityAggregator(new PomXml('', false));
+        let mavenVulnerabilityAggregator = new MavenVulnerabilityAggregator(new PomXml());
         // let vulnerability1 = new Vulnerability(dummyRange, 'pkg:maven/MockPkg@1.2.3', 0, null, '', '', null, '');
         let vulnerability1 = new Vulnerability(dummyRange, 'pkg:maven/MockPkg@1.2.3', 0, '');
         let aggVulnerability1 = mavenVulnerabilityAggregator.aggregate(vulnerability1);
@@ -77,7 +77,7 @@ describe('Maven vulnerability aggregator tests', () => {
     });
 
     it('Test Maven aggregator with two different vulnerability', async () => {
-        let mavenVulnerabilityAggregator = new MavenVulnerabilityAggregator(new PomXml('', false));
+        let mavenVulnerabilityAggregator = new MavenVulnerabilityAggregator(new PomXml());
         // let vulnerability1 = new Vulnerability(dummyRange, 'pkg:maven/MockPkg1@1.2.3', 0, null, '', '', null, '');
         let vulnerability1 = new Vulnerability(dummyRange, 'pkg:maven/MockPkg1@1.2.3', 0, '');
         let aggVulnerability1 = mavenVulnerabilityAggregator.aggregate(vulnerability1);

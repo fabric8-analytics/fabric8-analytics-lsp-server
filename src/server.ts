@@ -200,7 +200,7 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
         'EXHORT_MVN_PATH': globalSettings.mvnExecutable,
         'EXHORT_NPM_PATH': globalSettings.npmExecutable,
         'EXHORT_GO_PATH': globalSettings.goExecutable,
-        'EXHORT_DEV_MODE': config.exhort_dev_mode,
+        'EXHORT_DEV_MODE': config.exhort_dev_mode
     };
     if (globalSettings.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
@@ -233,7 +233,7 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     }
 };
 
-const sendDiagnostics = async (diagnosticFilePath: string, originalContents: string, effectiveContents: string, provider: IDependencyProvider) => {
+const sendDiagnostics = async (diagnosticFilePath: string, contents: string, provider: IDependencyProvider) => {
 
     // get dependencies from response before firing diagnostics.   
     const getDepsAndRunPipeline = response => {
@@ -256,7 +256,7 @@ const sendDiagnostics = async (diagnosticFilePath: string, originalContents: str
     let deps = null;
     try {
         const start = new Date().getTime();
-        deps = await provider.collect(effectiveContents ? effectiveContents : originalContents);
+        deps = await provider.collect(contents);
         const end = new Date().getTime();
         connection.console.log(`manifest parse took ${end - start} ms, found ${deps.length} deps`);
     } catch (error) {
@@ -269,9 +269,7 @@ const sendDiagnostics = async (diagnosticFilePath: string, originalContents: str
     }
 
     // map dependencies
-    const regexVersion = new RegExp(/^(~|\^)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
-    const validPackages = provider.ecosystem === 'golang' ? deps : deps.filter(d => regexVersion.test(d.version.value.trim()));
-    const pkgMap = new DependencyMap(validPackages);
+    const pkgMap = new DependencyMap(deps);
 
     // init aggregator
     let packageAggregator = provider.ecosystem === 'maven' ? new MavenVulnerabilityAggregator(provider) : new NoopVulnerabilityAggregator(provider);
@@ -282,7 +280,7 @@ const sendDiagnostics = async (diagnosticFilePath: string, originalContents: str
     const start = new Date().getTime();
         
     // fetch vulnerabilities
-    const request = fetchVulnerabilities(path.basename(diagnosticFilePath), originalContents).then(getDepsAndRunPipeline);
+    const request = fetchVulnerabilities(path.basename(diagnosticFilePath), contents).then(getDepsAndRunPipeline);
     await request;
 
     // report results
@@ -297,52 +295,16 @@ const sendDiagnostics = async (diagnosticFilePath: string, originalContents: str
     });
 };
 
-function sendDiagnosticsWithEffectivePom(uri, originalContents: string) {
-    let tempTarget = uri.replace('file://', '').replaceAll('%20', ' ').replace('pom.xml', '');
-    const effectivePomPath = path.join(tempTarget, 'target', 'effective-pom.xml');
-    const tmpPomPath = path.join(tempTarget, 'target', 'in-memory-pom.xml');
-    if (!fs.existsSync(path.dirname(tmpPomPath))) {
-        fs.mkdirSync(path.dirname(tmpPomPath), { recursive: true});
-    }
-    fs.writeFile(tmpPomPath, originalContents, (error) => {
-        if (error) {
-            server.connection.sendNotification('caError', error);
-        } else {
-            try {
-                execSync(`${globalSettings.mvnExecutable} help:effective-pom -Doutput='${effectivePomPath}' --quiet -f '${tmpPomPath}'`);
-                try {
-                    const effectiveContents = fs.readFileSync(effectivePomPath, 'utf8');
-                    sendDiagnostics(uri, originalContents, effectiveContents, new PomXml(originalContents, false));
-                } catch (error) {
-                    server.connection.sendNotification('caError', error.message);
-                }
-            } catch (error) {
-                // Ignore. Non parseable pom and fall back to original content
-                server.connection.sendNotification('caSimpleWarning', 'Full component analysis cannot be performed until the Pom is valid.');
-                connection.console.info('Unable to parse effective pom. Cause: ' + error.message);
-                sendDiagnostics(uri, originalContents, null, new PomXml(originalContents, true));
-            } finally {
-                if (fs.existsSync(tmpPomPath)) {
-                    fs.rmSync(tmpPomPath);
-                }
-                if (fs.existsSync(effectivePomPath)) {
-                    fs.rmSync(effectivePomPath);
-                }
-            }
-        }
-    });
-}
-
 files.on(EventStream.Diagnostics, '^package\\.json$', (uri, name, contents) => {
-    sendDiagnostics(uri, contents, null, new PackageJson());
+    sendDiagnostics(uri, contents, new PackageJson());
 });
 
 files.on(EventStream.Diagnostics, '^pom\\.xml$', (uri, name, contents) => {
-    sendDiagnosticsWithEffectivePom(uri, contents);
+    sendDiagnostics(uri, contents, new PomXml());
 });
 
 files.on(EventStream.Diagnostics, '^go\\.mod$', (uri, name, contents) => {
-    sendDiagnostics(uri, contents, null, new GoMod());
+    sendDiagnostics(uri, contents, new GoMod());
 });
 
 

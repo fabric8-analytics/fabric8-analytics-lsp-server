@@ -6,16 +6,10 @@ import { VERSION_TEMPLATE } from '../utils';
 
 export class DependencyProvider implements IDependencyProvider {
     private xmlDocAst: XMLDocument;
-    private originalDeps: Array<XMLElement>;
     ecosystem: string;
 
-    constructor(originalContents: string, enforceVersions: boolean, public classes: Array<string> = ['dependencies']) {
+    constructor(public classes: Array<string> = ['dependencies']) {
         this.ecosystem = 'maven';
-        const { cst, tokenVector } = parse(originalContents);
-        const originalXmlDocAst = buildAst(cst as DocumentCstNode, tokenVector);
-        if (originalXmlDocAst.rootElement) {
-            this.originalDeps = this.getXMLDependencies(originalXmlDocAst, enforceVersions);
-        }
     }
 
     private findRootNodes(document: XMLDocument, rootElementName: string): Array<XMLElement> {
@@ -37,7 +31,7 @@ export class DependencyProvider implements IDependencyProvider {
         this.xmlDocAst = buildAst(cst as DocumentCstNode, tokenVector);
     }
 
-    private mapToDependency(dependenciesNode: XMLElement[]): Array<IDependency> {
+    private mapToDependency(deps: XMLElement[]): Array<IDependency> {
         class PomDependency {
             public element: XMLElement;
             public groupId: XMLElement;
@@ -55,121 +49,72 @@ export class DependencyProvider implements IDependencyProvider {
                 return [this.groupId, this.artifactId].find(e => !e.textContents[0]?.text) === undefined;
             }
 
-            isValidWithVersion(): boolean {
-                // none should have a empty text.
-                return [this.groupId, this.artifactId, this.version].find(e => !e.textContents[0]?.text) === undefined;
-            }
-
         };
 
-        const toDependency = (resolved: PomDependency, original: PomDependency): Dependency => {
+        const toDependency = (d: PomDependency): Dependency => {
             const dep: IKeyValueEntry = new KeyValueEntry(
-                `${original.groupId.textContents[0].text}/${original.artifactId.textContents[0].text}`,
-                { line: original.element.position.startLine, column: original.element.position.startColumn }
+                `${d.groupId.textContents[0].text}/${d.artifactId.textContents[0].text}`,
+                { line: d.element.position.startLine, column: d.element.position.startColumn }
             );
             dep.context_range = {
-                start: { line: original.element.position.startLine - 1, character: original.element.position.startColumn - 1 },
-                end: { line: original.element.position.endLine - 1, character: original.element.position.endColumn }
+                start: { line: d.element.position.startLine - 1, character: d.element.position.startColumn - 1 },
+                end: { line: d.element.position.endLine - 1, character: d.element.position.endColumn }
             };
-            dep.value = new Variant(ValueType.String, resolved.version.textContents[0].text);
 
-            if (original.version) {
-                const versionVal = original.version.textContents[0];
+            if (d.version && d.version.textContents.length > 0) {
+                dep.value = new Variant(ValueType.String, d.version.textContents[0].text);
+                const versionVal = d.version.textContents[0];
                 dep.value_position = { line: versionVal.position.startLine, column: versionVal.position.startColumn };
             } else {
+                dep.value = new Variant(ValueType.String, '');
                 dep.value_position = { line: 0, column: 0 };
-                dep.context = dependencyTemplate(original.element);
+                dep.context = dependencyTemplate(d.element);
             }
             return new Dependency(dep);
         };
 
-        const dependencyTemplate = (original: XMLElement): string => {
+        const dependencyTemplate = (dep: XMLElement): string => {
             let template = '<dependency>';
-            let hasVersion = false;
             let idx = 0;
-            let margin = original.textContents[idx].text;
-            original.subElements.forEach(e => {
-                if (e.name === 'version') {
-                    template += `${original.textContents[idx++].text}<${e.name}>${VERSION_TEMPLATE}</${e.name}>`;
-                } else {
-                    template += `${original.textContents[idx++].text}<${e.name}>${e.textContents[0].text}</${e.name}>`;
+            let margin = dep.textContents[idx].text;
+            dep.subElements.forEach(e => {
+                if (e.name !== 'version') {
+                    template += `${dep.textContents[idx++].text}<${e.name}>${e.textContents[0].text}</${e.name}>`;
                 }
             });
-            if (!hasVersion) {
-                template += `${margin}<version>${VERSION_TEMPLATE}</version>`;
-            }
-            template += `${original.textContents[idx].text}</dependency>`;
+            template += `${margin}<version>${VERSION_TEMPLATE}</version>`;
+            template += `${dep.textContents[idx].text}</dependency>`;
             return template;
         };
 
-        const getMapKey = (element: PomDependency): string => {
-            return `${element.groupId.textContents[0].text}/${element.artifactId.textContents[0].text}`;
-        };
+        const purgeTestDeps = (nodes: XMLElement[]): Array<PomDependency> => nodes
+            // no test dependencies
+            .filter(e => !e.subElements.find(e => (e.name === 'scope' && e.textContents[0]?.text === 'test')))
+            .map(e => new PomDependency(e));
 
-        const buildDependencyMap = (original: Array<PomDependency>, resolved: Array<PomDependency>): Array<PomDependency> => {
-            let result = new Array<PomDependency>();
-            if (original) {
-                const visited = new Map<string, number>();
-                let resolvedIdx = 0;
-                original.forEach(o => {
-                    const k = getMapKey(o);
-                    let r = visited.get(k);
-                    if(r === undefined) {
-                        r = resolvedIdx++;
-                        visited.set(k, r);
-                    }
-                    if(resolved[r] !== undefined) {
-                        result.push(resolved[r]);
-                    } else {
-                        result.push(null);
-                    }
-                });
-            }
-            return result;
-        };
+        const validDeps = purgeTestDeps(deps).filter(e => e.isValid());
 
-        if (this.originalDeps) {
-            const toPomDep = (nodes: XMLElement[]): Array<PomDependency> => nodes
-                // no test dependencies
-                .filter(e => !e.subElements.find(e => (e.name === 'scope' && e.textContents[0].text === 'test')))
-                .map(e => new PomDependency(e));
-
-            const resolvedDeps = toPomDep(dependenciesNode).filter(e => e.isValidWithVersion());
-            const origDeps = toPomDep(this.originalDeps).filter(e => e.isValid());
-
-            const resolvedMap = buildDependencyMap(origDeps, resolvedDeps);
-            const result = new Array();
-            origDeps.forEach((d, idx) => {
-                if(resolvedMap[idx] !== null) {
-                    result.push(toDependency(resolvedMap[idx], d));
-                }
-            });
-            return result;
-        }
-        return new Array();
+        const result = new Array();
+        validDeps.forEach((d) => {
+                result.push(toDependency(d));
+        });
+        return result;
     }
 
     async collect(contents: string): Promise<Array<IDependency>> {
         this.parseXml(contents);
-        const deps = this.getXMLDependencies(this.xmlDocAst, true);
+        const deps = this.getXMLDependencies(this.xmlDocAst);
         return this.mapToDependency(deps);
     }
 
-    private getXMLDependencies(doc: XMLDocument, enforceVersions: boolean): Array<XMLElement> {
+    private getXMLDependencies(doc: XMLDocument): Array<XMLElement> {
         let validElementNames = ['groupId', 'artifactId'];
-        if(enforceVersions) {
-            validElementNames.push('version');
-        }
 
         return this.findRootNodes(doc, 'dependencies')
             //must not be a dependency under dependencyManagement
             .filter(e => {
                 const parentElement = e.parent as XMLElement | undefined;
-
-                if (parentElement) {
-                    return parentElement.name !== 'dependencyManagement';
-                }
-                return true;
+                return parentElement?.name !== 'dependencyManagement';
             })
             .map(node => node.subElements)
             .flat(1)
