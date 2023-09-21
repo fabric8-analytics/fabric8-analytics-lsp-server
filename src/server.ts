@@ -179,10 +179,7 @@ const getCAmsg = (deps, diagnostics, vulnCount): string => {
 function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, vulnCount, provider: IDependencyProvider) {
     dependencies.forEach(d => {
         // match dependency with dependency from package map
-        let pkg = pkgMap.get(d.ref.replace(`pkg:${provider.ecosystem}/`, ''));
-        if (pkg === undefined && provider.ecosystem === 'npm') {
-            pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${provider.ecosystem}/`, ''));
-        }
+        let pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${provider.ecosystem}/`, ''));
         // if dependency mached, run diagnostic
         if (pkg !== undefined) {
             let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
@@ -199,11 +196,12 @@ function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFil
 const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     
     // set up configuration options for the component analysis request
-    const options = {};
-    options['EXHORT_MVN_PATH'] = globalSettings.mvnExecutable;
-    options['EXHORT_NPM_PATH'] = globalSettings.npmExecutable;
-    options['EXHORT_GO_PATH'] = globalSettings.goExecutable;
-    options['EXHORT_DEV_MODE'] = config.exhort_dev_mode;
+    const options = {
+        'EXHORT_MVN_PATH': globalSettings.mvnExecutable,
+        'EXHORT_NPM_PATH': globalSettings.npmExecutable,
+        'EXHORT_GO_PATH': globalSettings.goExecutable,
+        'EXHORT_DEV_MODE': config.exhort_dev_mode,
+    };
     if (globalSettings.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
     }

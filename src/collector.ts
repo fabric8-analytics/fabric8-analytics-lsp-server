@@ -114,7 +114,7 @@ export class Dependency implements IHashableDependency {
   }
 
   key(): string {
-    return `${this.name.value}${/^[~^]/.test(this.version.value) ? '' : `@${this.version.value}`}`;
+    return `${this.name.value}`;
   }
 }
 

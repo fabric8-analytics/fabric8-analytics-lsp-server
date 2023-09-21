@@ -52,13 +52,28 @@ class NaiveGomodParser {
 
     static parseDependencies(contents:string): Array<IDependency> {
         let replaceMap = new Map<string, IDependency>();
+        let isExcluded = false;
         let goModDeps = contents.split('\n').reduce((dependencies, line, index) => {
-            
+            // ignore excluded dependencies
+            if (line.includes('exclude')) {
+                if (line.includes('(')) {
+                    isExcluded = true;
+                }
+                return dependencies;
+            }
+            if (isExcluded) {
+                if (line.includes(')')) {
+                    isExcluded = false;
+                }
+                return dependencies;
+            }
+
             // skip any text after '//'
             if (line.includes('//')) {
                 line = line.split('//')[0];
             }
 
+            // stash replacement dependencies for replacement
             if (line.includes('=>')) {
                 let replaceEntry = NaiveGomodParser.getReplaceMap(line, index);
                 if (replaceEntry) {
@@ -83,10 +98,10 @@ class NaiveGomodParser {
             }
             return dependencies;
         }, []);
-
+        // apply replacement dependencies
         goModDeps = goModDeps.map(goModDep => NaiveGomodParser.applyReplaceMap(goModDep, replaceMap));
 
-        // Return modules present in go.mod and packages used in imports.
+        // Return modules present in go.mod.
         return [...goModDeps];
     }
 
