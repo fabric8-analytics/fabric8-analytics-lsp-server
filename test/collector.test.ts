@@ -25,7 +25,7 @@ describe('Collector util test', () => {
   it('create map for maven dependecies', async () => {
     const ecosystem = 'maven';
     const map = new DependencyMap(reqDeps);
-    expect(map.get(resDeps[0].ref.replace(`pkg:${ecosystem}/`, ''))).to.eql(reqDeps[0]);
-    expect(map.get(resDeps[1].ref.replace(`pkg:${ecosystem}/`, ''))).to.eql(reqDeps[1]);
+    expect(map.get(resDeps[0].ref.split('@')[0].replace(`pkg:${ecosystem}/`, ''))).to.eql(reqDeps[0]);
+    expect(map.get(resDeps[1].ref.split('@')[0].replace(`pkg:${ecosystem}/`, ''))).to.eql(reqDeps[1]);
   });
 })

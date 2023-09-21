@@ -391,4 +391,44 @@ describe('Golang go.mod parser test', () => {
       version: { value: 'v2.0.5', position: { line: 8, column: 41 } }
     });
   });
+
+  it('tests exclude statements in go.mod', async () => {
+    const deps = await provider.collect(`
+      module test/data/sample1
+
+      go 1.15
+
+      require (
+        github.com/googleapis/gax-go v1.0.3
+        github.com/googleapis/gax-go/v2 v2.0.5
+        github.com/gogo/protobuf v1.3.0
+        github.com/golang/protobuf v1.3.4
+      )
+
+      exclude (
+        github.com/googleapis/gax-go v1.0.3
+        github.com/googleapis/gax-go/v2 v2.0.5
+      )
+
+      exclude github.com/gogo/protobuf v1.3.0
+
+    `);
+    expect(deps.length).equal(4);
+    expect(deps[0]).is.eql({
+      name: { value: 'github.com/googleapis/gax-go', position: { line: 0, column: 0 } },
+      version: { value: 'v1.0.3', position: { line: 7, column: 38 } }
+    });
+    expect(deps[1]).is.eql({
+      name: { value: 'github.com/googleapis/gax-go/v2', position: { line: 0, column: 0 } },
+      version: { value: 'v2.0.5', position: { line: 8, column: 41 } }
+    });
+    expect(deps[2]).is.eql({
+      name: { value: 'github.com/gogo/protobuf', position: { line: 0, column: 0 } },
+      version: { value: 'v1.3.0', position: { line: 9, column: 34 } }
+    });
+    expect(deps[3]).is.eql({
+      name: { value: 'github.com/golang/protobuf', position: { line: 0, column: 0 } },
+      version: { value: 'v1.3.4', position: { line: 10, column: 36 } }
+    });
+  });
 });
