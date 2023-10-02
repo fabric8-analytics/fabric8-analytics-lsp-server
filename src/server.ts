@@ -5,7 +5,6 @@
 'use strict';
 
 import * as path from 'path';
-import * as fs from 'fs';
 
 import {
     createConnection,
@@ -27,7 +26,6 @@ import {
     TextDocument
 } from 'vscode-languageserver-textdocument';
 
-import { execSync } from 'child_process';
 import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
 
 
@@ -200,7 +198,8 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
         'EXHORT_MVN_PATH': globalSettings.mvnExecutable,
         'EXHORT_NPM_PATH': globalSettings.npmExecutable,
         'EXHORT_GO_PATH': globalSettings.goExecutable,
-        'EXHORT_DEV_MODE': config.exhort_dev_mode
+        'EXHORT_DEV_MODE': config.exhort_dev_mode,
+        'RHDA_TOKEN': config.telemetry_id
     };
     if (globalSettings.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
