@@ -17,6 +17,7 @@ class Config
     npm_executable:           string;
     go_executable:            string;
     exhort_dev_mode:          string;
+    telemetry_id:             string;
 
     constructor() {
         // TODO: this needs to be configurable
@@ -30,6 +31,7 @@ class Config
         this.npm_executable = process.env.NPM_EXECUTABLE || 'npm';
         this.go_executable = process.env.GO_EXECUTABLE || 'go';
         this.exhort_dev_mode = process.env.EXHORT_DEV_MODE || 'false';
+        this.telemetry_id = process.env.TELEMETRY_ID || '';
     }
 }
 
