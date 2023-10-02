@@ -22,9 +22,7 @@ import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator } from './agg
 import { AnalyticsSource } from './vulnerability';
 import { config } from './config';
 import { TextDocumentSyncKind, Connection, DidChangeConfigurationNotification } from 'vscode-languageserver';
-import {
-    TextDocument
-} from 'vscode-languageserver-textdocument';
+import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
 
