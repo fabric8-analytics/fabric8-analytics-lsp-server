@@ -197,7 +197,8 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
         'EXHORT_NPM_PATH': globalSettings.npmExecutable,
         'EXHORT_GO_PATH': globalSettings.goExecutable,
         'EXHORT_DEV_MODE': config.exhort_dev_mode,
-        'RHDA_TOKEN': config.telemetry_id
+        'RHDA_TOKEN': config.telemetry_id,
+        'RHDA_SOURCE': config.utm_source
     };
     if (globalSettings.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
