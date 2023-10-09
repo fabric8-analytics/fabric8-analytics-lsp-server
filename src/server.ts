@@ -16,6 +16,7 @@ import {
 import { DependencyProvider as PackageJson } from './providers/package.json';
 import { DependencyProvider as PomXml } from './providers/pom.xml';
 import { DependencyProvider as GoMod } from './providers/go.mod';
+import { DependencyProvider as RequirementsTxt } from './providers/requirements.txt';
 import { DependencyMap, IDependencyProvider } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator } from './aggregators';
@@ -64,6 +65,10 @@ interface RedhatDependencyAnalyticsSettings {
     mvnExecutable: string;
     npmExecutable: string;
     goExecutable: string;
+    python3Executable: string;
+    pip3Executable: string;
+    pythonExecutable: string;
+    pipExecutable: string;
 }
 
 // Initializing default settings for Red Hat Dependency Analytics
@@ -72,6 +77,10 @@ const defaultSettings: RedhatDependencyAnalyticsSettings = {
     mvnExecutable: config.mvn_executable,
     npmExecutable: config.npm_executable,
     goExecutable: config.go_executable,
+    python3Executable: config.python3_executable,
+    pip3Executable: config.pip3_executable,
+    pythonExecutable: config.python_executable,
+    pipExecutable: config.pip_executable
 };
 
 // Creating a mutable variable to hold the global settings for Red Hat Dependency Analytics.
@@ -196,6 +205,10 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
         'EXHORT_MVN_PATH': globalSettings.mvnExecutable,
         'EXHORT_NPM_PATH': globalSettings.npmExecutable,
         'EXHORT_GO_PATH': globalSettings.goExecutable,
+        'EXHORT_PYTHON3_PATH': globalSettings.python3Executable,
+        'EXHORT_PIP3_PATH': globalSettings.pip3Executable,
+        'EXHORT_PYTHON_PATH': globalSettings.pythonExecutable,
+        'EXHORT_PIP_PATH': globalSettings.pipExecutable,
         'EXHORT_DEV_MODE': config.exhort_dev_mode,
         'RHDA_TOKEN': config.telemetry_id,
         'RHDA_SOURCE': config.utm_source
@@ -227,6 +240,7 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     } catch (error) {
         const errMsg = `fetch error. ${error}`;
         connection.console.warn(errMsg);
+        connection.sendNotification('caSimpleWarning', errMsg);
         return error;
     }
 };
@@ -305,6 +319,9 @@ files.on(EventStream.Diagnostics, '^go\\.mod$', (uri, name, contents) => {
     sendDiagnostics(uri, contents, new GoMod());
 });
 
+files.on(EventStream.Diagnostics, '^requirements\\.txt$', (uri, name, contents) => {
+    sendDiagnostics(uri, contents, new RequirementsTxt());
+});
 
 // TRIGGERS
 let checkDelay;
@@ -327,7 +344,7 @@ connection.onDidChangeTextDocument((params) => {
     clearTimeout(checkDelay);
     checkDelay = setTimeout(() => {
         server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
-    }, 500);
+    }, 3000);
 });
 
 // triggered when document is closed
@@ -354,6 +371,10 @@ connection.onDidChangeConfiguration(() => {
                 mvnExecutable: data.mvn.executable.path || 'mvn',
                 npmExecutable: data.npm.executable.path || 'npm',
                 goExecutable: data.go.executable.path || 'go',
+                python3Executable: data.python3.executable.path || 'python3',
+                pip3Executable: data.pip3.executable.path || 'pip3',
+                pythonExecutable: data.python.executable.path || 'python',
+                pipExecutable: data.pip.executable.path || 'pip'
             });
         });
     }

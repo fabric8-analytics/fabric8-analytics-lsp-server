@@ -16,6 +16,10 @@ class Config
     mvn_executable:           string;
     npm_executable:           string;
     go_executable:            string;
+    python3_executable:       string;
+    pip3_executable:          string;
+    python_executable:        string;
+    pip_executable:           string;
     exhort_dev_mode:          string;
     telemetry_id:             string;
 
@@ -30,6 +34,10 @@ class Config
         this.mvn_executable = process.env.MVN_EXECUTABLE || 'mvn';
         this.npm_executable = process.env.NPM_EXECUTABLE || 'npm';
         this.go_executable = process.env.GO_EXECUTABLE || 'go';
+        this.go_executable = process.env.PYTHON3_EXECUTABLE || 'python3';
+        this.go_executable = process.env.PIP3_EXECUTABLE || 'pip3';
+        this.go_executable = process.env.PYTHON_EXECUTABLE || 'python';
+        this.go_executable = process.env.PIP_EXECUTABLE || 'pip';
         this.exhort_dev_mode = process.env.EXHORT_DEV_MODE || 'false';
         this.telemetry_id = process.env.TELEMETRY_ID || '';
     }

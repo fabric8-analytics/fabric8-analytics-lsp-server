@@ -40,7 +40,7 @@ class NaivePyParser {
 export class DependencyProvider implements IDependencyProvider {
     ecosystem: string;
     constructor(public classes: Array<string> = ['dependencies']) {
-        this.ecosystem = 'python';
+        this.ecosystem = 'pypi';
     }
 
     async collect(contents: string): Promise<Array<IDependency>> {
