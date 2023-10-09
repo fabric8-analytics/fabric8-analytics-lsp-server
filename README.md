@@ -5,7 +5,7 @@
 ![CI](https://github.com/fabric8-analytics/fabric8-analytics-lsp-server/workflows/CI/badge.svg?branch=master)
 [![Codecov](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server/branch/master/graph/badge.svg?token=aVThXjheDf)](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server)
 
-Language Server(LSP) that can analyze your dependencies specified in `package.json`, `pom.xml` and `go.mod`.
+Language Server(LSP) that can analyze your dependencies specified in `package.json`, `pom.xml`, `go.mod` and `requirements.txt`.
 
 ## Build
 
