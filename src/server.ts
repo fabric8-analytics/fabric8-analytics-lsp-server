@@ -62,6 +62,7 @@ connection.onInitialize((params): InitializeResult => {
 // Defining settings for Red Hat Dependency Analytics
 interface RedhatDependencyAnalyticsSettings {
     exhortSnykToken: string;
+    matchManifestVersions: boolean;
     mvnExecutable: string;
     npmExecutable: string;
     goExecutable: string;
@@ -74,6 +75,7 @@ interface RedhatDependencyAnalyticsSettings {
 // Initializing default settings for Red Hat Dependency Analytics
 const defaultSettings: RedhatDependencyAnalyticsSettings = {
     exhortSnykToken: config.exhort_snyk_token,
+    matchManifestVersions: config.match_manifest_versions,
     mvnExecutable: config.mvn_executable,
     npmExecutable: config.npm_executable,
     goExecutable: config.go_executable,
@@ -211,7 +213,8 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
         'EXHORT_PIP_PATH': globalSettings.pipExecutable,
         'EXHORT_DEV_MODE': config.exhort_dev_mode,
         'RHDA_TOKEN': config.telemetry_id,
-        'RHDA_SOURCE': config.utm_source
+        'RHDA_SOURCE': config.utm_source,
+        'MATCH_MANIFEST_VERSIONS': globalSettings.matchManifestVersions
     };
     if (globalSettings.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
@@ -368,6 +371,7 @@ connection.onDidChangeConfiguration(() => {
             // Updating global settings based on the fetched configuration data.
             globalSettings = ({
                 exhortSnykToken: data.redHatDependencyAnalytics.exhortSnykToken,
+                matchManifestVersions: data.redHatDependencyAnalytics.matchManifestVersions,
                 mvnExecutable: data.mvn.executable.path || 'mvn',
                 npmExecutable: data.npm.executable.path || 'npm',
                 goExecutable: data.go.executable.path || 'go',

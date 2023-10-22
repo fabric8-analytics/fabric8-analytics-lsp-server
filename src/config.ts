@@ -8,6 +8,7 @@
 class Config
 {
     exhort_snyk_token:        string;
+    match_manifest_versions:  boolean;
     provide_fullstack_action: boolean;
     forbidden_licenses:       Array<string>;
     no_crypto:                boolean;
@@ -26,6 +27,7 @@ class Config
     constructor() {
         // TODO: this needs to be configurable
         this.exhort_snyk_token = process.env.SNYK_TOKEN || '';
+        this.match_manifest_versions = (process.env.MATCH_MANIFEST_VERSIONS || '') === 'true';
         this.provide_fullstack_action = (process.env.PROVIDE_FULLSTACK_ACTION || '') === 'true';
         this.forbidden_licenses = [];
         this.no_crypto = false;
