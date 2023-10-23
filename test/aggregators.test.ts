@@ -3,7 +3,7 @@ import { Range } from 'vscode-languageserver';
 import { DependencyProvider as PackageJson } from '../src/providers/package.json';
 import { DependencyProvider as PomXml } from '../src/providers/pom.xml';
 import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator } from '../src/aggregators';
-import { Vulnerability } from '../src/vulnerability';
+import { Vulnerability, ANALYTICS_SOURCE } from '../src/vulnerability';
 
 const dummyRange: Range = {
     start: {
@@ -15,8 +15,6 @@ const dummyRange: Range = {
         character: 10
     }
 }
-
-const AnalyticsSource = '\nRed Hat Dependency Analytics Plugin [Powered by Snyk]';;
 
 describe('Noop vulnerability aggregator tests', () => {
 
@@ -31,7 +29,7 @@ describe('Noop vulnerability aggregator tests', () => {
         //     severity: DiagnosticSeverity.Information,
         //     range: dummyRange,
         //     message: msg,
-        //     source: AnalyticsSource,
+        //     source: ANALYTICS_SOURCE,
         // };
 
         expect(noopVulnerabilityAggregator.isNewVulnerability).to.equal(true);
@@ -53,7 +51,7 @@ describe('Maven vulnerability aggregator tests', () => {
         //     severity: DiagnosticSeverity.Information,
         //     range: dummyRange,
         //     message: msg,
-        //     source: AnalyticsSource,
+        //     source: ANALYTICS_SOURCE,
         // };
 
         expect(mavenVulnerabilityAggregator.isNewVulnerability).to.equal(true);

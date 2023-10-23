@@ -24,9 +24,9 @@ export class DependencyProvider implements IDependencyProvider {
               filter(c => this.classes.includes(c.key.value)).
               flatMap(c => c.value.children).
               map(c => {
-                  let entry: IKeyValueEntry = new KeyValueEntry(c.key.value, {line: c.key.loc.start.line, column: c.key.loc.start.column + 1});
+                  const entry: IKeyValueEntry = new KeyValueEntry(c.key.value, {line: c.key.loc.start.line, column: c.key.loc.start.column + 1});
                   entry.value = new Variant(ValueType.String, c.value.value);
-                  entry.value_position = {line: c.value.loc.start.line, column: c.value.loc.start.column + 1};
+                  entry.valuePosition = {line: c.value.loc.start.line, column: c.value.loc.start.column + 1};
                   return new Dependency(entry);
               });
     }

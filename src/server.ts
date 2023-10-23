@@ -8,8 +8,7 @@ import * as path from 'path';
 
 import {
     createConnection,
-    TextDocuments, InitializeResult,
-    CodeLens, CodeAction, CodeActionKind,
+    TextDocuments, InitializeResult, CodeAction, CodeActionKind,
     ProposedFeatures
 } from 'vscode-languageserver/node';
 
@@ -20,7 +19,7 @@ import { DependencyProvider as RequirementsTxt } from './providers/requirements.
 import { DependencyMap, IDependencyProvider } from './collector';
 import { SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
 import { NoopVulnerabilityAggregator, MavenVulnerabilityAggregator } from './aggregators';
-import { AnalyticsSource } from './vulnerability';
+import { ANALYTICS_SOURCE } from './vulnerability';
 import { config } from './config';
 import { TextDocumentSyncKind, Connection, DidChangeConfigurationNotification } from 'vscode-languageserver';
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -30,8 +29,7 @@ import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
 
 enum EventStream {
     Invalid,
-    Diagnostics,
-    CodeLens
+    Diagnostics
 }
 
 // Create a connection for the server, using Node's IPC as a transport.
@@ -45,7 +43,7 @@ let triggerFullStackAnalysis: string;
 let triggerRHRepositoryRecommendationNotification: string;
 let hasConfigurationCapability: boolean = false;
 connection.onInitialize((params): InitializeResult => {
-    let capabilities = params.capabilities;
+    const capabilities = params.capabilities;
     triggerFullStackAnalysis = params.initializationOptions.triggerFullStackAnalysis;
     triggerRHRepositoryRecommendationNotification = params.initializationOptions.triggerRHRepositoryRecommendationNotification;
     hasConfigurationCapability = !!(
@@ -74,15 +72,15 @@ interface RedhatDependencyAnalyticsSettings {
 
 // Initializing default settings for Red Hat Dependency Analytics
 const defaultSettings: RedhatDependencyAnalyticsSettings = {
-    exhortSnykToken: config.exhort_snyk_token,
-    matchManifestVersions: config.match_manifest_versions,
-    mvnExecutable: config.mvn_executable,
-    npmExecutable: config.npm_executable,
-    goExecutable: config.go_executable,
-    python3Executable: config.python3_executable,
-    pip3Executable: config.pip3_executable,
-    pythonExecutable: config.python_executable,
-    pipExecutable: config.pip_executable
+    exhortSnykToken: config.exhortSnykToken,
+    matchManifestVersions: config.matchManifestVersions,
+    mvnExecutable: config.mvnExecutable,
+    npmExecutable: config.npmExecutable,
+    goExecutable: config.goExecutable,
+    python3Executable: config.python3Executable,
+    pip3Executable: config.pip3Executable,
+    pythonExecutable: config.pythonExecutable,
+    pipExecutable: config.pipExecutable
 };
 
 // Creating a mutable variable to hold the global settings for Red Hat Dependency Analytics.
@@ -100,7 +98,7 @@ interface IAnalysisFileHandler {
 
 interface IAnalysisFiles {
     handlers: Array<IAnalysisFileHandler>;
-    file_data: Map<string, string>;
+    fileData: Map<string, string>;
     on(stream: EventStream, matcher: string, cb: IFileHandlerCallback): IAnalysisFiles;
     run(stream: EventStream, uri: string, file: string, contents: string): any;
 }
@@ -114,17 +112,17 @@ class AnalysisFileHandler implements IAnalysisFileHandler {
 
 class AnalysisFiles implements IAnalysisFiles {
     handlers: Array<IAnalysisFileHandler>;
-    file_data: Map<string, string>;
+    fileData: Map<string, string>;
     constructor() {
         this.handlers = [];
-        this.file_data = new Map<string, string>();
+        this.fileData = new Map<string, string>();
     }
     on(stream: EventStream, matcher: string, cb: IFileHandlerCallback): IAnalysisFiles {
         this.handlers.push(new AnalysisFileHandler(matcher, stream, cb));
         return this;
     }
     run(stream: EventStream, uri: string, file: string, contents: string): any {
-        for (let handler of this.handlers) {
+        for (const handler of this.handlers) {
             if (handler.stream === stream && handler.matcher.test(file)) {
                 return handler.callback(uri, file, contents);
             }
@@ -133,35 +131,27 @@ class AnalysisFiles implements IAnalysisFiles {
 }
 
 interface IAnalysisLSPServer {
-    connection: Connection;
+    conn: Connection;
     files: IAnalysisFiles;
 
-    handle_file_event(uri: string, contents: string): void;
-    handle_code_lens_event(uri: string): CodeLens[];
+    handleFileEvent(uri: string, contents: string): void;
 }
 
 class AnalysisLSPServer implements IAnalysisLSPServer {
-    constructor(public connection: Connection, public files: IAnalysisFiles) { }
+    constructor(public conn: Connection, public files: IAnalysisFiles) { }
 
-    handle_file_event(uri: string, contents: string): void {
-        let path_name = new URL(uri).pathname;
-        let file_name = path.basename(path_name);
+    handleFileEvent(uri: string, contents: string): void {
+        const pathName = new URL(uri).pathname;
+        const fileName = path.basename(pathName);
 
-        this.files.file_data[uri] = contents;
+        this.files.fileData[uri] = contents;
 
-        this.files.run(EventStream.Diagnostics, uri, file_name, contents);
-    }
-
-    handle_code_lens_event(uri: string): CodeLens[] {
-        let path_name = new URL(uri).pathname;
-        let file_name = path.basename(path_name);
-        let contents = this.files.file_data[uri];
-        return this.files.run(EventStream.CodeLens, uri, file_name, contents);
+        this.files.run(EventStream.Diagnostics, uri, fileName, contents);
     }
 }
 
-let files: IAnalysisFiles = new AnalysisFiles();
-let server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
+const files: IAnalysisFiles = new AnalysisFiles();
+const server: IAnalysisLSPServer = new AnalysisLSPServer(connection, files);
 
 // total counts of known security vulnerabilities
 class VulnCount {
@@ -186,10 +176,10 @@ const getCAmsg = (deps, diagnostics, vulnCount): string => {
 function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFilePath, pkgMap: DependencyMap, vulnCount, provider: IDependencyProvider) {
     dependencies.forEach(d => {
         // match dependency with dependency from package map
-        let pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${provider.ecosystem}/`, ''));
+        const pkg = pkgMap.get(d.ref.split('@')[0].replace(`pkg:${provider.ecosystem}/`, ''));
         // if dependency mached, run diagnostic
         if (pkg !== undefined) {
-            let pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
+            const pipeline = new DiagnosticsPipeline(SecurityEngine, pkg, config, diagnostics, packageAggregator, diagnosticFilePath);
             pipeline.run(d);
             const secEng = pipeline.item as SecurityEngine;
             vulnCount.issuesCount += secEng.issuesCount;
@@ -200,7 +190,7 @@ function runPipeline(dependencies, diagnostics, packageAggregator, diagnosticFil
 }
 
 // Fetch Vulnerabilities by component analysis API call
-const fetchVulnerabilities = async (fileType: string, reqData: any) => {
+const fetchVulnerabilities = async (fileType: string, reqData: string) => {
     
     // set up configuration options for the component analysis request
     const options = {
@@ -211,9 +201,9 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
         'EXHORT_PIP3_PATH': globalSettings.pip3Executable,
         'EXHORT_PYTHON_PATH': globalSettings.pythonExecutable,
         'EXHORT_PIP_PATH': globalSettings.pipExecutable,
-        'EXHORT_DEV_MODE': config.exhort_dev_mode,
-        'RHDA_TOKEN': config.telemetry_id,
-        'RHDA_SOURCE': config.utm_source,
+        'EXHORT_DEV_MODE': config.exhortDevMode,
+        'RHDA_TOKEN': config.telemetryId,
+        'RHDA_SOURCE': config.utmSource,
         'MATCH_MANIFEST_VERSIONS': globalSettings.matchManifestVersions
     };
     if (globalSettings.exhortSnykToken !== '') {
@@ -223,10 +213,10 @@ const fetchVulnerabilities = async (fileType: string, reqData: any) => {
     try {
 
         // get component analysis in JSON format
-        let componentAnalysisJson = await exhort.componentAnalysis(fileType, reqData, options);
+        const componentAnalysisJson = await exhort.componentAnalysis(fileType, reqData, options);
 
         // check vulnerability provider statuses
-        let ko = new Array();
+        const ko = [];
         componentAnalysisJson.summary.providerStatuses.forEach(ps => {
             if (!ps.ok) {
                 ko.push(ps.provider);
@@ -287,7 +277,7 @@ const sendDiagnostics = async (diagnosticFilePath: string, contents: string, pro
     const pkgMap = new DependencyMap(deps);
 
     // init aggregator
-    let packageAggregator = provider.ecosystem === 'maven' ? new MavenVulnerabilityAggregator(provider) : new NoopVulnerabilityAggregator(provider);
+    const packageAggregator = provider.ecosystem === 'maven' ? new MavenVulnerabilityAggregator(provider) : new NoopVulnerabilityAggregator(provider);
 
     // init tracking components
     const diagnostics = [];
@@ -331,27 +321,27 @@ let checkDelay;
 
 // triggered when document is opened
 connection.onDidOpenTextDocument((params) => {
-    server.handle_file_event(params.textDocument.uri, params.textDocument.text);
+    server.handleFileEvent(params.textDocument.uri, params.textDocument.text);
 });
 
 // triggered when document is saved
 connection.onDidSaveTextDocument((params) => {
     clearTimeout(checkDelay);
-    server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
+    server.handleFileEvent(params.textDocument.uri, server.files.fileData[params.textDocument.uri]);
 });
 
 // triggered when changes have been applied to document
 connection.onDidChangeTextDocument((params) => {
     /* Update internal state for code lenses */
-    server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
+    server.files.fileData[params.textDocument.uri] = params.contentChanges[0].text;
     clearTimeout(checkDelay);
     checkDelay = setTimeout(() => {
-        server.handle_file_event(params.textDocument.uri, server.files.file_data[params.textDocument.uri]);
+        server.handleFileEvent(params.textDocument.uri, server.files.fileData[params.textDocument.uri]);
     }, 3000);
 });
 
 // triggered when document is closed
-connection.onDidCloseTextDocument((params) => {
+connection.onDidCloseTextDocument(() => {
     clearTimeout(checkDelay);
 });
 
@@ -367,7 +357,7 @@ connection.onInitialized(() => {
 connection.onDidChangeConfiguration(() => {
     if (hasConfigurationCapability) {
         // Fetching the workspace configuration from the client.
-        server.connection.workspace.getConfiguration().then((data) => {
+        server.conn.workspace.getConfiguration().then((data) => {
             // Updating global settings based on the fetched configuration data.
             globalSettings = ({
                 exhortSnykToken: data.redHatDependencyAnalytics.exhortSnykToken,
@@ -395,10 +385,10 @@ const fullStackReportAction = (): CodeAction => ({
 
 
 connection.onCodeAction((params): CodeAction[] => {
-    let codeActions: CodeAction[] = [];
+    const codeActions: CodeAction[] = [];
     let hasAnalyticsDiagonostic: boolean = false;
-    for (let diagnostic of params.context.diagnostics) {
-        let codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
+    for (const diagnostic of params.context.diagnostics) {
+        const codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
         if (codeAction) {
             
             if (path.basename(params.textDocument.uri) === 'pom.xml') {
@@ -412,10 +402,10 @@ connection.onCodeAction((params): CodeAction[] => {
 
         }
         if (!hasAnalyticsDiagonostic) {
-            hasAnalyticsDiagonostic = diagnostic.source === AnalyticsSource;
+            hasAnalyticsDiagonostic = diagnostic.source === ANALYTICS_SOURCE;
         }
     }
-    if (config.provide_fullstack_action && hasAnalyticsDiagonostic) {
+    if (config.provideFullstackAction && hasAnalyticsDiagonostic) {
         codeActions.push(fullStackReportAction());
     }
     return codeActions;
