@@ -60,27 +60,27 @@ connection.onInitialize((params): InitializeResult => {
 // Defining settings for Red Hat Dependency Analytics
 interface RedhatDependencyAnalyticsSettings {
     exhortSnykToken: string;
-    matchManifestVersions: boolean;
-    mvnExecutable: string;
-    npmExecutable: string;
-    goExecutable: string;
-    python3Executable: string;
-    pip3Executable: string;
-    pythonExecutable: string;
-    pipExecutable: string;
+    matchManifestVersions: string;
+    exhortMvnPath: string;
+    exhortNpmPath: string;
+    exhortGoPath: string;
+    exhortPython3Path: string;
+    exhortPip3Path: string;
+    exhortPythonPath: string;
+    exhortPipPath: string;
 }
 
 // Initializing default settings for Red Hat Dependency Analytics
 const defaultSettings: RedhatDependencyAnalyticsSettings = {
     exhortSnykToken: config.exhortSnykToken,
     matchManifestVersions: config.matchManifestVersions,
-    mvnExecutable: config.mvnExecutable,
-    npmExecutable: config.npmExecutable,
-    goExecutable: config.goExecutable,
-    python3Executable: config.python3Executable,
-    pip3Executable: config.pip3Executable,
-    pythonExecutable: config.pythonExecutable,
-    pipExecutable: config.pipExecutable
+    exhortMvnPath: config.exhortMvnPath,
+    exhortNpmPath: config.exhortNpmPath,
+    exhortGoPath: config.exhortGoPath,
+    exhortPython3Path: config.exhortPython3Path,
+    exhortPip3Path: config.exhortPip3Path,
+    exhortPythonPath: config.exhortPythonPath,
+    exhortPipPath: config.exhortPipPath
 };
 
 // Creating a mutable variable to hold the global settings for Red Hat Dependency Analytics.
@@ -194,48 +194,40 @@ const fetchVulnerabilities = async (fileType: string, reqData: string) => {
     
     // set up configuration options for the component analysis request
     const options = {
-        'EXHORT_MVN_PATH': globalSettings.mvnExecutable,
-        'EXHORT_NPM_PATH': globalSettings.npmExecutable,
-        'EXHORT_GO_PATH': globalSettings.goExecutable,
-        'EXHORT_PYTHON3_PATH': globalSettings.python3Executable,
-        'EXHORT_PIP3_PATH': globalSettings.pip3Executable,
-        'EXHORT_PYTHON_PATH': globalSettings.pythonExecutable,
-        'EXHORT_PIP_PATH': globalSettings.pipExecutable,
-        'EXHORT_DEV_MODE': config.exhortDevMode,
         'RHDA_TOKEN': config.telemetryId,
         'RHDA_SOURCE': config.utmSource,
-        'MATCH_MANIFEST_VERSIONS': globalSettings.matchManifestVersions
+        'EXHORT_DEV_MODE': config.exhortDevMode,
+        'MATCH_MANIFEST_VERSIONS': globalSettings.matchManifestVersions,
+        'EXHORT_MVN_PATH': globalSettings.exhortMvnPath,
+        'EXHORT_NPM_PATH': globalSettings.exhortNpmPath,
+        'EXHORT_GO_PATH': globalSettings.exhortGoPath,
+        'EXHORT_PYTHON3_PATH': globalSettings.exhortPython3Path,
+        'EXHORT_PIP3_PATH': globalSettings.exhortPip3Path,
+        'EXHORT_PYTHON_PATH': globalSettings.exhortPythonPath,
+        'EXHORT_PIP_PATH': globalSettings.exhortPipPath
     };
     if (globalSettings.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalSettings.exhortSnykToken;
     }
 
-    try {
-
         // get component analysis in JSON format
-        const componentAnalysisJson = await exhort.componentAnalysis(fileType, reqData, options);
+    const componentAnalysisJson = await exhort.componentAnalysis(fileType, reqData, options);
 
-        // check vulnerability provider statuses
-        const ko = [];
-        componentAnalysisJson.summary.providerStatuses.forEach(ps => {
-            if (!ps.ok) {
-                ko.push(ps.provider);
-            }
-        });
-        // issue warning if failed to fetch data from providers
-        if (ko.length !== 0) {
-            const errMsg = `The component analysis couldn't fetch data from the following providers: [${ko}]`;
-            connection.console.warn(errMsg);
-            connection.sendNotification('caSimpleWarning', errMsg);
+    // check vulnerability provider statuses
+    const ko = [];
+    componentAnalysisJson.summary.providerStatuses.forEach(ps => {
+        if (!ps.ok) {
+            ko.push(ps.provider);
         }
-
-        return componentAnalysisJson;
-    } catch (error) {
-        const errMsg = `fetch error. ${error}`;
+    });
+    // issue warning if failed to fetch data from providers
+    if (ko.length !== 0) {
+        const errMsg = `The Component Analysis couldn't fetch data from the following providers: [${ko}]`;
         connection.console.warn(errMsg);
         connection.sendNotification('caSimpleWarning', errMsg);
-        return error;
     }
+
+    return componentAnalysisJson;
 };
 
 const sendDiagnostics = async (diagnosticFilePath: string, contents: string, provider: IDependencyProvider) => {
@@ -285,7 +277,14 @@ const sendDiagnostics = async (diagnosticFilePath: string, contents: string, pro
     const start = new Date().getTime();
         
     // fetch vulnerabilities
-    const request = fetchVulnerabilities(path.basename(diagnosticFilePath), contents).then(getDepsAndRunPipeline);
+    const request = fetchVulnerabilities(path.basename(diagnosticFilePath), contents)
+    .then(getDepsAndRunPipeline)
+    .catch(error => {
+        const errMsg = `Component Analysis error. ${error}`;
+        connection.console.warn(errMsg);
+        connection.sendNotification('caSimpleWarning', errMsg);
+        return;
+    });
     await request;
 
     // report results
@@ -361,14 +360,14 @@ connection.onDidChangeConfiguration(() => {
             // Updating global settings based on the fetched configuration data.
             globalSettings = ({
                 exhortSnykToken: data.redHatDependencyAnalytics.exhortSnykToken,
-                matchManifestVersions: data.redHatDependencyAnalytics.matchManifestVersions,
-                mvnExecutable: data.mvn.executable.path || 'mvn',
-                npmExecutable: data.npm.executable.path || 'npm',
-                goExecutable: data.go.executable.path || 'go',
-                python3Executable: data.python3.executable.path || 'python3',
-                pip3Executable: data.pip3.executable.path || 'pip3',
-                pythonExecutable: data.python.executable.path || 'python',
-                pipExecutable: data.pip.executable.path || 'pip'
+                matchManifestVersions: data.redHatDependencyAnalytics.matchManifestVersions ? 'true' : 'false',
+                exhortMvnPath: data.mvn.executable.path || 'mvn',
+                exhortNpmPath: data.npm.executable.path || 'npm',
+                exhortGoPath: data.go.executable.path || 'go',
+                exhortPython3Path: data.python3.executable.path || 'python3',
+                exhortPip3Path: data.pip3.executable.path || 'pip3',
+                exhortPythonPath: data.python.executable.path || 'python',
+                exhortPipPath: data.pip.executable.path || 'pip'
             });
         });
     }

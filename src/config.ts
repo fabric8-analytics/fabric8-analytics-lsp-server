@@ -7,35 +7,35 @@
 
 class Config
 {
-    exhortSnykToken:        string;
-    matchManifestVersions:  boolean;
-    provideFullstackAction: boolean;
-    utmSource:               string;
-    mvnExecutable:           string;
-    npmExecutable:           string;
-    goExecutable:            string;
-    python3Executable:       string;
-    pip3Executable:          string;
-    pythonExecutable:        string;
-    pipExecutable:           string;
-    exhortDevMode:          string;
+    provideFullstackAction:  boolean;
     telemetryId:             string;
+    utmSource:               string;
+    exhortDevMode:           string;
+    exhortSnykToken:         string;
+    matchManifestVersions:   string;
+    exhortMvnPath:           string;
+    exhortNpmPath:           string;
+    exhortGoPath:            string;
+    exhortPython3Path:       string;
+    exhortPip3Path:          string;
+    exhortPythonPath:        string;
+    exhortPipPath:           string;
 
     constructor() {
-        // TODO: this needs to be configurable
-        this.exhortSnykToken = process.env.SNYK_TOKEN || '';
-        this.matchManifestVersions = (process.env.MATCH_MANIFEST_VERSIONS || '') === 'true';
-        this.provideFullstackAction = (process.env.PROVIDE_FULLSTACK_ACTION || '') === 'true';
-        this.utmSource = process.env.UTM_SOURCE || '';
-        this.mvnExecutable = process.env.MVN_EXECUTABLE || 'mvn';
-        this.npmExecutable = process.env.NPM_EXECUTABLE || 'npm';
-        this.goExecutable = process.env.GO_EXECUTABLE || 'go';
-        this.python3Executable = process.env.PYTHON3_EXECUTABLE || 'python3';
-        this.pip3Executable = process.env.PIP3_EXECUTABLE || 'pip3';
-        this.pythonExecutable = process.env.PYTHON_EXECUTABLE || 'python';
-        this.pipExecutable = process.env.PIP_EXECUTABLE || 'pip';
-        this.exhortDevMode = process.env.EXHORT_DEV_MODE || 'false';
-        this.telemetryId = process.env.TELEMETRY_ID || '';
+        // init child process configuration with parent process environment data
+        this.provideFullstackAction = (process.env.VSCEXT_PROVIDE_FULLSTACK_ACTION || '') === 'true';
+        this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
+        this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
+        this.exhortDevMode = process.env.VSCEXT_EXHORT_DEV_MODE || 'false';
+        this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
+        this.matchManifestVersions = process.env.VSCEXT_MATCH_MANIFEST_VERSIONS;
+        this.exhortMvnPath = process.env.VSCEXT_EXHORT_MVN_PATH || 'mvn';
+        this.exhortNpmPath = process.env.VSCEXT_EXHORT_NPM_PATH || 'npm';
+        this.exhortGoPath = process.env.VSCEXT_EXHORT_GO_PATH || 'go';
+        this.exhortPython3Path = process.env.VSCEXT_EXHORT_PYTHON3_PATH || 'python3';
+        this.exhortPip3Path = process.env.VSCEXT_EXHORT_PIP3_PATH || 'pip3';
+        this.exhortPythonPath = process.env.VSCEXT_EXHORT_PYTHON_PATH || 'python';
+        this.exhortPipPath = process.env.VSCEXT_EXHORT_PIP_PATH || 'pip';
     }
 }
 
