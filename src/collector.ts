@@ -34,27 +34,27 @@ export interface IPosition {
 export interface IKeyValueEntry {
   key: string;
   value: IVariant;
-  key_position: IPosition;
-  value_position: IPosition;
+  keyPosition: IPosition;
+  valuePosition: IPosition;
   context: string;
-  context_range: Range;
+  contextRange: Range;
 }
 
 export class KeyValueEntry implements IKeyValueEntry {
   key: string;
   value: IVariant;
-  key_position: IPosition;
-  value_position: IPosition;
+  keyPosition: IPosition;
+  valuePosition: IPosition;
   context: string;
-  context_range: Range;
+  contextRange: Range;
 
-  constructor(k: string, pos: IPosition, v?: IVariant, v_pos?: IPosition, c?: string, c_range?: Range) {
+  constructor(k: string, pos: IPosition, v?: IVariant, vPos?: IPosition, c?: string, cRange?: Range) {
     this.key = k;
-    this.key_position = pos;
+    this.keyPosition = pos;
     this.value = v;
-    this.value_position = v_pos;
+    this.valuePosition = vPos;
     this.context = c;
-    this.context_range = c_range;
+    this.contextRange = cRange;
   }
 }
 
@@ -99,16 +99,16 @@ export class Dependency implements IHashableDependency {
   constructor(dependency: IKeyValueEntry) {
     this.name = {
       value: dependency.key,
-      position: dependency.key_position
+      position: dependency.keyPosition
     };
     this.version = {
       value: dependency.value.object,
-      position: dependency.value_position
+      position: dependency.valuePosition
     };
-    if (dependency.context && dependency.context_range) {
+    if (dependency.context && dependency.contextRange) {
       this.context = {
         value: dependency.context,
-        range: dependency.context_range
+        range: dependency.contextRange
       };
     }
   }

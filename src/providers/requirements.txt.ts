@@ -23,7 +23,7 @@ class NaivePyParser {
                 const version = (parsedRequirement[1] || '').trim();
                 const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                 entry.value = new Variant(ValueType.String, version);
-                entry.value_position = { line: index + 1, column: req.indexOf(version) + 1 };
+                entry.valuePosition = { line: index + 1, column: req.indexOf(version) + 1 };
                 dependencies.push(new Dependency(entry));
             }
             return dependencies;
@@ -44,7 +44,7 @@ export class DependencyProvider implements IDependencyProvider {
     }
 
     async collect(contents: string): Promise<Array<IDependency>> {
-        let parser = new NaivePyParser(contents);
+        const parser = new NaivePyParser(contents);
         return parser.parse();
     }
 }

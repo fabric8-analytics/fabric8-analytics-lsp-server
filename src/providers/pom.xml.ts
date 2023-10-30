@@ -49,14 +49,14 @@ export class DependencyProvider implements IDependencyProvider {
                 return [this.groupId, this.artifactId].find(e => !e.textContents[0]?.text) === undefined;
             }
 
-        };
+        }
 
         const toDependency = (d: PomDependency): Dependency => {
             const dep: IKeyValueEntry = new KeyValueEntry(
                 `${d.groupId.textContents[0].text}/${d.artifactId.textContents[0].text}`,
                 { line: d.element.position.startLine, column: d.element.position.startColumn }
             );
-            dep.context_range = {
+            dep.contextRange = {
                 start: { line: d.element.position.startLine - 1, character: d.element.position.startColumn - 1 },
                 end: { line: d.element.position.endLine - 1, character: d.element.position.endColumn }
             };
@@ -64,10 +64,10 @@ export class DependencyProvider implements IDependencyProvider {
             if (d.version && d.version.textContents.length > 0) {
                 dep.value = new Variant(ValueType.String, d.version.textContents[0].text);
                 const versionVal = d.version.textContents[0];
-                dep.value_position = { line: versionVal.position.startLine, column: versionVal.position.startColumn };
+                dep.valuePosition = { line: versionVal.position.startLine, column: versionVal.position.startColumn };
             } else {
                 dep.value = new Variant(ValueType.String, '');
-                dep.value_position = { line: 0, column: 0 };
+                dep.valuePosition = { line: 0, column: 0 };
                 dep.context = dependencyTemplate(d.element);
             }
             return new Dependency(dep);
@@ -76,7 +76,7 @@ export class DependencyProvider implements IDependencyProvider {
         const dependencyTemplate = (dep: XMLElement): string => {
             let template = '<dependency>';
             let idx = 0;
-            let margin = dep.textContents[idx].text;
+            const margin = dep.textContents[idx].text;
             dep.subElements.forEach(e => {
                 if (e.name !== 'version') {
                     template += `${dep.textContents[idx++].text}<${e.name}>${e.textContents[0].text}</${e.name}>`;
@@ -89,12 +89,12 @@ export class DependencyProvider implements IDependencyProvider {
 
         const purgeTestDeps = (nodes: XMLElement[]): Array<PomDependency> => nodes
             // no test dependencies
-            .filter(e => !e.subElements.find(e => (e.name === 'scope' && e.textContents[0]?.text === 'test')))
+            .filter(e => !e.subElements.find(elm => (elm.name === 'scope' && elm.textContents[0]?.text === 'test')))
             .map(e => new PomDependency(e));
 
         const validDeps = purgeTestDeps(deps).filter(e => e.isValid());
 
-        const result = new Array();
+        const result = [];
         validDeps.forEach((d) => {
                 result.push(toDependency(d));
         });
@@ -108,7 +108,7 @@ export class DependencyProvider implements IDependencyProvider {
     }
 
     private getXMLDependencies(doc: XMLDocument): Array<XMLElement> {
-        let validElementNames = ['groupId', 'artifactId'];
+        const validElementNames = ['groupId', 'artifactId'];
 
         return this.findRootNodes(doc, 'dependencies')
             //must not be a dependency under dependencyManagement
@@ -120,6 +120,6 @@ export class DependencyProvider implements IDependencyProvider {
             .flat(1)
             .filter(e => e.name === 'dependency')
             // must include all validElementNames
-            .filter(e => e.subElements.filter(e => validElementNames.includes(e.name)).length === validElementNames.length);
+            .filter(e => e.subElements.filter(elm => validElementNames.includes(elm.name)).length === validElementNames.length);
     }
 }

@@ -31,7 +31,7 @@ class NaiveGomodParser {
             const replaceWithIndex = line.lastIndexOf(parts[1]);
             const replaceEntry: IKeyValueEntry = new KeyValueEntry(replaceWith[0].trim(), { line: 0, column: 0 });
             replaceEntry.value = new Variant(ValueType.String, 'v' + replaceWithVersion[0]);
-            replaceEntry.value_position = { line: index + 1, column: (replaceWithIndex + replaceWithVersion.index) };
+            replaceEntry.valuePosition = { line: index + 1, column: (replaceWithIndex + replaceWithVersion.index) };
             const replaceDependency = new Dependency(replaceEntry);
             const isReplaceToVersion: boolean = replaceToVersion && replaceToVersion.length > 0;
             return {key: replaceTo[0].trim() + (isReplaceToVersion ? ('@v' + replaceToVersion[0]) : ''), value: replaceDependency};
@@ -51,7 +51,7 @@ class NaiveGomodParser {
     }
 
     static parseDependencies(contents:string): Array<IDependency> {
-        let replaceMap = new Map<string, IDependency>();
+        const replaceMap = new Map<string, IDependency>();
         let isExcluded = false;
         let goModDeps = contents.split('\n').reduce((dependencies, line, index) => {
             // ignore excluded dependencies
@@ -75,7 +75,7 @@ class NaiveGomodParser {
 
             // stash replacement dependencies for replacement
             if (line.includes('=>')) {
-                let replaceEntry = NaiveGomodParser.getReplaceMap(line, index);
+                const replaceEntry = NaiveGomodParser.getReplaceMap(line, index);
                 if (replaceEntry) {
                     replaceMap.set(replaceEntry.key, replaceEntry.value);
                 }
@@ -90,7 +90,7 @@ class NaiveGomodParser {
                     if (pkgName.length > 0) {
                         const entry: IKeyValueEntry = new KeyValueEntry(pkgName, { line: 0, column: 0 });
                         entry.value = new Variant(ValueType.String, 'v' + version[0]);
-                        entry.value_position = { line: index + 1, column: version.index };
+                        entry.valuePosition = { line: index + 1, column: version.index };
                         // Push all direct and indirect modules present in go.mod (manifest)
                         dependencies.push(new Dependency(entry));
                     }
@@ -118,7 +118,7 @@ export class DependencyProvider implements IDependencyProvider {
     }
 
     async collect(contents: string): Promise<Array<IDependency>> {
-        let parser = new NaiveGomodParser(contents);
+        const parser = new NaiveGomodParser(contents);
         return parser.parse();
     }
 }

@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 import { IDependency } from './collector';
-import { get_range } from './utils';
+import { getRange } from './utils';
 import { Vulnerability } from './vulnerability';
 import { VulnerabilityAggregator } from './aggregators';
 import { Diagnostic, CodeAction } from 'vscode-languageserver';
@@ -15,9 +15,9 @@ interface IBindingDescriptor {
 }
 
 /* Bind & return the part of `obj` as described by `desc` */
-let bind_object = (obj: any, desc: IBindingDescriptor) => {
+const bindObject = (obj: any, desc: IBindingDescriptor) => {
     let bind = obj;
-    for (let elem of desc.path) {
+    for (const elem of desc.path) {
         if (elem in bind) {
             bind = bind[elem];
         } else {
@@ -30,7 +30,7 @@ let bind_object = (obj: any, desc: IBindingDescriptor) => {
 /* Arbitrary metadata consumer interface */
 interface IConsumer {
     refbinding: IBindingDescriptor;
-    ref: any;
+    ref: string;
     consume(data: any): boolean;
 }
 
@@ -72,7 +72,7 @@ class DiagnosticsPipeline implements IPipeline<Vulnerability>
 
     run(data: any): Vulnerability {
         if (this.item.consume(data)) {
-            let vulnerability = this.item.produce();
+            const vulnerability = this.item.produce();
             const aggVulnerability = this.vulnerabilityAggregator.aggregate(vulnerability);
             if (this.vulnerabilityAggregator.isNewVulnerability) {
                 const aggDiagnostic = aggVulnerability.getDiagnostic();
@@ -145,29 +145,29 @@ class AnalysisConsumer implements IConsumer {
     constructor(public config: any) { }
     consume(data: any): boolean {
         if (this.refbinding !== null) {
-            this.ref = bind_object(data, this.refbinding);
+            this.ref = bindObject(data, this.refbinding);
         }
         if (this.issuesBinding !== null) {
-            this.issues = bind_object(data, this.issuesBinding);
+            this.issues = bindObject(data, this.issuesBinding);
             this.issuesCount = this.issues !== null ? this.issues.length : 0;
         }
         // if (this.recommendationBinding !== null) {
-        //     this.recommendation = bind_object(data, this.recommendationBinding);
+        //     this.recommendation = bindObject(data, this.recommendationBinding);
         // }
         // if (this.recommendation !== null && this.recommendationNameBinding !== null) {
-        //     this.recommendationName = bind_object(data, this.recommendationNameBinding);
+        //     this.recommendationName = bindObject(data, this.recommendationNameBinding);
         // }
         // if (this.recommendation !== null && this.recommendationVersionBinding !== null) {
-        //     this.recommendationVersion = bind_object(data, this.recommendationVersionBinding);
+        //     this.recommendationVersion = bindObject(data, this.recommendationVersionBinding);
         // }
         // if (this.remediationsBinding !== null) {
-        //     this.remediations = bind_object(data, this.remediationsBinding);
+        //     this.remediations = bindObject(data, this.remediationsBinding);
         // }
         if (this.highestVulnerabilityBinding !== null) {
-            this.highestVulnerability = bind_object(data, this.highestVulnerabilityBinding);
+            this.highestVulnerability = bindObject(data, this.highestVulnerabilityBinding);
         }
         if (this.highestVulnerability !== null && this.highestVulnerabilitySeverityBinding !== null) {
-            this.highestVulnerabilitySeverity = bind_object(data, this.highestVulnerabilitySeverityBinding);
+            this.highestVulnerabilitySeverity = bindObject(data, this.highestVulnerabilitySeverityBinding);
         }
         return this.ref !== null;
     }
@@ -189,7 +189,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
 
     produce(): Vulnerability {
         return new Vulnerability(
-            get_range(this.context),
+            getRange(this.context),
             this.ref,
             this.issuesCount,
             // this.recommendation,
@@ -202,6 +202,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer {
     }
 }
 
-let codeActionsMap = new Map<string, CodeAction>();
+const codeActionsMap = new Map<string, CodeAction>();
 
 export { DiagnosticsPipeline, SecurityEngine, codeActionsMap };
