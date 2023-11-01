@@ -6,7 +6,7 @@ describe('PyPi requirements.txt parser test', () => {
 
     it('tests valid requirements.txt', async () => {
         const deps = await collector.collect(`a==1
-            b==2.1.1
+            B==2.1.1
             c>=10.1
             d<=20.1.2.3.4.5.6.7.8
         `);
