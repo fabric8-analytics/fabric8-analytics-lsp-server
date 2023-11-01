@@ -2,7 +2,7 @@
 import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyProvider, Dependency } from '../collector';
 import { parse, DocumentCstNode } from '@xml-tools/parser';
 import { buildAst, accept, XMLElement, XMLDocument } from '@xml-tools/ast';
-import { VERSION_TEMPLATE } from '../utils';
+import { VERSION_PLACEHOLDER } from '../constants';
 
 export class DependencyProvider implements IDependencyProvider {
     private xmlDocAst: XMLDocument;
@@ -82,7 +82,7 @@ export class DependencyProvider implements IDependencyProvider {
                     template += `${dep.textContents[idx++].text}<${e.name}>${e.textContents[0].text}</${e.name}>`;
                 }
             });
-            template += `${margin}<version>${VERSION_TEMPLATE}</version>`;
+            template += `${margin}<version>${VERSION_PLACEHOLDER}</version>`;
             template += `${dep.textContents[idx].text}</dependency>`;
             return template;
         };

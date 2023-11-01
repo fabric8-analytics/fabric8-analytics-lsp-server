@@ -3,6 +3,7 @@
  * Licensed under the Apache-2.0 License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
+
 import { Position, Range } from 'vscode-languageserver';
 import { IPositionedString, IPosition, IDependency } from './collector';
 
@@ -36,4 +37,12 @@ export const getRange = (dep: IDependency): Range => {
   
 };
 
-export const VERSION_TEMPLATE: string = '__VERSION__';
+export function isDefined(obj: any, ...keys: string[]): boolean {
+  for (const key of keys) {
+      if (!obj || !obj[key]) {
+          return false;
+      }
+      obj = obj[key];
+  }
+  return true;
+}

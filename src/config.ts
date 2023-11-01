@@ -5,9 +5,10 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-class Config
+export class Config
 {
-    provideFullstackAction:  boolean;
+    triggerFullStackAnalysis:  string;
+    triggerRHRepositoryRecommendationNotification:  string;
     telemetryId:             string;
     utmSource:               string;
     exhortDevMode:           string;
@@ -23,7 +24,8 @@ class Config
 
     constructor() {
         // init child process configuration with parent process environment data
-        this.provideFullstackAction = (process.env.VSCEXT_PROVIDE_FULLSTACK_ACTION || '') === 'true';
+        this.triggerFullStackAnalysis = process.env.VSCEXT_TRIGGER_FULL_STACK_ANALYSIS || '';
+        this.triggerRHRepositoryRecommendationNotification = process.env.VSCEXT_TRIGGER_REDHAT_REPOSITORY_RECOMMENDATION_NOTIFICATION || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortDevMode = process.env.VSCEXT_EXHORT_DEV_MODE || 'false';
@@ -37,8 +39,20 @@ class Config
         this.exhortPythonPath = process.env.VSCEXT_EXHORT_PYTHON_PATH || 'python';
         this.exhortPipPath = process.env.VSCEXT_EXHORT_PIP_PATH || 'pip';
     }
+
+    updateConfig( data: any ) {
+        this.exhortSnykToken = data.redHatDependencyAnalytics.exhortSnykToken;
+        this.matchManifestVersions = data.redHatDependencyAnalytics.matchManifestVersions ? 'true' : 'false';
+        this.exhortMvnPath = data.mvn.executable.path || 'mvn';
+        this.exhortNpmPath = data.npm.executable.path || 'npm';
+        this.exhortGoPath = data.go.executable.path || 'go';
+        this.exhortPython3Path = data.python3.executable.path || 'python3';
+        this.exhortPip3Path = data.pip3.executable.path || 'pip3';
+        this.exhortPythonPath = data.python.executable.path || 'python';
+        this.exhortPipPath = data.pip.executable.path || 'pip';
+    }
 }
 
-const config = new Config();
+const globalConfig = new Config();
 
-export { config };
+export { globalConfig };

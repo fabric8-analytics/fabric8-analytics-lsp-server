@@ -59,7 +59,10 @@ export class KeyValueEntry implements IKeyValueEntry {
 }
 
 export class Variant implements IVariant {
-  constructor(public type: ValueType, public object: any) { }
+  constructor(
+    public type: ValueType, 
+    public object: any
+  ) { }
 }
 
 /* String value with position */
