@@ -28,7 +28,7 @@ class Config
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortDevMode = process.env.VSCEXT_EXHORT_DEV_MODE || 'false';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
-        this.matchManifestVersions = process.env.VSCEXT_MATCH_MANIFEST_VERSIONS;
+        this.matchManifestVersions = process.env.VSCEXT_MATCH_MANIFEST_VERSIONS || 'true';
         this.exhortMvnPath = process.env.VSCEXT_EXHORT_MVN_PATH || 'mvn';
         this.exhortNpmPath = process.env.VSCEXT_EXHORT_NPM_PATH || 'npm';
         this.exhortGoPath = process.env.VSCEXT_EXHORT_GO_PATH || 'go';
