@@ -40,7 +40,7 @@ class AnalysisFileHandler implements IAnalysisFileHandler {
 }
 
 interface IAnalysisFiles {
-    handlers: Array<IAnalysisFileHandler>;
+    handlers: IAnalysisFileHandler[];
     fileData: Map<string, string>;
     on(stream: EventStream, matcher: string, cb: IAnalysisFileHandlerCallback): IAnalysisFiles;
     run(stream: EventStream, uri: string, file: string, contents: string): any;
@@ -48,7 +48,7 @@ interface IAnalysisFiles {
 
 class AnalysisFiles implements IAnalysisFiles {
     constructor(
-        public handlers: Array<IAnalysisFileHandler> = [],
+        public handlers: IAnalysisFileHandler[] = [],
         public fileData: Map<string, string> = new Map<string, string>()
     ) {}
     on(stream: EventStream, matcher: string, cb: IAnalysisFileHandlerCallback): IAnalysisFiles {

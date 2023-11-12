@@ -1,50 +1,47 @@
 'use strict';
 
-import { IKeyValueEntry, KeyValueEntry, Variant, ValueType, IDependency, IDependencyProvider, Dependency } from '../collector';
+import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../collector';
 
-class NaivePyParser {
-    constructor(contents: string) {
-        this.dependencies = NaivePyParser.parseDependencies(contents);
+/* Process entries found in the txt files and collect all dependency
+ * related information */
+export class DependencyProvider extends EcosystemDependencyResolver implements IDependencyProvider {
+    
+    constructor() {
+        super('pypi'); // set ecosystem to 'pypi'
     }
 
-    dependencies: Array<IDependency>;
+    private parseTxtDoc(contents: string): string[] {
+        return contents.split('\n');
+    }
 
-    static parseDependencies(contents:string): Array<IDependency> {
-        const requirements = contents.split('\n');
-        return requirements.reduce((dependencies, req, index) => {
-            // skip any text after #
-            if (req.includes('#')) {
-                req = req.split('#')[0];
-            }
-            const parsedRequirement: Array<string>  = req.split(/[==,>=,<=]+/);
-            const pkgName:string = (parsedRequirement[0] || '').trim();
-            // skip empty lines
-            if (pkgName.length > 0) {
-                const version = (parsedRequirement[1] || '').trim();
-                const entry: IKeyValueEntry = new KeyValueEntry(pkgName.toLowerCase(), { line: 0, column: 0 });
-                entry.value = new Variant(ValueType.String, version);
-                entry.valuePosition = { line: index + 1, column: req.indexOf(version) + 1 };
-                dependencies.push(new Dependency(entry));
+    private parseLine(line: string, index: number): IDependency | null {
+        line = line.split('#')[0].trim(); // Remove comments
+        if (!line) return null; // Skip empty lines
+
+        const lineData: string[]  = line.split(/[==,>=,<=]+/);
+        if (lineData.length !== 2) return null; // Skip invalid lines
+
+        const depName: string = lineData[0].trim().toLowerCase();
+        const depVersion: string = lineData[1].trim();
+
+        return new Dependency(
+            { value: depName, position: { line: 0, column: 0 } },
+            { value: depVersion, position: { line: index + 1, column: line.indexOf(depVersion) + 1 } },
+        );
+    }
+
+    private extractDependenciesFromLines(lines: string[]): IDependency[] {
+        return lines.reduce((dependencies: IDependency[], line: string, index: number) => {
+            const parsedDependency = this.parseLine(line, index);
+            if (parsedDependency) {
+                dependencies.push(parsedDependency);
             }
             return dependencies;
         }, []);
     }
 
-    parse(): Array<IDependency> {
-        return this.dependencies;
-    }
-}
-
-/* Process entries found in the txt files and collect all dependency
- * related information */
-export class DependencyProvider implements IDependencyProvider {
-    ecosystem: string;
-    constructor(public classes: Array<string> = ['dependencies']) {
-        this.ecosystem = 'pypi';
-    }
-
-    async collect(contents: string): Promise<Array<IDependency>> {
-        const parser = new NaivePyParser(contents);
-        return parser.parse();
+    async collect(contents: string): Promise<IDependency[]> {
+        const lines: string[] = this.parseTxtDoc(contents);
+        return this.extractDependenciesFromLines(lines);
     }
 }

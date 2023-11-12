@@ -48,7 +48,7 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
 
     runDiagnostics(dependencies: Map<string, DependencyData[]>) {
         Object.entries(dependencies).map(([ref, dependencyData]) => {
-            const dependency = this.dependencyMap.get(ref.split('@')[0].replace(`pkg:${this.provider.ecosystem}/`, ''));
+            const dependency = this.dependencyMap.get(this.provider.resolveDependencyFromReference(ref).split('@')[0]);
             if (dependency !== undefined) {
                 const vulnerability = new Vulnerability(
                     this.provider,

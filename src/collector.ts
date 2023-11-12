@@ -6,63 +6,10 @@
 
 import { Range } from 'vscode-languageserver';
 
-/* Determine what is the value */
-export enum ValueType {
-  Invalid,
-  String,
-  Integer,
-  Float,
-  Array,
-  Object,
-  Boolean,
-  Null
-}
-
-/* Value variant */
-export interface IVariant {
-  type: ValueType;
-  object: any;
-}
-
 /* Line and column inside the JSON file */
 export interface IPosition {
   line: number;
   column: number;
-}
-
-/* Key/Value entry with positions */
-export interface IKeyValueEntry {
-  key: string;
-  value: IVariant;
-  keyPosition: IPosition;
-  valuePosition: IPosition;
-  context: string;
-  contextRange: Range;
-}
-
-export class KeyValueEntry implements IKeyValueEntry {
-  key: string;
-  value: IVariant;
-  keyPosition: IPosition;
-  valuePosition: IPosition;
-  context: string;
-  contextRange: Range;
-
-  constructor(k: string, pos: IPosition, v?: IVariant, vPos?: IPosition, c?: string, cRange?: Range) {
-    this.key = k;
-    this.keyPosition = pos;
-    this.value = v;
-    this.valuePosition = vPos;
-    this.context = c;
-    this.contextRange = cRange;
-  }
-}
-
-export class Variant implements IVariant {
-  constructor(
-    public type: ValueType, 
-    public object: any
-  ) { }
 }
 
 /* String value with position */
@@ -83,51 +30,40 @@ export interface IDependency {
   context: IPositionedContext;
 }
 
-export interface IHashableDependency extends IDependency {
-  key(): string;
+/* Dependency class that can be created from `IKeyValueEntry` */
+export class Dependency implements IDependency {
+  constructor(
+    public name: IPositionedString,
+    public version: IPositionedString = {} as IPositionedString,
+    public context: IPositionedContext = {} as IPositionedContext,
+  ) {}
+}
+
+export class DependencyMap {
+  mapper: Map<string, IDependency>;
+  constructor(deps: IDependency[]) {
+    this.mapper = new Map(deps.map(d => [d.name.value, d]));
+  }
+
+  public get(key: string): IDependency {
+    return this.mapper.get(key);
+  }
 }
 
 /* Ecosystem provider interface */
 export interface IDependencyProvider {
-  ecosystem: string;
-  classes: Array<string>;
-  collect(contents: string): Promise<Array<IDependency>>;
+  collect(contents: string): Promise<IDependency[]>;
+  resolveDependencyFromReference(ref: string): string;
 }
 
-/* Dependency class that can be created from `IKeyValueEntry` */
-export class Dependency implements IHashableDependency {
-  name: IPositionedString;
-  version: IPositionedString;
-  context: IPositionedContext;
-  constructor(dependency: IKeyValueEntry) {
-    this.name = {
-      value: dependency.key,
-      position: dependency.keyPosition
-    };
-    this.version = {
-      value: dependency.value.object,
-      position: dependency.valuePosition
-    };
-    if (dependency.context && dependency.contextRange) {
-      this.context = {
-        value: dependency.context,
-        range: dependency.contextRange
-      };
-    }
+export class EcosystemDependencyResolver {
+  private ecosystem: string;
+
+  constructor(ecosystem: string) {
+    this.ecosystem = ecosystem;
   }
 
-  key(): string {
-    return `${this.name.value}`;
-  }
-}
-
-export class DependencyMap {
-  mapper: Map<string, IHashableDependency>;
-  constructor(deps: Array<IHashableDependency>) {
-    this.mapper = new Map(deps.map(d => [d.key(), d]));
-  }
-
-  public get(key: string): IHashableDependency {
-    return this.mapper.get(key);
+  resolveDependencyFromReference(ref: string): string {
+    return ref.replace(`pkg:${this.ecosystem}/`, '');
   }
 }
