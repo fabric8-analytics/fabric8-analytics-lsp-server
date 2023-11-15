@@ -10,12 +10,17 @@ import { isDefined } from './utils';
 
 import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
 
-/* Source specification */
+/**
+ * Represents a source object with an ID and dependencies array.
+ */
 interface ISource {
     id: string;
     dependencies: any[];
 }
 
+/**
+ * Implementation of ISource interface.
+ */
 class Source implements ISource {
     constructor(
         public id: string, 
@@ -23,13 +28,18 @@ class Source implements ISource {
     ) {}
 }
 
-/* Dependency Data specification */
+/**
+ * Represents data specification related to a dependency.
+ */
 interface IDependencyData {
     sourceId: string;
     issuesCount: number;
     highestVulnerabilitySeverity: string;
 }
 
+/**
+ * Implementation of IDependencyData interface.
+ */
 class DependencyData implements IDependencyData {
     constructor(
         public sourceId: string,
@@ -38,11 +48,16 @@ class DependencyData implements IDependencyData {
     ) {}
 }
 
-/* Dependency Analysis Response specification */
+/**
+ * Represents the parsed response of Red Hat Dependency Analysis, with dependencies mapped by string keys.
+ */
 interface IAnalysisResponse {
     dependencies: Map<string, DependencyData[]>;
 }
 
+/**
+ * Implementation of IAnalysisResponse interface.
+ */
 class AnalysisResponse implements IAnalysisResponse {
     dependencies: Map<string, DependencyData[]> = new Map<string, DependencyData[]>();
 
@@ -83,9 +98,15 @@ class AnalysisResponse implements IAnalysisResponse {
     }
 }
 
+/**
+ * Performs RHDA component analysis on provided manifest contents and fileType based on ecosystem.
+ * @param fileType - The type of file (e.g., 'pom.xml', 'package.json', 'go.mod', 'requirements.txt').
+ * @param contents - The contents of the manifest file to analyze.
+ * @returns A Promise resolving to an AnalysisResponse object.
+ */
 async function componentAnalysisService (fileType: string, contents: string): Promise<AnalysisResponse> {
     
-    // set up configuration options for the component analysis request
+    // Define configuration options for the component analysis request
     const options = {
         'RHDA_TOKEN': globalConfig.telemetryId,
         'RHDA_SOURCE': globalConfig.utmSource,
@@ -103,8 +124,7 @@ async function componentAnalysisService (fileType: string, contents: string): Pr
         options['EXHORT_SNYK_TOKEN'] = globalConfig.exhortSnykToken;
     }
 
-    // get component analysis as JSON object
-    const componentAnalysisJson = await exhort.componentAnalysis(fileType, contents, options);
+    const componentAnalysisJson = await exhort.componentAnalysis(fileType, contents, options); // Execute component analysis
 
     return new AnalysisResponse(componentAnalysisJson);
 }

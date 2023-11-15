@@ -14,5 +14,9 @@
   "exclude": [
     "node_modules",
     "test"
-  ]
+  ],
+  "typedocOptions": {
+    "entryPoints": ["src/**/*.ts"],
+    "out": "docs"
+  }
 }

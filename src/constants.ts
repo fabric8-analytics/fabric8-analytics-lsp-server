@@ -8,7 +8,11 @@
  * Commonly used constants
  */
 
-// RHDA source
+/**
+ * Default source name for the Red Hat Dependency Analytics extension in diagnostics.
+ */
 export const RHDA_DIAGNOSTIC_SOURCE = '\nRed Hat Dependency Analytics Plugin';
-// version placeholder for dependency template
+/**
+ * Placeholder used as a version for dependency templates.
+ */
 export const VERSION_PLACEHOLDER: string = '__VERSION__';

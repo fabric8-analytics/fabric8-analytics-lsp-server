@@ -5,6 +5,9 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
+/**
+ * Represents the global configuration settings.
+ */
 export class Config
 {
     triggerFullStackAnalysis:  string;
@@ -22,8 +25,10 @@ export class Config
     exhortPythonPath:        string;
     exhortPipPath:           string;
 
+    /**
+     * Initializes a new instance of the Config class with default values from the parent process environment variable data.
+     */
     constructor() {
-        // init child process configuration with parent process environment data
         this.triggerFullStackAnalysis = process.env.VSCEXT_TRIGGER_FULL_STACK_ANALYSIS || '';
         this.triggerRHRepositoryRecommendationNotification = process.env.VSCEXT_TRIGGER_REDHAT_REPOSITORY_RECOMMENDATION_NOTIFICATION || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
@@ -40,6 +45,10 @@ export class Config
         this.exhortPipPath = process.env.VSCEXT_EXHORT_PIP_PATH || 'pip';
     }
 
+    /**
+     * Updates the global configuration with provided data from extension workspace settings.
+     * @param data - The data from extension workspace settings to update the global configuration with.
+     */
     updateConfig( data: any ) {
         this.exhortSnykToken = data.redHatDependencyAnalytics.exhortSnykToken;
         this.matchManifestVersions = data.redHatDependencyAnalytics.matchManifestVersions ? 'true' : 'false';
@@ -53,6 +62,9 @@ export class Config
     }
 }
 
+/**
+ * Represents the global configuration instance based on Config class.
+ */
 const globalConfig = new Config();
 
 export { globalConfig };

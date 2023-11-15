@@ -8,17 +8,32 @@ import { Diagnostic, CodeAction } from 'vscode-languageserver';
 import { DependencyMap, IDependencyProvider } from './collector';
 import { componentAnalysisService, DependencyData } from './componentAnalysis';
 import { Vulnerability } from './vulnerability';
-import { getRange } from './utils';
+import { getRange } from './collector';
 import { connection } from './server';
 import * as path from 'path';
 
-/* Diagnostics Pipeline specification */
+/**
+ * Diagnostics Pipeline specification.
+ */
 interface IDiagnosticsPipeline {
-    clearDiagnostics(): void;
-    reportDiagnostics(): void;
-    runDiagnostics(dependencies: Map<string, DependencyData[]>): void;
+    /**
+     * Clears diagnostics.
+     */
+    clearDiagnostics();
+    /**
+     * Reports diagnostics to the client.
+     */
+    reportDiagnostics();
+    /**
+     * Runs diagnostics on dependencies.
+     * @param dependencies -  A map containing dependency data from exhort.
+     */
+    runDiagnostics(dependencies: Map<string, DependencyData[]>);
 }
 
+/**
+ * Implementation of DiagnosticsPipeline interface.
+ */
 class DiagnosticsPipeline implements IDiagnosticsPipeline {
     private diagnostics: Diagnostic[] = [];
     private vulnCount: number = 0;
@@ -64,7 +79,7 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
             
                 const totalIssuesCount: number = dependencyData.reduce(
                     (sum, currentItem) => sum + currentItem.issuesCount,
-                    0 // Initial value for the sum
+                    0
                 );
                 this.vulnCount += totalIssuesCount;
             }
@@ -73,9 +88,16 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
     }
 }
 
+/**
+ * Performs diagnostics on the provided manifest file contents.
+ * @param diagnosticFilePath - The path to the manifest file.
+ * @param contents - The contents of the manifest file.
+ * @param provider - The dependency provider of the corresponding ecosystem.
+ * @returns A Promise that resolves when diagnostics are completed.
+ */
 async function performDiagnostics(diagnosticFilePath: string, contents: string, provider: IDependencyProvider) {
-
-    // collect dependencies from manifest
+    
+    // collect dependencies from manifest file
     let dependencies = null;
     dependencies = await provider.collect(contents)
         .catch(error => {
@@ -86,17 +108,12 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
             });
             return;
         });
-
-    // map dependencies
     const dependencyMap = new DependencyMap(dependencies);
 
-    // init Diagnostics Pipeline
     const diagnosticsPipeline = new DiagnosticsPipeline(provider, dependencyMap, diagnosticFilePath);
     
-    // clear Diagnostics
     diagnosticsPipeline.clearDiagnostics();
 
-    // execute Component Analysis
     const analysis = componentAnalysisService(path.basename(diagnosticFilePath), contents)
         .then(response => {
             diagnosticsPipeline.runDiagnostics(response.dependencies);
@@ -110,10 +127,12 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
 
     await analysis;
 
-    // report Diagnostics results
     diagnosticsPipeline.reportDiagnostics();
 }
 
-export const codeActionsMap = new Map<string, CodeAction>();
+/**
+ * Map of code actions.
+ */
+const codeActionsMap = new Map<string, CodeAction>();
 
-export { performDiagnostics };
+export { performDiagnostics, codeActionsMap };
