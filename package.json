@@ -24,7 +24,7 @@
     "dist"
   ],
   "dependencies": {
-    "@RHEcosystemAppEng/exhort-javascript-api": "^0.0.2-ea.49",
+    "@RHEcosystemAppEng/exhort-javascript-api": "^0.1.0",
     "@xml-tools/ast": "^5.0.5",
     "@xml-tools/parser": "^1.0.11",
     "json-to-ast": "^2.1.0",
@@ -43,6 +43,7 @@
     "fake-exec": "^1.1.0",
     "mocha": "^10.2.0",
     "nyc": "^15.1.0",
+    "sinon": "^17.0.1",
     "ts-node": "^10.9.1",
     "typedoc": "^0.25.3",
     "typescript": "^5.2.2"

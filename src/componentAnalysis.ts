@@ -86,7 +86,7 @@ class AnalysisResponse implements IAnalysisResponse {
             sources.forEach(source => {
                 source.dependencies.forEach(d => {
                     if (isDefined(d, 'ref') && isDefined(d, 'issues')) {
-                        const dd = new DependencyData(source.id, d.issues.length, isDefined(d, 'highestVulnerability', 'severity') ? d.highestVulnerability.severity : 'UNKNOWN');
+                        const dd = new DependencyData(source.id, d.issues.length, isDefined(d, 'highestVulnerability', 'severity') ? d.highestVulnerability.severity : 'NONE');
                         if (this.dependencies[d.ref] === undefined) {
                             this.dependencies[d.ref] = [];
                         }

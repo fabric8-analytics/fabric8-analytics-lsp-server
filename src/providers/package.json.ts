@@ -11,7 +11,7 @@ import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependen
  * Process entries found in the package.json file.
  */
 export class DependencyProvider extends EcosystemDependencyResolver implements IDependencyProvider {
-    private classes: string[] = ['dependencies'];
+    classes: string[] = ['dependencies'];
 
     constructor() {
         super('npm'); // set ecosystem to 'npm'
@@ -36,10 +36,9 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
                 .filter(c => this.classes.includes(c.key.value))
                 .flatMap(c => c.value.children)
                 .map(c => {
-                    return new Dependency(
-                        { value: c.key.value, position: {line: c.key.loc.start.line, column: c.key.loc.start.column + 1} },
-                        { value: c.value.value, position: {line: c.value.loc.start.line, column: c.value.loc.start.column + 1} },
-                    );
+                    const dep = new Dependency({ value: c.key.value, position: {line: c.key.loc.start.line, column: c.key.loc.start.column + 1} });
+                    dep.version = { value: c.value.value, position: {line: c.value.loc.start.line, column: c.value.loc.start.column + 1} };
+                    return dep;
                 });
     }
 
@@ -49,14 +48,17 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
      * @returns A Promise resolving to an array of IDependency objects representing collected dependencies.
      */
     async collect(contents: string): Promise<IDependency[]> {
+        let ast: jsonAst;
+        
         try {
-            const ast: jsonAst = this.parseJson(contents);
-            return this.mapDependencies(ast);
+            ast = this.parseJson(contents);
         } catch (err) {
             if (err instanceof SyntaxError) {
                 return [];
             }
             throw err;
         }
+
+        return this.mapDependencies(ast);
     }
 }

@@ -31,8 +31,8 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
      * @returns An IDependency object representing the parsed dependency or null if no dependency is found.
      */
     private parseLine(line: string, index: number): IDependency | null {
-        line = line.split('#')[0].trim(); // Remove comments
-        if (!line) { return null; } // Skip empty lines
+        line = line.split('#')[0]; // Remove comments
+        if (!line.trim()) { return null; } // Skip empty lines
 
         const lineData: string[]  = line.split(/[==,>=,<=]+/);
         if (lineData.length !== 2) { return null; } // Skip invalid lines
@@ -40,10 +40,9 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
         const depName: string = lineData[0].trim().toLowerCase();
         const depVersion: string = lineData[1].trim();
 
-        return new Dependency(
-            { value: depName, position: { line: 0, column: 0 } },
-            { value: depVersion, position: { line: index + 1, column: line.indexOf(depVersion) + 1 } },
-        );
+        const dep = new Dependency ({ value: depName, position: { line: 0, column: 0 } });
+        dep.version = { value: depVersion, position: { line: index + 1, column: line.indexOf(depVersion) + 1 } };
+        return dep;
     }
 
     /**

@@ -107,12 +107,6 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
                 { value: `${d.groupId.textContents[0].text}/${d.artifactId.textContents[0].text}`, 
                     position: { line: d.element.position.startLine, column: d.element.position.startColumn } },
             );        
-            
-            dep.context = { value: '', range: {
-                    start: { line: d.element.position.startLine - 1, character: d.element.position.startColumn - 1 },
-                    end: { line: d.element.position.endLine - 1, character: d.element.position.endColumn }
-                },
-            };
 
             if (d.version && d.version.textContents.length > 0) {
                 const versionVal = d.version.textContents[0];
@@ -121,11 +115,11 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
                     position: { line: versionVal.position.startLine, column: versionVal.position.startColumn },
                 };
             } else {
-                dep.version = {
-                    value: '',
-                    position: { line: 0, column: 0 },
+                dep.context = { value: dependencyTemplate(d.element), range: {
+                    start: { line: d.element.position.startLine - 1, character: d.element.position.startColumn - 1 },
+                    end: { line: d.element.position.endLine - 1, character: d.element.position.endColumn }
+                    },
                 };
-                dep.context.value = dependencyTemplate(d.element);
             }
 
             return dep;

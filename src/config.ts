@@ -11,7 +11,6 @@
 export class Config
 {
     triggerFullStackAnalysis:  string;
-    triggerRHRepositoryRecommendationNotification:  string;
     telemetryId:             string;
     utmSource:               string;
     exhortDevMode:           string;
@@ -30,7 +29,6 @@ export class Config
      */
     constructor() {
         this.triggerFullStackAnalysis = process.env.VSCEXT_TRIGGER_FULL_STACK_ANALYSIS || '';
-        this.triggerRHRepositoryRecommendationNotification = process.env.VSCEXT_TRIGGER_REDHAT_REPOSITORY_RECOMMENDATION_NOTIFICATION || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortDevMode = process.env.VSCEXT_EXHORT_DEV_MODE || 'false';

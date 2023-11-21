@@ -5,6 +5,7 @@
 'use strict';
 
 import { Range } from 'vscode-languageserver';
+import { isDefined } from './utils';
 
 /**
  * Represents a position inside the manifest file with line and column information.
@@ -43,10 +44,11 @@ export interface IDependency {
  * Represents a dependency and implements the IDependency interface.
  */
 export class Dependency implements IDependency {
+  public version: IPositionedString
+  public context: IPositionedContext
+  
   constructor(
-    public name: IPositionedString,
-    public version: IPositionedString = {} as IPositionedString,
-    public context: IPositionedContext = {} as IPositionedContext,
+    public name: IPositionedString
   ) {}
 }
 
@@ -56,8 +58,9 @@ export class Dependency implements IDependency {
  * @returns The range within the text document that represents the dependency.
  */
 export function getRange (dep: IDependency): Range {
-  const pos: IPosition = dep.version.position;
-  if (pos.line !== 0) {
+  
+  if (isDefined(dep, 'version', 'position')) {
+    const pos: IPosition = dep.version.position;
     const length = dep.version.value.length;
     return {
       start: {
@@ -123,7 +126,7 @@ export class EcosystemDependencyResolver {
   }
 
   /**
-   * RResolves a dependency reference to its actual name in the specified ecosystem.
+   * Resolves a dependency reference in a specified ecosystem to its name and version string.
    * @param ref - The reference string to resolve.
    * @returns The resolved name of the dependency.
    */

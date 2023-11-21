@@ -73,7 +73,6 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
      */
     private registerReplacement(line: string, index: number) {
         const lineData: string[] = line.split('=>');
-        if (lineData.length !== 2) { return; }
 
         let originalDepData = DependencyProvider.getDependencyData(lineData[0]);
         const replacementDepData = DependencyProvider.getDependencyData(lineData[1]);
@@ -81,11 +80,9 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
         if (!originalDepData) { originalDepData = {name: DependencyProvider.clean(lineData[0]), version: null, index: null}; }
         if (!replacementDepData) { return; }
 
-        const replaceDependency = new Dependency(
-            { value: replacementDepData.name, position: { line: 0, column: 0 } },
-            { value: 'v' + replacementDepData.version, position: { line: index + 1, column: (line.lastIndexOf(lineData[1]) + replacementDepData.index) } },
-        );
-
+        const replaceDependency = new Dependency({ value: replacementDepData.name, position: { line: 0, column: 0 } });
+        replaceDependency.version = { value: 'v' + replacementDepData.version, position: { line: index + 1, column: (line.lastIndexOf(lineData[1]) + replacementDepData.index) } };
+        
         this.replacementMap.set(originalDepData.name + (originalDepData.version ? ('@v' + originalDepData.version) : ''), replaceDependency); 
     }
 
@@ -109,10 +106,9 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
         const depData = DependencyProvider.getDependencyData(line);
         if (!depData) { return null; }
 
-        return new Dependency(
-            { value: depData.name, position: { line: 0, column: 0 } },
-            { value: 'v' + depData.version, position: { line: index + 1, column: depData.index } },
-        );
+        const dep =  new Dependency({ value: depData.name, position: { line: 0, column: 0 } });
+        dep.version = { value: 'v' + depData.version, position: { line: index + 1, column: depData.index } };
+        return dep;
     }
 
     /**

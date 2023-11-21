@@ -130,9 +130,4 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
     diagnosticsPipeline.reportDiagnostics();
 }
 
-/**
- * Map of code actions.
- */
-const codeActionsMap = new Map<string, CodeAction>();
-
-export { performDiagnostics, codeActionsMap };
+export { performDiagnostics };

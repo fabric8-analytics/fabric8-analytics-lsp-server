@@ -5,42 +5,22 @@
 'use strict';
 
 import { CodeAction, CodeActionKind, Diagnostic } from 'vscode-languageserver/node';
-import { codeActionsMap } from './diagnosticsHandler';
 import { globalConfig } from './config';
 import { RHDA_DIAGNOSTIC_SOURCE } from './constants';
 
 /**
  * Retrieves code actions based on diagnostics and file type.
  * @param diagnostics - An array of available diagnostics.
- * @param fileType - The type of the file based on ecosystem (e.g., 'pom.xml').
  * @returns An array of CodeAction objects to be made available to the user.
  */
-function getDiagnosticsCodeActions( diagnostics: Diagnostic[], fileType: string ): CodeAction[] {
+function getDiagnosticsCodeActions(diagnostics: Diagnostic[]): CodeAction[] {
+    const hasRhdaDiagonostic = diagnostics.some(diagnostic => diagnostic.source === RHDA_DIAGNOSTIC_SOURCE);
     const codeActions: CodeAction[] = [];
-    let hasRhdaDiagonostic: boolean = false;
-    
-    for (const diagnostic of diagnostics) {
-        const codeAction = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
-        if (codeAction) {
-            
-            if (fileType === 'pom.xml') {
-                // add Red Hat repository recommendation command to action
-                codeAction.command = {
-                title: 'RedHat repository recommendation',
-                command: globalConfig.triggerRHRepositoryRecommendationNotification,
-                };   
-            }
 
-            codeActions.push(codeAction);
-
-        }
-        if (!hasRhdaDiagonostic) {
-            hasRhdaDiagonostic = diagnostic.source === RHDA_DIAGNOSTIC_SOURCE;
-        }
-    }
     if (globalConfig.triggerFullStackAnalysis && hasRhdaDiagonostic) {
         codeActions.push(generateFullStackAnalysisAction());
     }
+
     return codeActions;
 }
 

@@ -3,242 +3,262 @@
 import { expect } from 'chai';
 import { DependencyProvider } from '../../src/providers/pom.xml';
 
-describe('Maven pom.xml parser test', () => {
+describe('Java Maven pom.xml parser test', () => {
+    let dependencyProvider: DependencyProvider;
+
+    beforeEach(() => {
+        dependencyProvider = new DependencyProvider();
+    });
 
     it('tests pom.xml with empty string', async () => {
-        const pom = `
-        `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps.length).equal(0);
+        const pom = ``;
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([]);
     });
 
     it('tests pom.xml with empty project', async () => {
-        const pom = `<project>
+        const pom = `
+            <project>
 
-        </project>
+            </project>
        `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps.length).equal(0);
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([]);
     });
 
-    it('tests pom.xml with empty project + dependencies', async () => {
-        const pom = `<project>
-            <dependencies>
+    it('tests pom.xml with empty dependencies', async () => {
+        const pom = `
+            <project>
+                <dependencies>
 
-            </dependencies>
-        </project>
+                </dependencies>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps.length).equal(0);
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([]);
     });    
 
     it('tests valid pom.xml', async () => {
         const pom = `
-        <project>
-            <dependencies>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version>2.3</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                    <version>2.4</version>
-                </dependency>
-            </dependencies>
-         </project>
+            <project>
+                <dependencies>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        <version>2.3</version>
+                        <scope>test</scope>
+                    </dependency>
+                    <dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                        <version>2.4</version>
+                    </dependency>
+                </dependencies>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps).is.eql([{
-            name: { value: 'foo/bar', position: { line: 10, column: 17 } },
-            version: { value: '2.4', position: { line: 13, column: 30 } },
-        }]);
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([
+            {
+                name: { value: 'foo/bar', position: { line: 10, column: 21 } },
+                version: { value: '2.4', position: { line: 13, column: 34 } },
+            }
+        ]);
     });
 
-    it('highlights duplicate dependencies', async () => {
+    it('tests duplicate dependencies', async () => {
         const pom = `
-        <project>
-            <dependencies>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version>2.3</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                    <version>2.4</version>
-                </dependency>
-                <dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                    <version>2.4</version>
-                </dependency>
-            </dependencies>
-         </project>
+            <project>
+                <dependencies>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        <version>2.3</version>
+                        <scope>test</scope>
+                    </dependency>
+                    <dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                        <version>2.4</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                        <version>2.4</version>
+                    </dependency>
+                </dependencies>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps).is.eql([{
-            name: { value: 'foo/bar', position: { line: 10, column: 17 } },
-            version: { value: '2.4', position: { line: 13, column: 30 } },
-        },{
-            name: { value: 'foo/bar', position: { line: 15, column: 17 } },
-            version: { value: '2.4', position: { line: 18, column: 30 } },
-        }]);
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([
+            {
+                name: { value: 'foo/bar', position: { line: 10, column: 21 } },
+                version: { value: '2.4', position: { line: 13, column: 34 } },
+            },
+            {
+                name: { value: 'foo/bar', position: { line: 15, column: 21 } },
+                version: { value: '2.4', position: { line: 18, column: 34 } },
+            }
+        ]);
     });
 
-    it('highlights duplicate dependencies when one has version', async () => {
+    it('tests duplicate dependencies when only one does not specify a version', async () => {
         const pom = `
-        <project>
-            <dependencies>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version>2.3</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                    <version>2.4</version>
-                </dependency>
-                <dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                </dependency>
-            </dependencies>
-         </project>
+            <project>
+                <dependencies>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        <version>2.3</version>
+                        <scope>test</scope>
+                    </dependency>
+                    <dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                        <version>2.4</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                    </dependency>
+                </dependencies>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps).is.eql([{
-            name: { value: 'foo/bar', position: { line: 10, column: 17 } },
-            version: { value: '2.4', position: { line: 13, column: 30 } },
-        },{
-            name: { value: 'foo/bar', position: { line: 15, column: 17 } },
-            version: { value: '', position: { line: 0, column: 0 } },
-            context: { value: `<dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                    <version>__VERSION__</version>
-                </dependency>`,
-                range: {
-                    end: {
-                        character: 29,
-                        line: 17
-                    },
-                    start: {
-                        character: 16,
-                        line: 14
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([
+            {
+                name: { value: 'foo/bar', position: { line: 10, column: 21 } },
+                version: { value: '2.4', position: { line: 13, column: 34 } },
+            },
+            {
+                name: { value: 'foo/bar', position: { line: 15, column: 21 } },
+                context: { value: 
+                    `<dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                        <version>__VERSION__</version>
+                    </dependency>`,
+                    range: {
+                        end: {
+                            character: 33,
+                            line: 17
+                        },
+                        start: {
+                            character: 20,
+                            line: 14
+                        }
                     }
                 }
             }
-        }]);
+        ]);
     });
 
-    it('highlights duplicate dependencies when none has version', async () => {
+    it('test duplicate dependencies where none specify a version', async () => {
         const pom = `
-        <project>
-            <dependencies>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version>2.3</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                </dependency>
-            </dependencies>
-         </project>
+            <project>
+                <dependencies>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        <version>2.3</version>
+                        <scope>test</scope>
+                    </dependency>
+                    <dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                    </dependency>
+                    <dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                    </dependency>
+                </dependencies>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps).is.eql([{
-            name: { value: 'foo/bar', position: { line: 10, column: 17 } },
-            version: { value: '', position: { line: 0, column: 0 } },
-            context: { value: `<dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                    <version>__VERSION__</version>
-                </dependency>`,
-                range: {
-                    end: {
-                        character: 29,
-                        line: 12
-                    },
-                    start: {
-                        character: 16,
-                        line: 9
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([
+            {
+                name: { value: 'foo/bar', position: { line: 10, column: 21 } },
+                context: { value: 
+                    `<dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                        <version>__VERSION__</version>
+                    </dependency>`,
+                    range: {
+                        end: {
+                            character: 33,
+                            line: 12
+                        },
+                        start: {
+                            character: 20,
+                            line: 9
+                        }
+                    }
+                }
+            },
+            {
+                name: { value: 'foo/bar', position: { line: 14, column: 21 } },
+                context: { value: 
+                    `<dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                        <version>__VERSION__</version>
+                    </dependency>`,
+                    range: {
+                        end: {
+                            character: 33,
+                            line: 16
+                        },
+                        start: {
+                            character: 20,
+                            line: 13
+                        }
                     }
                 }
             }
-        },{
-            name: { value: 'foo/bar', position: { line: 14, column: 17 } },
-            version: { value: '', position: { line: 0, column: 0 } },
-            context: { value: 
-                `<dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                    <version>__VERSION__</version>
-                </dependency>`,
-                range: {
-                    end: {
-                        character: 29,
-                        line: 16
-                    },
-                    start: {
-                        character: 16,
-                        line: 13
-                    }
-                }
-            }
-        }]);
+        ]);
     });
 
     it('tests pom.xml with multiple dependencies', async () => {
         const pom = `
-        <project>
-            <plugins>
+            <project>
+                <plugins>
+                    <dependencies>
+                        <dependency>
+                            <groupId>plugins</groupId>
+                            <artifactId>a</artifactId>
+                            <version>2.3</version>
+                        </dependency>
+                    </dependencies>
+                </plugins>
                 <dependencies>
                     <dependency>
-                        <groupId>plugins</groupId>
+                        <groupId>dep</groupId>
                         <artifactId>a</artifactId>
-                        <version>2.3</version>
+                        <version>10.1</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                        <version>2.4</version>
                     </dependency>
                 </dependencies>
-            </plugins>
-            <dependencies>
-                <dependency>
-                    <groupId>dep</groupId>
-                    <artifactId>a</artifactId>
-                    <version>10.1</version>
-                </dependency>
-                <dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                    <version>2.4</version>
-                </dependency>
-            </dependencies>
-         </project>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps).is.eql([{
-            name: { value: 'plugins/a', position: { line: 5, column: 21 } },
-            version: { value: '2.3', position: { line: 8, column: 34 } }
-        }, {
-            name: { value: 'dep/a', position: { line: 13, column: 17 } },
-            version: { value: '10.1', position: { line: 16, column: 30 } }
-        }, {
-            name: { value: 'foo/bar', position: { line: 18, column: 17 } },
-            version: { value: '2.4', position: { line: 21, column: 30 } }
-        }]);
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([
+            {
+                name: { value: 'plugins/a', position: { line: 5, column: 25 } },
+                version: { value: '2.3', position: { line: 8, column: 38 } }
+            },
+            {
+                name: { value: 'dep/a', position: { line: 13, column: 21 } },
+                version: { value: '10.1', position: { line: 16, column: 34 } }
+            },
+            {
+                name: { value: 'foo/bar', position: { line: 18, column: 21 } },
+                version: { value: '2.4', position: { line: 21, column: 34 } }
+            }
+        ]);
     });
 
     it('tests pom.xml with only test scope', async () => {
@@ -270,228 +290,234 @@ describe('Maven pom.xml parser test', () => {
                 </dependencies>
             </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps.length).equal(0);
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([]);
     });
 
     it('tests pom.xml with invalid dependencies', async () => {
         const pom = `
-        <project>
-            <dependencies>
-                <dependency>
-                    <groupId></groupId>
-                    <artifactId>ab-cd</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId></artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>c</groupId>
-                </dependency>
-                <dependency>
-                    <artifactId></artifactId>
-                </dependency>
-            </dependencies>
-         </project>
+            <project>
+                <dependencies>
+                    <dependency>
+                        <groupId></groupId>
+                        <artifactId>ab-cd</artifactId>
+                    </dependency>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId></artifactId>
+                    </dependency>
+                    <dependency>
+                        <groupId>c</groupId>
+                    </dependency>
+                    <dependency>
+                        <artifactId></artifactId>
+                    </dependency>
+                </dependencies>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps.length).equal(0);
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([]);
     });
 
     it('tests pom.xml with invalid dependency versions', async () => {
         const pom = `
-        <project>
-            <dependencies>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version></version>
-                </dependency>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    </version>
-                </dependency>
-            </dependencies>
-         </project>
+            <project>
+                <dependencies>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        <version></version>
+                    </dependency>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        </version>
+                    </dependency>
+                </dependencies>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps).is.eql([{
-            name: { value: 'c/ab-cd', position: { line: 4, column: 17 } },
-            version: { value: '', position: { line: 0, column: 0 } },
-            context: { value: 
-                `<dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version>__VERSION__</version>
-                    </dependency>`,
-                range: {
-                    end: {
-                        character: 29,
-                        line: 7
-                    },
-                    start: {
-                        character: 16,
-                        line: 3
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([
+            {
+                name: { value: 'c/ab-cd', position: { line: 4, column: 21 } },
+                context: { value: 
+                    `<dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        <version>__VERSION__</version>
+                        </dependency>`,
+                    range: {
+                        end: {
+                            character: 33,
+                            line: 7
+                        },
+                        start: {
+                            character: 20,
+                            line: 3
+                        }
+                    }
+                }
+            },
+            {
+                name: { value: 'c/ab-cd', position: { line: 9, column: 21 } },
+                context: { value: 
+                    `<dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        <version>__VERSION__</version>
+                        </dependency>`,
+                    range: {
+                        end: {
+                            character: 34,
+                            line: 11
+                        },
+                        start: {
+                            character: 20,
+                            line: 8
+                        }
                     }
                 }
             }
-        },{
-            name: { value: 'c/ab-cd', position: { line: 9, column: 17 } },
-            version: { value: '', position: { line: 0, column: 0 } },
-            context: { value: 
-                `<dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version>__VERSION__</version>
-                    </dependency>`,
-                range: {
-                    end: {
-                        character: 30,
-                        line: 11
-                    },
-                    start: {
-                        character: 16,
-                        line: 8
-                    }
-                }
-            }
-        }]);
+        ]);
     });
 
     it('tests pom.xml with dependencyManagement scope', async () => {
         const pom = `
-        <project>
-            <dependencyManagement>
-                <dependency>
-                    <!-- Dependency with scope as runtime -->
-                    <groupId>{a.groupId}</groupId>
-                    <artifactId>bc</artifactId>
-                    <version>{a.version}</version>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <!-- Dependency with scope as compile -->
-                    <groupId>a</groupId>
-                    <artifactId>b-c</artifactId>
-                    <version>1.2.3</version>
-                    <scope>compile</scope>
-                    <optional>true</optional>
-                </dependency>
-            </dependencyManagement>
-            <dependencies>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version>2.3</version>
-                </dependency>
-                <dependency>
-                    <groupId>foo</groupId>
-                    <artifactId>bar</artifactId>
-                    <version>2.4</version>
-                </dependency>
-            </dependencies>
-         </project>
+            <project>
+                <dependencyManagement>
+                    <dependency>
+                        <!-- Dependency with scope as runtime -->
+                        <groupId>{a.groupId}</groupId>
+                        <artifactId>bc</artifactId>
+                        <version>{a.version}</version>
+                        <scope>runtime</scope>
+                    </dependency>
+                    <dependency>
+                        <!-- Dependency with scope as compile -->
+                        <groupId>a</groupId>
+                        <artifactId>b-c</artifactId>
+                        <version>1.2.3</version>
+                        <scope>compile</scope>
+                        <optional>true</optional>
+                    </dependency>
+                </dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        <version>2.3</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>foo</groupId>
+                        <artifactId>bar</artifactId>
+                        <version>2.4</version>
+                    </dependency>
+                </dependencies>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps).is.eql([{
-            name: { value: 'c/ab-cd', position: { line: 21, column: 17 } },
-            version: { value: '2.3', position: { line: 24, column: 30 } }
-        }, {
-            name: { value: 'foo/bar', position: { line: 26, column: 17 } },
-            version: { value: '2.4', position: { line: 29, column: 30 } }
-        }]);
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([
+            {
+                name: { value: 'c/ab-cd', position: { line: 21, column: 21 } },
+                version: { value: '2.3', position: { line: 24, column: 34 } }
+            },
+            {
+                name: { value: 'foo/bar', position: { line: 26, column: 21 } },
+                version: { value: '2.4', position: { line: 29, column: 34 } }
+            }
+        ]);
     });
 
     it('tests pom.xml without version and with properties', async () => {
         const pom = `
-        <project>
-            <dependencies>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-cd</artifactId>
-                    <version>2.3</version>
-                </dependency>
-                <dependency>
-                    <groupId>\${some.example}</groupId>
-                    <artifactId>\${other.example}</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-other</artifactId>
-                </dependency>
-            </dependencies>
-         </project>
+            <project>
+                <dependencies>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-cd</artifactId>
+                        <version>2.3</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>\${some.example}</groupId>
+                        <artifactId>\${other.example}</artifactId>
+                    </dependency>
+                    <dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-other</artifactId>
+                    </dependency>
+                </dependencies>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps).is.eql([{
-            name: { value: 'c/ab-cd', position: { line: 4, column: 17 } },
-            version: { value: '2.3', position: { line: 7, column: 30 } }
-        }, {
-            name: { value: '${some.example}/${other.example}', position: { line: 9, column: 17 } },
-            version: { value: '', position: { line: 0, column: 0 } },
-            context: { value: `<dependency>
-                    <groupId>\${some.example}</groupId>
-                    <artifactId>\${other.example}</artifactId>
-                    <version>__VERSION__</version>
-                </dependency>`,
-                range: {
-                    end: {
-                        character: 29,
-                        line: 11
-                    },
-                    start: {
-                        character: 16,
-                        line: 8
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([
+            {
+                name: { value: 'c/ab-cd', position: { line: 4, column: 21 } },
+                version: { value: '2.3', position: { line: 7, column: 34 } }
+            },
+            {
+                name: { value: '${some.example}/${other.example}', position: { line: 9, column: 21 } },
+                context: { value: `<dependency>
+                        <groupId>\${some.example}</groupId>
+                        <artifactId>\${other.example}</artifactId>
+                        <version>__VERSION__</version>
+                    </dependency>`,
+                    range: {
+                        end: {
+                            character: 33,
+                            line: 11
+                        },
+                        start: {
+                            character: 20,
+                            line: 8
+                        }
+                    }
+                }
+            },
+            {
+                name: { value: 'c/ab-other', position: { line: 13, column: 21 } },
+                context: { value: `<dependency>
+                        <groupId>c</groupId>
+                        <artifactId>ab-other</artifactId>
+                        <version>__VERSION__</version>
+                    </dependency>`,
+                    range: {
+                        end: {
+                            character: 33,
+                            line: 15
+                        },
+                        start: {
+                            character: 20,
+                            line: 12
+                        }
                     }
                 }
             }
-        }, {
-            name: { value: 'c/ab-other', position: { line: 13, column: 17 } },
-            version: { value: '', position: { line: 0, column: 0 } },
-            context: { value: `<dependency>
-                    <groupId>c</groupId>
-                    <artifactId>ab-other</artifactId>
-                    <version>__VERSION__</version>
-                </dependency>`,
-                range: {
-                    end: {
-                        character: 29,
-                        line: 15
-                    },
-                    start: {
-                        character: 16,
-                        line: 12
-                    }
-                }
-            }
-        }]);
+        ]);
     });
 
     it('tests pom.xml with only dependencyManagement scope', async () => {
         const pom = `
-        <project>
-            <dependencyManagement>
-                <dependency>
-                    <!-- Dependency with scope as runtime -->
-                    <groupId>{a.groupId}</groupId>
-                    <artifactId>bc</artifactId>
-                    <version>{a.version}</version>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <!-- Dependency with scope as compile -->
-                    <groupId>a</groupId>
-                    <artifactId>b-c</artifactId>
-                    <version>1.2.3</version>
-                    <scope>compile</scope>
-                    <optional>true</optional>
-                </dependency>
-            </dependencyManagement>
-         </project>
+            <project>
+                <dependencyManagement>
+                    <dependency>
+                        <!-- Dependency with scope as runtime -->
+                        <groupId>{a.groupId}</groupId>
+                        <artifactId>bc</artifactId>
+                        <version>{a.version}</version>
+                        <scope>runtime</scope>
+                    </dependency>
+                    <dependency>
+                        <!-- Dependency with scope as compile -->
+                        <groupId>a</groupId>
+                        <artifactId>b-c</artifactId>
+                        <version>1.2.3</version>
+                        <scope>compile</scope>
+                        <optional>true</optional>
+                    </dependency>
+                </dependencyManagement>
+            </project>
         `;
-        const deps = await new DependencyProvider().collect(pom);
-        expect(deps.length).equal(0);
+        const deps = await dependencyProvider.collect(pom);
+        expect(deps).is.eql([]);
     });
 });
