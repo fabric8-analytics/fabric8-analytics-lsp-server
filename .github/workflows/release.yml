@@ -43,7 +43,7 @@ jobs:
       - name: Update package with new version
         id: bump
         run: |
-          echo "version=$(npm version prerelease --no-git-tag-version --preid ea)" >> "$GITHUB_OUTPUT"
+          echo "version=$(npm version ${{ vars.VERSION_BUMPING_TYPE }} --no-git-tag-version --preid ea)" >> "$GITHUB_OUTPUT"
 
       - name: Install project modules
         run: npm ci
@@ -75,7 +75,7 @@ jobs:
             const response = await github.request('POST /repos/' + repo_name + '/releases', {
               tag_name: '${{ steps.bump.outputs.version }}',
               name: '${{ steps.bump.outputs.version }}',
-              prerelease: true,
+              prerelease: false,
               generate_release_notes: true
             })
             

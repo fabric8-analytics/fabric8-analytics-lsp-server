@@ -123,6 +123,10 @@ async function componentAnalysisService (fileType: string, contents: string): Pr
     if (globalConfig.exhortSnykToken !== '') {
         options['EXHORT_SNYK_TOKEN'] = globalConfig.exhortSnykToken;
     }
+    if (globalConfig.exhortOSSIndexUser !== '' && globalConfig.exhortOSSIndexToken !== '') {
+        options['EXHORT_OSS_INDEX_USER'] = globalConfig.exhortOSSIndexUser;
+        options['EXHORT_OSS_INDEX_TOKEN'] = globalConfig.exhortOSSIndexToken;
+    }
 
     const componentAnalysisJson = await exhort.componentAnalysis(fileType, contents, options); // Execute component analysis
 

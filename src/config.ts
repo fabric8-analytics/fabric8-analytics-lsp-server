@@ -15,6 +15,8 @@ export class Config
     utmSource:               string;
     exhortDevMode:           string;
     exhortSnykToken:         string;
+    exhortOSSIndexUser:      string;
+    exhortOSSIndexToken:     string;
     matchManifestVersions:   string;
     exhortMvnPath:           string;
     exhortNpmPath:           string;
@@ -33,6 +35,8 @@ export class Config
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortDevMode = process.env.VSCEXT_EXHORT_DEV_MODE || 'false';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
+        this.exhortOSSIndexUser = process.env.VSCEXT_EXHORT_OSS_INDEX_USER || '';
+        this.exhortOSSIndexToken = process.env.VSCEXT_EXHORT_OSS_INDEX_TOKEN || '';
         this.matchManifestVersions = process.env.VSCEXT_MATCH_MANIFEST_VERSIONS || 'true';
         this.exhortMvnPath = process.env.VSCEXT_EXHORT_MVN_PATH || 'mvn';
         this.exhortNpmPath = process.env.VSCEXT_EXHORT_NPM_PATH || 'npm';
@@ -49,6 +53,8 @@ export class Config
      */
     updateConfig( data: any ) {
         this.exhortSnykToken = data.redHatDependencyAnalytics.exhortSnykToken;
+        this.exhortOSSIndexUser = data.redHatDependencyAnalytics.exhortOSSIndexUser;
+        this.exhortOSSIndexToken = data.redHatDependencyAnalytics.exhortOSSIndexToken;
         this.matchManifestVersions = data.redHatDependencyAnalytics.matchManifestVersions ? 'true' : 'false';
         this.exhortMvnPath = data.mvn.executable.path || 'mvn';
         this.exhortNpmPath = data.npm.executable.path || 'npm';

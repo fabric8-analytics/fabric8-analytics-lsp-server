@@ -44,8 +44,8 @@ export interface IDependency {
  * Represents a dependency and implements the IDependency interface.
  */
 export class Dependency implements IDependency {
-  public version: IPositionedString
-  public context: IPositionedContext
+  public version: IPositionedString;
+  public context: IPositionedContext;
   
   constructor(
     public name: IPositionedString

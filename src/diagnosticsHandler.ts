@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-import { Diagnostic, CodeAction } from 'vscode-languageserver';
+import { Diagnostic } from 'vscode-languageserver';
 import { DependencyMap, IDependencyProvider } from './collector';
 import { componentAnalysisService, DependencyData } from './componentAnalysis';
 import { Vulnerability } from './vulnerability';
