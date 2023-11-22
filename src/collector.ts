@@ -5,126 +5,132 @@
 'use strict';
 
 import { Range } from 'vscode-languageserver';
+import { isDefined } from './utils';
 
-/* Determine what is the value */
-export enum ValueType {
-  Invalid,
-  String,
-  Integer,
-  Float,
-  Array,
-  Object,
-  Boolean,
-  Null
-}
-
-/* Value variant */
-export interface IVariant {
-  type: ValueType;
-  object: any;
-}
-
-/* Line and column inside the JSON file */
+/**
+ * Represents a position inside the manifest file with line and column information.
+ */
 export interface IPosition {
   line: number;
   column: number;
 }
 
-/* Key/Value entry with positions */
-export interface IKeyValueEntry {
-  key: string;
-  value: IVariant;
-  keyPosition: IPosition;
-  valuePosition: IPosition;
-  context: string;
-  contextRange: Range;
-}
-
-export class KeyValueEntry implements IKeyValueEntry {
-  key: string;
-  value: IVariant;
-  keyPosition: IPosition;
-  valuePosition: IPosition;
-  context: string;
-  contextRange: Range;
-
-  constructor(k: string, pos: IPosition, v?: IVariant, vPos?: IPosition, c?: string, cRange?: Range) {
-    this.key = k;
-    this.keyPosition = pos;
-    this.value = v;
-    this.valuePosition = vPos;
-    this.context = c;
-    this.contextRange = cRange;
-  }
-}
-
-export class Variant implements IVariant {
-  constructor(public type: ValueType, public object: any) { }
-}
-
-/* String value with position */
+/**
+ * Represents a string value with associated position information.
+ */
 export interface IPositionedString {
   value: string;
   position: IPosition;
 }
 
+/**
+ * Represents a context with a string value and its associated range.
+ */
 export interface IPositionedContext {
   value: string;
   range: Range;
 }
 
-/* Dependency specification */
+/**
+ * Represents a dependency specification.
+ */
 export interface IDependency {
   name: IPositionedString;
   version: IPositionedString;
   context: IPositionedContext;
 }
 
-export interface IHashableDependency extends IDependency {
-  key(): string;
+/**
+ * Represents a dependency and implements the IDependency interface.
+ */
+export class Dependency implements IDependency {
+  public version: IPositionedString;
+  public context: IPositionedContext;
+  
+  constructor(
+    public name: IPositionedString
+  ) {}
 }
 
-/* Ecosystem provider interface */
-export interface IDependencyProvider {
-  ecosystem: string;
-  classes: Array<string>;
-  collect(contents: string): Promise<Array<IDependency>>;
-}
-
-/* Dependency class that can be created from `IKeyValueEntry` */
-export class Dependency implements IHashableDependency {
-  name: IPositionedString;
-  version: IPositionedString;
-  context: IPositionedContext;
-  constructor(dependency: IKeyValueEntry) {
-    this.name = {
-      value: dependency.key,
-      position: dependency.keyPosition
+/**
+ * Retrieves the range of a dependency version or context within a text document.
+ * @param dep - The dependency object containing version and context information.
+ * @returns The range within the text document that represents the dependency.
+ */
+export function getRange (dep: IDependency): Range {
+  
+  if (isDefined(dep, 'version', 'position')) {
+    const pos: IPosition = dep.version.position;
+    const length = dep.version.value.length;
+    return {
+      start: {
+        line: pos.line - 1, 
+        character: pos.column - 1
+      },
+      end: {
+        line: pos.line - 1, 
+        character: pos.column + length - 1}
     };
-    this.version = {
-      value: dependency.value.object,
-      position: dependency.valuePosition
-    };
-    if (dependency.context && dependency.contextRange) {
-      this.context = {
-        value: dependency.context,
-        range: dependency.contextRange
-      };
-    }
-  }
-
-  key(): string {
-    return `${this.name.value}`;
+  } else {
+    return dep.context.range;
   }
 }
 
+/**
+ * Represents a map of dependencies using dependency name as key for easy retrieval of associated details.
+ */
 export class DependencyMap {
-  mapper: Map<string, IHashableDependency>;
-  constructor(deps: Array<IHashableDependency>) {
-    this.mapper = new Map(deps.map(d => [d.key(), d]));
+  mapper: Map<string, IDependency>;
+  constructor(deps: IDependency[]) {
+    this.mapper = new Map(deps.map(d => [d.name.value, d]));
   }
 
-  public get(key: string): IHashableDependency {
+  /**
+   * Retrieves a dependency by its unique name key.
+   * @param key - The unique name key for the desired dependency.
+   * @returns The dependency object linked to the specified unique name key.
+   */
+  public get(key: string): IDependency {
     return this.mapper.get(key);
+  }
+}
+
+/**
+ * Represents an interface for providing ecosystem-specific dependencies.
+ */
+export interface IDependencyProvider {
+
+  /**
+   * Collects dependencies from the provided manifest contents.
+   * @param contents - The manifest contents to collect dependencies from.
+   * @returns A Promise resolving to an array of dependencies.
+   */
+  collect(contents: string): Promise<IDependency[]>;
+
+  /**
+   * Resolves a dependency reference to its actual name in the ecosystem.
+   * @param ref - The reference string to resolve.
+   * @returns The resolved name of the dependency.
+   */
+  resolveDependencyFromReference(ref: string): string;
+}
+
+/**
+ * Represents a resolver for ecosystem-specific dependencies.
+ */
+export class EcosystemDependencyResolver {
+  private ecosystem: string;
+
+  constructor(ecosystem: string) {
+    this.ecosystem = ecosystem;
+  }
+
+  /**
+   * Resolves a dependency reference in a specified ecosystem to its name and version string.
+   * @param ref - The reference string to resolve.
+   * @returns The resolved name of the dependency.
+   */
+  resolveDependencyFromReference(ref: string): string {
+    return ref.replace(`pkg:${this.ecosystem}/`, '');
   }
 }
