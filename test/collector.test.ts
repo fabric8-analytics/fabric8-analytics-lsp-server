@@ -1,10 +1,11 @@
 'use strict';
 
 import { expect } from 'chai';
+
 import { Dependency, DependencyMap, getRange } from '../src/collector';
 import { DependencyProvider } from '../src/providers/pom.xml';
 
-describe('Collector util test', () => {
+describe('Collector tests', () => {
 
     // Mock manifest dependency collection
     const reqDeps: Dependency[] = [
@@ -20,6 +21,13 @@ describe('Collector util test', () => {
             'mockGroupId1/mockArtifact1': reqDeps[0],
             'mockGroupId2/mockArtifact2': reqDeps[1]
         });
+    });
+
+    it('should create empty map', async () => {
+
+        const depMap = new DependencyMap([]);
+
+        expect(Object.keys(depMap.mapper).length).to.eql(0);
     });
 
     it('should get dependency from dependency map', async () => {

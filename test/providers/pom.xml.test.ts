@@ -1,9 +1,10 @@
 'use strict';
 
 import { expect } from 'chai';
+
 import { DependencyProvider } from '../../src/providers/pom.xml';
 
-describe('Java Maven pom.xml parser test', () => {
+describe('Java Maven pom.xml parser tests', () => {
     let dependencyProvider: DependencyProvider;
 
     beforeEach(() => {

@@ -2,9 +2,10 @@
 
 import { expect } from 'chai';
 import * as sinon from 'sinon';
+
 import { DependencyProvider } from '../../src/providers/package.json';
 
-describe('Javascript NPM package.json parser test', () => {
+describe('Javascript NPM package.json parser tests', () => {
     let dependencyProvider: DependencyProvider;
 
     beforeEach(() => {
@@ -21,7 +22,7 @@ describe('Javascript NPM package.json parser test', () => {
         expect(deps.length).equal(0);
     });
 
-    it('tests invalid token package.json', async () => {
+    it('tests invalid token', async () => {
         const deps = await dependencyProvider.collect(`
             {
                 <<<<<
@@ -54,7 +55,7 @@ describe('Javascript NPM package.json parser test', () => {
         expect(deps).eql([]);
     });
 
-    it('tests single dependency ', async () => {
+    it('tests single dependency', async () => {
         const deps = await dependencyProvider.collect(`
             {
                 "hello":{},
@@ -134,7 +135,7 @@ describe('Javascript NPM package.json parser test', () => {
         ]);
     });
 
-    it('tests 3 dependencies with spaces', async () => {
+    it('tests dependencies with spaces', async () => {
         const deps = await dependencyProvider.collect(`
             {
                 "hello":{},

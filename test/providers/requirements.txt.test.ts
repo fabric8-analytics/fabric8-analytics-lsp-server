@@ -1,9 +1,10 @@
 'use strict';
 
 import { expect } from 'chai';
+
 import { DependencyProvider } from '../../src/providers/requirements.txt';
 
-describe('Python PyPi requirements.txt parser test', () => {
+describe('Python PyPi requirements.txt parser tests', () => {
     let dependencyProvider: DependencyProvider;
 
     beforeEach(() => {
@@ -63,7 +64,7 @@ describe('Python PyPi requirements.txt parser test', () => {
         ]);
     });
 
-    it('tests empty lines', async () => {
+    it('tests requirements.txt with empty lines', async () => {
         const deps = await dependencyProvider.collect(`
 
             a==1
@@ -77,7 +78,7 @@ describe('Python PyPi requirements.txt parser test', () => {
         ]);
     });
 
-    it('tests deps with spaces before and after comparators', async () => {
+    it('tests dependencies with spaces before and after package name and version', async () => {
         const deps = await dependencyProvider.collect(`
             a        ==1               
 

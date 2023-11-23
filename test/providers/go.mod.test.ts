@@ -1,9 +1,10 @@
 'use strict';
 
 import { expect } from 'chai';
+
 import { DependencyProvider } from '../../src/providers/go.mod';
 
-describe('Golang Gomudules go.mod parser test', () => {
+describe('Golang Gomodules go.mod parser tests', () => {
     let dependencyProvider: DependencyProvider;
 
     beforeEach(() => {
@@ -15,7 +16,7 @@ describe('Golang Gomudules go.mod parser test', () => {
         expect(deps).is.eql([]);
     });
 
-    it('tests require statement in go.mod', async () => {
+    it('tests require statements in go.mod', async () => {
         const deps = await dependencyProvider.collect(`
         module github.com/alecthomas/kingpin
 
@@ -91,7 +92,7 @@ describe('Golang Gomudules go.mod parser test', () => {
         ]);
     });
 
-    it('tests empty lines in go.mod', async () => {
+    it('tests go.mod with empty lines', async () => {
         const deps = await dependencyProvider.collect(`
             module github.com/alecthomas/kingpin
 
@@ -119,7 +120,7 @@ describe('Golang Gomudules go.mod parser test', () => {
         ]);
     });
 
-    it('tests deps with spaces before and after dep name and version', async () => {
+    it('tests go.mod with dependencies which have spaces before and after package name and version', async () => {
         const deps = await dependencyProvider.collect(`
             module github.com/alecthomas/kingpin
             require (
@@ -150,7 +151,7 @@ describe('Golang Gomudules go.mod parser test', () => {
         ]);
     });
 
-    it('tests deps with alpha, beta and extra for version', async () => {
+    it('tests go.mod with dependencies which have extra sufixes in version', async () => {
         const deps = await dependencyProvider.collect(`
             module github.com/alecthomas/kingpin
 
@@ -273,7 +274,7 @@ describe('Golang Gomudules go.mod parser test', () => {
         ]);
     });
 
-    it('tests multiple module points to same replace module in go.mod', async () => {
+    it('tests go.mod with multiple packages replaced by the same package in go.mod', async () => {
         const deps = await dependencyProvider.collect(`
             module github.com/alecthomas/kingpin
             go 1.13
