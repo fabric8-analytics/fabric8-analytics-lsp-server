@@ -5,12 +5,10 @@
 'use strict';
 
 import { Diagnostic } from 'vscode-languageserver';
-import { DependencyMap, IDependencyProvider } from './collector';
-import { componentAnalysisService, DependencyData } from './componentAnalysis';
+import { DependencyMap, IDependencyProvider, getRange } from './collector';
+import { executeComponentAnalysis, DependencyData } from './componentAnalysis';
 import { Vulnerability } from './vulnerability';
-import { getRange } from './collector';
 import { connection } from './server';
-import * as path from 'path';
 
 /**
  * Diagnostics Pipeline specification.
@@ -101,9 +99,9 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
     let dependencies = null;
     dependencies = await provider.collect(contents)
         .catch(error => {
-            connection.console.warn(`Error: ${error}`);
+            connection.console.warn(`Component Analysis Error: ${error}`);
             connection.sendNotification('caError', {
-                data: error,
+                error: error,
                 uri: diagnosticFilePath,
             });
             return;
@@ -114,14 +112,16 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
     
     diagnosticsPipeline.clearDiagnostics();
 
-    const analysis = componentAnalysisService(path.basename(diagnosticFilePath), contents)
+    const analysis = executeComponentAnalysis(diagnosticFilePath, contents)
         .then(response => {
             diagnosticsPipeline.runDiagnostics(response.dependencies);
         })
         .catch(error => {
-            const errMsg = `Component Analysis error. ${error}`;
-            connection.console.warn(errMsg);
-            connection.sendNotification('caSimpleWarning', errMsg);
+            connection.console.warn(`Component Analysis Error: ${error}`);
+            connection.sendNotification('caError', {
+                error: error,
+                uri: diagnosticFilePath,
+            });
             return;
         });
 

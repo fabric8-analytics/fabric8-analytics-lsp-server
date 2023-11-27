@@ -4,11 +4,12 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
+import * as path from 'path';
+import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
+
 import { connection } from './server';
 import { globalConfig } from './config';
 import { isDefined } from './utils';
-
-import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
 
 /**
  * Represents a source object with an ID and dependencies array.
@@ -61,7 +62,7 @@ interface IAnalysisResponse {
 class AnalysisResponse implements IAnalysisResponse {
     dependencies: Map<string, DependencyData[]> = new Map<string, DependencyData[]>();
 
-    constructor(resData: exhort.AnalysisReport) {
+    constructor(resData: exhort.AnalysisReport, diagnosticFilePath: string) {
 
         const failedProviders: string[] = [];
         const sources: Source[] = [];
@@ -79,8 +80,11 @@ class AnalysisResponse implements IAnalysisResponse {
 
             if (failedProviders.length !== 0) {
                 const errMsg = `The component analysis couldn't fetch data from the following providers: [${failedProviders.join(', ')}]`;
-                connection.console.warn(errMsg);
-                connection.sendNotification('caSimpleWarning', errMsg);
+                connection.console.warn(`Component Analysis Error: ${errMsg}`);
+                connection.sendNotification('caError', {
+                    error: errMsg,
+                    uri: diagnosticFilePath,
+                });
             }
 
             sources.forEach(source => {
@@ -104,13 +108,12 @@ class AnalysisResponse implements IAnalysisResponse {
  * @param contents - The contents of the manifest file to analyze.
  * @returns A Promise resolving to an AnalysisResponse object.
  */
-async function componentAnalysisService (fileType: string, contents: string): Promise<AnalysisResponse> {
+async function executeComponentAnalysis (diagnosticFilePath: string, contents: string): Promise<AnalysisResponse> {
     
     // Define configuration options for the component analysis request
     const options = {
         'RHDA_TOKEN': globalConfig.telemetryId,
         'RHDA_SOURCE': globalConfig.utmSource,
-        'EXHORT_DEV_MODE': globalConfig.exhortDevMode,
         'MATCH_MANIFEST_VERSIONS': globalConfig.matchManifestVersions,
         'EXHORT_MVN_PATH': globalConfig.exhortMvnPath,
         'EXHORT_NPM_PATH': globalConfig.exhortNpmPath,
@@ -128,9 +131,9 @@ async function componentAnalysisService (fileType: string, contents: string): Pr
         options['EXHORT_OSS_INDEX_TOKEN'] = globalConfig.exhortOSSIndexToken;
     }
 
-    const componentAnalysisJson = await exhort.componentAnalysis(fileType, contents, options); // Execute component analysis
+    const componentAnalysisJson = await exhort.componentAnalysis(path.basename(diagnosticFilePath), contents, options); // Execute component analysis
 
-    return new AnalysisResponse(componentAnalysisJson);
+    return new AnalysisResponse(componentAnalysisJson, diagnosticFilePath);
 }
 
-export { componentAnalysisService, DependencyData };
+export { executeComponentAnalysis, DependencyData };

@@ -4,11 +4,12 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { Range } from 'vscode-languageserver';
 import { CodeAction, CodeActionKind, Diagnostic } from 'vscode-languageserver/node';
+
 import * as config from '../src/config';
 import { RHDA_DIAGNOSTIC_SOURCE } from '../src/constants';
 import { getDiagnosticsCodeActions } from '../src/codeActionHandler';
 
-describe('Code Action Handler test', () => {
+describe('Code Action Handler tests', () => {
 
     const mockRange: Range = {
         start: {
