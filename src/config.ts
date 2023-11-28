@@ -29,6 +29,10 @@ class Config
      * Initializes a new instance of the Config class with default values from the parent process environment variable data.
      */
     constructor() {
+        this.load();
+    }
+
+    load() {
         this.triggerFullStackAnalysis = process.env.VSCEXT_TRIGGER_FULL_STACK_ANALYSIS || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
@@ -67,6 +71,4 @@ class Config
 /**
  * Represents the global configuration instance based on Config class.
  */
-const globalConfig = new Config();
-
-export { Config, globalConfig };
+export const globalConfig = new Config();
