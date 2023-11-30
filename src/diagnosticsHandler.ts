@@ -34,7 +34,7 @@ interface IDiagnosticsPipeline {
  */
 class DiagnosticsPipeline implements IDiagnosticsPipeline {
     private diagnostics: Diagnostic[] = [];
-    private vulnCount: number = 0;
+    private vulnCount: Map<string, number> = new Map<string, number>();
 
     constructor(
         private provider: IDependencyProvider,
@@ -71,15 +71,18 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
                 );
                 
                 const vulnerabilityDiagnostic = vulnerability.getDiagnostic();
-                if (vulnerabilityDiagnostic) {
-                    this.diagnostics.push(vulnerabilityDiagnostic);
-                }
-            
-                const totalIssuesCount: number = dependencyData.reduce(
-                    (sum, currentItem) => sum + currentItem.issuesCount,
-                    0
-                );
-                this.vulnCount += totalIssuesCount;
+                this.diagnostics.push(vulnerabilityDiagnostic);
+
+                dependencyData.forEach((dd) => {
+                    const vulnProvider = dd.sourceId.split('(')[0];
+                    const issuesCount = dd.issuesCount;
+
+                    if (vulnProvider in this.vulnCount) {
+                        this.vulnCount[vulnProvider] += issuesCount;
+                    } else {
+                        this.vulnCount[vulnProvider] = issuesCount;
+                    }
+                });          
             }
             connection.sendDiagnostics({ uri: this.diagnosticFilePath, diagnostics: this.diagnostics });
         });
