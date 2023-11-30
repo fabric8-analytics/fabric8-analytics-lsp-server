@@ -82,7 +82,7 @@ class AnalysisResponse implements IAnalysisResponse {
                 const errMsg = `The component analysis couldn't fetch data from the following providers: [${failedProviders.join(', ')}]`;
                 connection.console.warn(`Component Analysis Error: ${errMsg}`);
                 connection.sendNotification('caError', {
-                    error: errMsg,
+                    errorMessage: errMsg,
                     uri: diagnosticFilePath,
                 });
             }
