@@ -101,7 +101,7 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
         .catch(error => {
             connection.console.warn(`Component Analysis Error: ${error}`);
             connection.sendNotification('caError', {
-                error: error,
+                errorMessage: error.message,
                 uri: diagnosticFilePath,
             });
             return;
@@ -119,7 +119,7 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
         .catch(error => {
             connection.console.warn(`Component Analysis Error: ${error}`);
             connection.sendNotification('caError', {
-                error: error,
+                errorMessage: error.message,
                 uri: diagnosticFilePath,
             });
             return;
