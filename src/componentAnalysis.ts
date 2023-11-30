@@ -71,7 +71,7 @@ class AnalysisResponse implements IAnalysisResponse {
             Object.entries(resData.providers).map(([providerName, providerData]) => {
                 if (isDefined(providerData, 'status', 'ok') && isDefined(providerData, 'sources') && providerData.status.ok) {
                     Object.entries(providerData.sources).map(([sourceName, sourceData]) => {
-                        sources.push(new Source(`${providerName}-${sourceName}`, isDefined(sourceData, 'dependencies') ? sourceData.dependencies : []));
+                        sources.push(new Source(`${providerName}(${sourceName})`, isDefined(sourceData, 'dependencies') ? sourceData.dependencies : []));
                     });
                 } else {
                     failedProviders.push(providerName);
