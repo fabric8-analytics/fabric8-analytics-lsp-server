@@ -9,8 +9,10 @@ metadata:
     backstage.io/edit-url: https://github.com/fabric8-analytics/fabric8-analytics-lsp-server/blob/main/catalog-info.yaml
     backstage.io/source-location: url:https://github.com/fabric8-analytics/fabric8-analytics-lsp-server
     rhda/manifest-file-path: package.json
-    backstage.io/techdocs-ref: dir:README.md
+    backstage.io/techdocs-ref: url:https://github.com/fabric8-analytics/fabric8-analytics-lsp-server
   name: fabric8-analytics-lsp-server
+  tags:
+    - rhda
 spec:
   lifecycle: production
   owner: ecosystem-appeng
