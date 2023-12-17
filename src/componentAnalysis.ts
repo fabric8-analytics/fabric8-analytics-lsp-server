@@ -35,6 +35,8 @@ class Source implements ISource {
 interface IDependencyData {
     sourceId: string;
     issuesCount: number;
+    recommendationRef: string;
+    remediationRef: string
     highestVulnerabilitySeverity: string;
 }
 
@@ -45,6 +47,8 @@ class DependencyData implements IDependencyData {
     constructor(
         public sourceId: string,
         public issuesCount: number,
+        public recommendationRef: string,
+        public remediationRef: string,
         public highestVulnerabilitySeverity: string
     ) {}
 }
@@ -69,10 +73,12 @@ class AnalysisResponse implements IAnalysisResponse {
         
         if (isDefined(resData, 'providers')) {
             Object.entries(resData.providers).map(([providerName, providerData]) => {
-                if (isDefined(providerData, 'status', 'ok') && isDefined(providerData, 'sources') && providerData.status.ok) {
-                    Object.entries(providerData.sources).map(([sourceName, sourceData]) => {
-                        sources.push(new Source(`${providerName}(${sourceName})`, isDefined(sourceData, 'dependencies') ? sourceData.dependencies : []));
-                    });
+                if (isDefined(providerData, 'status', 'ok') && providerData.status.ok) {
+                    if (isDefined(providerData, 'sources')) {
+                        Object.entries(providerData.sources).map(([sourceName, sourceData]) => {
+                            sources.push(new Source(`${providerName}(${sourceName})`, this.getDependencies(sourceData)));
+                        });
+                    }
                 } else {
                     failedProviders.push(providerName);
                 }
@@ -89,16 +95,60 @@ class AnalysisResponse implements IAnalysisResponse {
 
             sources.forEach(source => {
                 source.dependencies.forEach(d => {
-                    if (isDefined(d, 'ref') && isDefined(d, 'issues')) {
-                        const dd = new DependencyData(source.id, d.issues.length, isDefined(d, 'highestVulnerability', 'severity') ? d.highestVulnerability.severity : 'NONE');
-                        if (this.dependencies[d.ref] === undefined) {
-                            this.dependencies[d.ref] = [];
-                        }
+                    if (isDefined(d, 'ref')) {
+
+                        const issuesCount: number = isDefined(d, 'issues') ? d.issues.length : 0;
+
+                        const dd = issuesCount
+                            ? new DependencyData(source.id, issuesCount, '', this.getRemediation(d.issues[0]), this.getHighestSeverity(d))
+                            : new DependencyData(source.id, issuesCount, this.getRecommendation(d), '', this.getHighestSeverity(d));
+
+                        this.dependencies[d.ref] = this.dependencies[d.ref] || [];
                         this.dependencies[d.ref].push(dd);
                     }
                 });
             });
         }
+    }
+
+    /**
+     * Retrieves dependencies from source.
+     * @param sourceData The source object.
+     * @returns An array of dependencies or empty array if none exists.
+     * @private
+     */
+    private getDependencies(sourceData: any): any[] {
+        return isDefined(sourceData, 'dependencies') ? sourceData.dependencies : [];
+    }
+    
+    /**
+     * Retrieves the highest vulnerability severity value from a dependency.
+     * @param dependency The dependency object.
+     * @returns The highest severity level or NONE if none exists.
+     * @private
+     */
+    private getHighestSeverity(dependency: any): string {
+        return isDefined(dependency, 'highestVulnerability', 'severity') ? dependency.highestVulnerability.severity : 'NONE';
+    }
+    
+    /**
+     * Retrieves the remediation reference from an issue.
+     * @param issue The issue object.
+     * @returns The remediation reference or empty string if none exists.
+     * @private
+     */
+    private getRemediation(issue: any): string {
+        return isDefined(issue, 'remediation', 'trustedContent', 'package') ? issue.remediation.trustedContent.package : '';
+    }
+
+    /**
+     * Retrieves the recommendation reference from a dependency.
+     * @param dependency The dependency object.
+     * @returns The recommendation reference or empty string if none exists.
+     * @private
+     */
+    private getRecommendation(dependency: any): string {
+        return isDefined(dependency, 'recommendation') ? dependency.recommendation.split('?')[0] : '';
     }
 }
 

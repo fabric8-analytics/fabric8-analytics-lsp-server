@@ -108,7 +108,7 @@ connection.onDidChangeConfiguration(() => {
  * Handles code action requests from client.
  */
 connection.onCodeAction((params): CodeAction[] => {
-    return getDiagnosticsCodeActions(params.context.diagnostics);
+    return getDiagnosticsCodeActions(params.context.diagnostics, params.textDocument.uri);
 });
 
 connection.listen();
