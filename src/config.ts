@@ -10,26 +10,28 @@
  */
 class Config
 {
-    triggerFullStackAnalysis:  string;
-    telemetryId:               string;
-    utmSource:                 string;
-    exhortSnykToken:           string;
-    exhortOSSIndexUser:        string;
-    exhortOSSIndexToken:       string;
-    matchManifestVersions:     string;
-    exhortMvnPath:             string;
-    exhortNpmPath:             string;
-    exhortGoPath:              string;
-    exhortPython3Path:         string;
-    exhortPip3Path:            string;
-    exhortPythonPath:          string;
-    exhortPipPath:             string;
+    triggerFullStackAnalysis:                       string;
+    triggerRHRepositoryRecommendationNotification:  string;
+    telemetryId:                                    string;
+    utmSource:                                      string;
+    exhortSnykToken:                                string;
+    exhortOSSIndexUser:                             string;
+    exhortOSSIndexToken:                            string;
+    matchManifestVersions:                          string;
+    exhortMvnPath:                                  string;
+    exhortNpmPath:                                  string;
+    exhortGoPath:                                   string;
+    exhortPython3Path:                              string;
+    exhortPip3Path:                                 string;
+    exhortPythonPath:                               string;
+    exhortPipPath:                                  string;
 
     /**
      * Initializes a new instance of the Config class with default values from the parent process environment variable data.
      */
     constructor() {
         this.triggerFullStackAnalysis = process.env.VSCEXT_TRIGGER_FULL_STACK_ANALYSIS || '';
+        this.triggerRHRepositoryRecommendationNotification = process.env.VSCEXT_TRIGGER_REDHAT_REPOSITORY_RECOMMENDATION_NOTIFICATION || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
