@@ -12,7 +12,7 @@ import { Vulnerability } from './vulnerability';
 import { connection } from './server';
 import { VERSION_PLACEHOLDER } from './constants';
 import { clearCodeActionsMap, registerCodeAction, generateSwitchToRecommendedVersionAction } from './codeActionHandler';
-import { IPositionedContext } from './collector'
+import { IPositionedContext } from './collector';
 
 /**
  * Diagnostics Pipeline specification.
@@ -108,7 +108,7 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
      * @private
      */
     private createCodeAction(loc: string, ref: string, context: IPositionedContext, sourceId: string, vulnerabilityDiagnostic: Diagnostic) {
-        const switchToVersion = this.provider.resolveDependencyFromReference(ref).split('@')[1]
+        const switchToVersion = this.provider.resolveDependencyFromReference(ref).split('@')[1];
         const versionReplacementString = context ? context.value.replace(VERSION_PLACEHOLDER, switchToVersion) : switchToVersion;
         const title = `Switch to version ${switchToVersion} for ${sourceId}`;
         const codeAction = generateSwitchToRecommendedVersionAction(title, versionReplacementString, vulnerabilityDiagnostic, this.diagnosticFilePath);

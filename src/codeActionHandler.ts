@@ -13,6 +13,13 @@ import { RHDA_DIAGNOSTIC_SOURCE } from './constants';
 let codeActionsMap: Map<string, CodeAction[]> = new Map<string, CodeAction[]>();
 
 /**
+ * Gets the code actions map.
+ */
+function getCodeActionsMap(): Map<string, CodeAction[]> {
+    return codeActionsMap;
+}
+
+/**
  * Clears the code actions map.
  */
 function clearCodeActionsMap() {
@@ -35,26 +42,15 @@ function registerCodeAction(key: string, codeAction: CodeAction) {
  * @param uri - The URI of the file being analyzed.
  * @returns An array of CodeAction objects to be made available to the user.
  */
-function getDiagnosticsCodeActions(diagnostics: Diagnostic[], uri: string): CodeAction[] {
+function getDiagnosticsCodeActions(diagnostics: Diagnostic[]): CodeAction[] {
     let hasRhdaDiagonostic: boolean = false; 
     const codeActions: CodeAction[] = [];
 
     for (const diagnostic of diagnostics) {
-        const diagnosticCodeActions = codeActionsMap[diagnostic.range.start.line + '|' + diagnostic.range.start.character];
-        if (diagnosticCodeActions && diagnosticCodeActions.length !== 0) {
 
-            if (path.basename(uri) === 'pom.xml') {
-                diagnosticCodeActions.forEach(codeAction => {
-                    codeAction.command = {
-                        title: 'RedHat repository recommendation',
-                        command: globalConfig.triggerRHRepositoryRecommendationNotification,
-                    };
-                });
-            }
-
-            codeActions.push(...diagnosticCodeActions);
-
-        }
+        const key = `${diagnostic.range.start.line}|${diagnostic.range.start.character}`;
+        const diagnosticCodeActions = codeActionsMap[key] || [];
+        codeActions.push(...diagnosticCodeActions);
 
         hasRhdaDiagonostic ||= diagnostic.source === RHDA_DIAGNOSTIC_SOURCE;
     }
@@ -104,7 +100,15 @@ function generateSwitchToRecommendedVersionAction(title: string, versionReplacem
         range: diagnostic.range,
         newText: versionReplacementString
     }];
+
+    if (diagnostic.severity !== 1 && path.basename(uri) === 'pom.xml') {
+        codeAction.command = {
+            title: 'RedHat repository recommendation',
+            command: globalConfig.triggerRHRepositoryRecommendationNotification,
+        };
+    }
+
     return codeAction;
 }
 
-export { clearCodeActionsMap, registerCodeAction , generateSwitchToRecommendedVersionAction, getDiagnosticsCodeActions };
+export { getCodeActionsMap, clearCodeActionsMap, registerCodeAction , generateSwitchToRecommendedVersionAction, getDiagnosticsCodeActions };

@@ -138,7 +138,7 @@ class AnalysisResponse implements IAnalysisResponse {
      * @private
      */
     private getRemediation(issue: any): string {
-        return isDefined(issue, 'remediation', 'trustedContent', 'package') ? issue.remediation.trustedContent.package : '';
+        return isDefined(issue, 'remediation', 'trustedContent', 'ref') ? issue.remediation.trustedContent.ref.split('?')[0] : '';
     }
 
     /**
