@@ -101,7 +101,7 @@ function generateSwitchToRecommendedVersionAction(title: string, versionReplacem
         newText: versionReplacementString
     }];
 
-    if (diagnostic.severity !== 1 && path.basename(uri) === 'pom.xml') {
+    if (path.basename(uri) === 'pom.xml') {
         codeAction.command = {
             title: 'RedHat repository recommendation',
             command: globalConfig.triggerRHRepositoryRecommendationNotification,
