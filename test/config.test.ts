@@ -11,8 +11,6 @@ describe('Config tests', () => {
     const data = {
         redHatDependencyAnalytics: {
           exhortSnykToken: 'mockToken',
-          exhortOSSIndexUser: 'mockUser',
-          exhortOSSIndexToken: 'mockToken',
           matchManifestVersions: false
         },
         mvn: {
@@ -41,8 +39,6 @@ describe('Config tests', () => {
     const partialData = {
       redHatDependencyAnalytics: {
         exhortSnykToken: 'mockToken',
-        exhortOSSIndexUser: 'mockUser',
-        exhortOSSIndexToken: 'mockToken',
         matchManifestVersions: true
       },
       mvn: {
@@ -74,8 +70,6 @@ describe('Config tests', () => {
         expect(mockConfig.telemetryId).to.eq('');
         expect(mockConfig.utmSource).to.eq('');
         expect(mockConfig.exhortSnykToken).to.eq('');
-        expect(mockConfig.exhortOSSIndexUser).to.eq('');
-        expect(mockConfig.exhortOSSIndexToken).to.eq('');
         expect(mockConfig.matchManifestVersions).to.eq('true');
         expect(mockConfig.exhortMvnPath).to.eq('mvn');
         expect(mockConfig.exhortNpmPath).to.eq('npm');
@@ -91,8 +85,6 @@ describe('Config tests', () => {
         mockConfig.updateConfig(data);
 
         expect(mockConfig.exhortSnykToken).to.eq('mockToken');
-        expect(mockConfig.exhortOSSIndexUser).to.eq('mockUser');
-        expect(mockConfig.exhortOSSIndexToken).to.eq('mockToken');
         expect(mockConfig.matchManifestVersions).to.eq('false');
         expect(mockConfig.exhortMvnPath).to.eq('mockPath');
         expect(mockConfig.exhortNpmPath).to.eq('mockPath');
@@ -108,8 +100,6 @@ describe('Config tests', () => {
       mockConfig.updateConfig(partialData);
 
       expect(mockConfig.exhortSnykToken).to.eq('mockToken');
-      expect(mockConfig.exhortOSSIndexUser).to.eq('mockUser');
-      expect(mockConfig.exhortOSSIndexToken).to.eq('mockToken');
       expect(mockConfig.matchManifestVersions).to.eq('true');
       expect(mockConfig.exhortMvnPath).to.eq('mvn');
       expect(mockConfig.exhortNpmPath).to.eq('npm');
