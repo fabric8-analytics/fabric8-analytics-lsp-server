@@ -124,42 +124,27 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
  * @returns A Promise that resolves when diagnostics are completed.
  */
 async function performDiagnostics(diagnosticFilePath: string, contents: string, provider: IDependencyProvider) {
-    
-    // collect dependencies from manifest file
-    let dependencies = null;
-    dependencies = await provider.collect(contents)
-        .catch(error => {
-            connection.console.warn(`Component Analysis Error: ${error}`);
-            connection.sendNotification('caError', {
-                errorMessage: error.message,
-                uri: diagnosticFilePath,
-            });
-            return;
+    try {        
+        const dependencies = await provider.collect(contents);
+        const dependencyMap = new DependencyMap(dependencies);
+
+        const diagnosticsPipeline = new DiagnosticsPipeline(provider, dependencyMap, diagnosticFilePath);
+        diagnosticsPipeline.clearDiagnostics();
+
+        const response = await executeComponentAnalysis(diagnosticFilePath, contents);
+
+        clearCodeActionsMap();
+
+        diagnosticsPipeline.runDiagnostics(response.dependencies);
+
+        diagnosticsPipeline.reportDiagnostics();
+    } catch (error) {
+        connection.console.warn(`Component Analysis Error: ${error}`);
+        connection.sendNotification('caError', {
+            errorMessage: error.message,
+            uri: diagnosticFilePath,
         });
-    const dependencyMap = new DependencyMap(dependencies);
-
-    const diagnosticsPipeline = new DiagnosticsPipeline(provider, dependencyMap, diagnosticFilePath);
-    
-    clearCodeActionsMap();
-
-    diagnosticsPipeline.clearDiagnostics();
-
-    const analysis = executeComponentAnalysis(diagnosticFilePath, contents)
-        .then(response => {
-            diagnosticsPipeline.runDiagnostics(response.dependencies);
-        })
-        .catch(error => {
-            connection.console.warn(`Component Analysis Error: ${error}`);
-            connection.sendNotification('caError', {
-                errorMessage: error.message,
-                uri: diagnosticFilePath,
-            });
-            return;
-        });
-
-    await analysis;
-
-    diagnosticsPipeline.reportDiagnostics();
+    }
 }
 
 export { performDiagnostics };
