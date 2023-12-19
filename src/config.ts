@@ -48,15 +48,17 @@ class Config
      * @param data - The data from extension workspace settings to update the global configuration with.
      */
     updateConfig( data: any ) {
-        this.exhortSnykToken = data.redHatDependencyAnalytics.exhortSnykToken;
-        this.matchManifestVersions = data.redHatDependencyAnalytics.matchManifestVersions ? 'true' : 'false';
-        this.exhortMvnPath = data.mvn.executable.path || 'mvn';
-        this.exhortNpmPath = data.npm.executable.path || 'npm';
-        this.exhortGoPath = data.go.executable.path || 'go';
-        this.exhortPython3Path = data.python3.executable.path || 'python3';
-        this.exhortPip3Path = data.pip3.executable.path || 'pip3';
-        this.exhortPythonPath = data.python.executable.path || 'python';
-        this.exhortPipPath = data.pip.executable.path || 'pip';
+        const rhdaData = data.redHatDependencyAnalytics;
+
+        this.exhortSnykToken = rhdaData.exhortSnykToken;
+        this.matchManifestVersions = rhdaData.matchManifestVersions ? 'true' : 'false';
+        this.exhortMvnPath = rhdaData.mvn.executable.path || 'mvn';
+        this.exhortNpmPath = rhdaData.npm.executable.path || 'npm';
+        this.exhortGoPath = rhdaData.go.executable.path || 'go';
+        this.exhortPython3Path = rhdaData.python3.executable.path || 'python3';
+        this.exhortPip3Path = rhdaData.pip3.executable.path || 'pip3';
+        this.exhortPythonPath = rhdaData.python.executable.path || 'python';
+        this.exhortPipPath = rhdaData.pip.executable.path || 'pip';
     }
 }
 
