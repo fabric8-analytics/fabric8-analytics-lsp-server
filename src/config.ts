@@ -10,31 +10,29 @@
  */
 class Config
 {
-    triggerFullStackAnalysis:  string;
-    telemetryId:               string;
-    utmSource:                 string;
-    exhortSnykToken:           string;
-    exhortOSSIndexUser:        string;
-    exhortOSSIndexToken:       string;
-    matchManifestVersions:     string;
-    exhortMvnPath:             string;
-    exhortNpmPath:             string;
-    exhortGoPath:              string;
-    exhortPython3Path:         string;
-    exhortPip3Path:            string;
-    exhortPythonPath:          string;
-    exhortPipPath:             string;
+    triggerFullStackAnalysis:                       string;
+    triggerRHRepositoryRecommendationNotification:  string;
+    telemetryId:                                    string;
+    utmSource:                                      string;
+    exhortSnykToken:                                string;
+    matchManifestVersions:                          string;
+    exhortMvnPath:                                  string;
+    exhortNpmPath:                                  string;
+    exhortGoPath:                                   string;
+    exhortPython3Path:                              string;
+    exhortPip3Path:                                 string;
+    exhortPythonPath:                               string;
+    exhortPipPath:                                  string;
 
     /**
      * Initializes a new instance of the Config class with default values from the parent process environment variable data.
      */
     constructor() {
         this.triggerFullStackAnalysis = process.env.VSCEXT_TRIGGER_FULL_STACK_ANALYSIS || '';
+        this.triggerRHRepositoryRecommendationNotification = process.env.VSCEXT_TRIGGER_REDHAT_REPOSITORY_RECOMMENDATION_NOTIFICATION || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
-        this.exhortOSSIndexUser = process.env.VSCEXT_EXHORT_OSS_INDEX_USER || '';
-        this.exhortOSSIndexToken = process.env.VSCEXT_EXHORT_OSS_INDEX_TOKEN || '';
         this.matchManifestVersions = process.env.VSCEXT_MATCH_MANIFEST_VERSIONS || 'true';
         this.exhortMvnPath = process.env.VSCEXT_EXHORT_MVN_PATH || 'mvn';
         this.exhortNpmPath = process.env.VSCEXT_EXHORT_NPM_PATH || 'npm';
@@ -50,17 +48,17 @@ class Config
      * @param data - The data from extension workspace settings to update the global configuration with.
      */
     updateConfig( data: any ) {
-        this.exhortSnykToken = data.redHatDependencyAnalytics.exhortSnykToken;
-        this.exhortOSSIndexUser = data.redHatDependencyAnalytics.exhortOSSIndexUser;
-        this.exhortOSSIndexToken = data.redHatDependencyAnalytics.exhortOSSIndexToken;
-        this.matchManifestVersions = data.redHatDependencyAnalytics.matchManifestVersions ? 'true' : 'false';
-        this.exhortMvnPath = data.mvn.executable.path || 'mvn';
-        this.exhortNpmPath = data.npm.executable.path || 'npm';
-        this.exhortGoPath = data.go.executable.path || 'go';
-        this.exhortPython3Path = data.python3.executable.path || 'python3';
-        this.exhortPip3Path = data.pip3.executable.path || 'pip3';
-        this.exhortPythonPath = data.python.executable.path || 'python';
-        this.exhortPipPath = data.pip.executable.path || 'pip';
+        const rhdaData = data.redHatDependencyAnalytics;
+
+        this.exhortSnykToken = rhdaData.exhortSnykToken;
+        this.matchManifestVersions = rhdaData.matchManifestVersions ? 'true' : 'false';
+        this.exhortMvnPath = rhdaData.mvn.executable.path || 'mvn';
+        this.exhortNpmPath = rhdaData.npm.executable.path || 'npm';
+        this.exhortGoPath = rhdaData.go.executable.path || 'go';
+        this.exhortPython3Path = rhdaData.python3.executable.path || 'python3';
+        this.exhortPip3Path = rhdaData.pip3.executable.path || 'pip3';
+        this.exhortPythonPath = rhdaData.python.executable.path || 'python';
+        this.exhortPipPath = rhdaData.pip.executable.path || 'pip';
     }
 }
 

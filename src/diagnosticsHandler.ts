@@ -5,10 +5,14 @@
 'use strict';
 
 import { Diagnostic } from 'vscode-languageserver';
+
 import { DependencyMap, IDependencyProvider, getRange } from './collector';
 import { executeComponentAnalysis, DependencyData } from './componentAnalysis';
 import { Vulnerability } from './vulnerability';
 import { connection } from './server';
+import { VERSION_PLACEHOLDER } from './constants';
+import { clearCodeActionsMap, registerCodeAction, generateSwitchToRecommendedVersionAction } from './codeActionHandler';
+import { IPositionedContext } from './collector';
 
 /**
  * Diagnostics Pipeline specification.
@@ -61,8 +65,10 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
 
     runDiagnostics(dependencies: Map<string, DependencyData[]>) {
         Object.entries(dependencies).map(([ref, dependencyData]) => {
-            const dependency = this.dependencyMap.get(this.provider.resolveDependencyFromReference(ref).split('@')[0]);
-            if (dependency !== undefined) {
+            const dependencyRef = this.provider.resolveDependencyFromReference(ref).split('@')[0];
+            const dependency = this.dependencyMap.get(dependencyRef);
+
+            if (dependency) {
                 const vulnerability = new Vulnerability(
                     this.provider,
                     getRange(dependency),
@@ -73,19 +79,40 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
                 const vulnerabilityDiagnostic = vulnerability.getDiagnostic();
                 this.diagnostics.push(vulnerabilityDiagnostic);
 
-                dependencyData.forEach((dd) => {
+                const loc = vulnerabilityDiagnostic.range.start.line + '|' + vulnerabilityDiagnostic.range.start.character;
+
+                dependencyData.forEach(dd => {
+    
+                    const actionRef = vulnerabilityDiagnostic.severity === 1 ? dd.remediationRef : dd.recommendationRef;
+
+                    if (actionRef) {
+                        this.createCodeAction(loc, actionRef, dependency.context, dd.sourceId, vulnerabilityDiagnostic);
+                    }
+    
                     const vulnProvider = dd.sourceId.split('(')[0];
                     const issuesCount = dd.issuesCount;
-
-                    if (vulnProvider in this.vulnCount) {
-                        this.vulnCount[vulnProvider] += issuesCount;
-                    } else {
-                        this.vulnCount[vulnProvider] = issuesCount;
-                    }
-                });          
+                    this.vulnCount[vulnProvider] = (this.vulnCount[vulnProvider] || 0) + issuesCount;
+                });      
             }
             connection.sendDiagnostics({ uri: this.diagnosticFilePath, diagnostics: this.diagnostics });
         });
+    }
+
+    /**
+     * Creates a code action.
+     * @param loc - Location of code action effect.
+     * @param ref - The reference name of the recommended package.
+     * @param context - Dependency context object.
+     * @param sourceId - Source ID.
+     * @param vulnerabilityDiagnostic - Vulnerability diagnostic object.
+     * @private
+     */
+    private createCodeAction(loc: string, ref: string, context: IPositionedContext, sourceId: string, vulnerabilityDiagnostic: Diagnostic) {
+        const switchToVersion = this.provider.resolveDependencyFromReference(ref).split('@')[1];
+        const versionReplacementString = context ? context.value.replace(VERSION_PLACEHOLDER, switchToVersion) : switchToVersion;
+        const title = `Switch to version ${switchToVersion} for ${sourceId}`;
+        const codeAction = generateSwitchToRecommendedVersionAction(title, versionReplacementString, vulnerabilityDiagnostic, this.diagnosticFilePath);
+        registerCodeAction(loc, codeAction);
     }
 }
 
@@ -97,40 +124,27 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
  * @returns A Promise that resolves when diagnostics are completed.
  */
 async function performDiagnostics(diagnosticFilePath: string, contents: string, provider: IDependencyProvider) {
-    
-    // collect dependencies from manifest file
-    let dependencies = null;
-    dependencies = await provider.collect(contents)
-        .catch(error => {
-            connection.console.warn(`Component Analysis Error: ${error}`);
-            connection.sendNotification('caError', {
-                errorMessage: error.message,
-                uri: diagnosticFilePath,
-            });
-            return;
+    try {        
+        const dependencies = await provider.collect(contents);
+        const dependencyMap = new DependencyMap(dependencies);
+
+        const diagnosticsPipeline = new DiagnosticsPipeline(provider, dependencyMap, diagnosticFilePath);
+        diagnosticsPipeline.clearDiagnostics();
+
+        const response = await executeComponentAnalysis(diagnosticFilePath, contents);
+
+        clearCodeActionsMap();
+
+        diagnosticsPipeline.runDiagnostics(response.dependencies);
+
+        diagnosticsPipeline.reportDiagnostics();
+    } catch (error) {
+        connection.console.warn(`Component Analysis Error: ${error}`);
+        connection.sendNotification('caError', {
+            errorMessage: error.message,
+            uri: diagnosticFilePath,
         });
-    const dependencyMap = new DependencyMap(dependencies);
-
-    const diagnosticsPipeline = new DiagnosticsPipeline(provider, dependencyMap, diagnosticFilePath);
-    
-    diagnosticsPipeline.clearDiagnostics();
-
-    const analysis = executeComponentAnalysis(diagnosticFilePath, contents)
-        .then(response => {
-            diagnosticsPipeline.runDiagnostics(response.dependencies);
-        })
-        .catch(error => {
-            connection.console.warn(`Component Analysis Error: ${error}`);
-            connection.sendNotification('caError', {
-                errorMessage: error.message,
-                uri: diagnosticFilePath,
-            });
-            return;
-        });
-
-    await analysis;
-
-    diagnosticsPipeline.reportDiagnostics();
+    }
 }
 
 export { performDiagnostics };
