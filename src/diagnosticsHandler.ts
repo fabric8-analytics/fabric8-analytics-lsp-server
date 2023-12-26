@@ -83,7 +83,7 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
 
                 dependencyData.forEach(dd => {
     
-                    const actionRef = vulnerabilityDiagnostic.severity === 1 ? dd.remediationRef : dd.recommendationRef;
+                    const actionRef = vulnerabilityDiagnostic.severity < 3 ? dd.remediationRef : dd.recommendationRef;
 
                     if (actionRef) {
                         this.createCodeAction(loc, actionRef, dependency.context, dd.sourceId, vulnerabilityDiagnostic);
