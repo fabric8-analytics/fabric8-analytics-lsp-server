@@ -16,6 +16,7 @@ class Config
     utmSource:                                      string;
     exhortSnykToken:                                string;
     matchManifestVersions:                          string;
+    vulnerabilityAlertSeverity:                     string;
     exhortMvnPath:                                  string;
     exhortNpmPath:                                  string;
     exhortGoPath:                                   string;
@@ -34,6 +35,7 @@ class Config
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
         this.matchManifestVersions = process.env.VSCEXT_MATCH_MANIFEST_VERSIONS || 'true';
+        this.vulnerabilityAlertSeverity = process.env.VSCEXT_VULNERABILITY_ALERT_SEVERITY || 'Error';
         this.exhortMvnPath = process.env.VSCEXT_EXHORT_MVN_PATH || 'mvn';
         this.exhortNpmPath = process.env.VSCEXT_EXHORT_NPM_PATH || 'npm';
         this.exhortGoPath = process.env.VSCEXT_EXHORT_GO_PATH || 'go';
@@ -52,6 +54,7 @@ class Config
 
         this.exhortSnykToken = rhdaData.exhortSnykToken;
         this.matchManifestVersions = rhdaData.matchManifestVersions ? 'true' : 'false';
+        this.vulnerabilityAlertSeverity = rhdaData.vulnerabilityAlertSeverity;
         this.exhortMvnPath = rhdaData.mvn.executable.path || 'mvn';
         this.exhortNpmPath = rhdaData.npm.executable.path || 'npm';
         this.exhortGoPath = rhdaData.go.executable.path || 'go';
