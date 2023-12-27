@@ -11,6 +11,10 @@ import * as codeActionHandler from '../src/codeActionHandler';
 
 describe('Code Action Handler tests', () => {
 
+    const mockUri = 'mock/path';
+    const mockLoc = 'mockLocation';
+    const mockCodeAction = { title: 'Mock Action' };
+
     const mockRange0: Range = {
         start: {
             line: 123,
@@ -51,35 +55,57 @@ describe('Code Action Handler tests', () => {
         }
     ];
 
-    it('should register code actions in codeActionsMap for the same key', () => {
-        const key0 = 'mockKey0';
-        const codeAction1 = { title: 'Mock Action1' };
-        const codeAction2 = { title: 'Mock Action2' };
-        codeActionHandler.registerCodeAction(key0, codeAction1);
-        codeActionHandler.registerCodeAction(key0, codeAction2);
+    it('should register code action in codeActionsMap under URI and location keys', () => {
+        codeActionHandler.registerCodeAction(mockUri, mockLoc, mockCodeAction);
 
-        expect(codeActionHandler.getCodeActionsMap()[key0]).to.deep.equal([codeAction1, codeAction2]);
+        expect(codeActionHandler.getCodeActionsMap().get(mockUri)?.get(mockLoc)).to.deep.equal([mockCodeAction]);
     });
 
-    it('should register code actions in codeActionsMap for different keys', () => {
-        const key1 = 'mockKey1';
-        const key2 = 'mockKey2';
-        const codeAction1 = { title: 'Mock Action1' };
-        const codeAction2 = { title: 'Mock Action2' };
-        codeActionHandler.registerCodeAction(key1, codeAction1);
-        codeActionHandler.registerCodeAction(key2, codeAction2);
+    it('should remove code action from codeActionsMap under URI and location keys', () => {
+        expect(codeActionHandler.getCodeActionsMap().get(mockUri)?.get(mockLoc)).to.deep.equal([mockCodeAction]);
+        
+        codeActionHandler.clearCodeActionsMap(mockUri);
 
-        const codeActionsMap = codeActionHandler.getCodeActionsMap();
-        expect(codeActionsMap[key1]).to.deep.equal([codeAction1]);
-        expect(codeActionsMap[key2]).to.deep.equal([codeAction2]);
+        expect(codeActionHandler.getCodeActionsMap().has(mockUri)).to.be.false;
     });
 
-    it('should clear codeActionsMap', () => {
-        expect(Object.keys(codeActionHandler.getCodeActionsMap()).length).greaterThan(0);
+    it('should register code actions in codeActionsMap for same URI key and same location key', () => {
+        const codeAction1 = { title: 'Mock Action1' };
+        const codeAction2 = { title: 'Mock Action2' };
+        codeActionHandler.registerCodeAction(mockUri, mockLoc, codeAction1);
+        codeActionHandler.registerCodeAction(mockUri, mockLoc, codeAction2);
 
-        codeActionHandler.clearCodeActionsMap();
+        expect(codeActionHandler.getCodeActionsMap().get(mockUri)?.get(mockLoc)).to.deep.equal([codeAction1, codeAction2]);
+        codeActionHandler.clearCodeActionsMap(mockUri);
+    });
 
-        expect(Object.keys(codeActionHandler.getCodeActionsMap()).length).to.equal(0);
+    it('should register code actions in codeActionsMap for same URI key and different location keys', () => {
+        const loc1 = 'mockLocation/1';
+        const loc2 = 'mockLocation/2';
+        const codeAction1 = { title: 'Mock Action1' };
+        const codeAction2 = { title: 'Mock Action2' };
+        codeActionHandler.registerCodeAction(mockUri, loc1, codeAction1);
+        codeActionHandler.registerCodeAction(mockUri, loc2, codeAction2);
+
+        expect(codeActionHandler.getCodeActionsMap().get(mockUri)?.get(loc1)).to.deep.equal([codeAction1]);
+        expect(codeActionHandler.getCodeActionsMap().get(mockUri)?.get(loc2)).to.deep.equal([codeAction2]);
+        codeActionHandler.clearCodeActionsMap(mockUri);
+    });
+
+    it('should register code actions in codeActionsMap for different URI keys', () => {
+        const uri1 = 'mock/path/1';
+        const uri2 = 'mock/path/2';
+        const loc1 = 'mockLocation/1';
+        const loc2 = 'mockLocation/2';
+        const codeAction1 = { title: 'Mock Action1' };
+        const codeAction2 = { title: 'Mock Action2' };
+        codeActionHandler.registerCodeAction(uri1, loc1, codeAction1);
+        codeActionHandler.registerCodeAction(uri2, loc2, codeAction2);
+
+        expect(codeActionHandler.getCodeActionsMap().get(uri1)?.get(loc1)).to.deep.equal([codeAction1]);
+        expect(codeActionHandler.getCodeActionsMap().get(uri2)?.get(loc2)).to.deep.equal([codeAction2]);
+        codeActionHandler.clearCodeActionsMap(uri1);
+        codeActionHandler.clearCodeActionsMap(uri2);
     });
 
     it('should return an empty array if no RHDA diagnostics are present and full stack analysis action is provided', () => {
@@ -89,7 +115,7 @@ describe('Code Action Handler tests', () => {
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
-        const codeActions = codeActionHandler.getDiagnosticsCodeActions(diagnostics);
+        const codeActions = codeActionHandler.getDiagnosticsCodeActions(diagnostics, mockUri);
 
         expect(codeActions).to.be.an('array').that.is.empty;
     });
@@ -101,87 +127,84 @@ describe('Code Action Handler tests', () => {
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
-        const codeActions = codeActionHandler.getDiagnosticsCodeActions(diagnostics);
+        const codeActions = codeActionHandler.getDiagnosticsCodeActions(diagnostics, mockUri);
 
         expect(codeActions).to.be.an('array').that.is.empty;
     });
 
-    it('should return an empty array if RHDA diagnostics are present but no matching code actions are found', () => {
-        const key = 'mockKey';
-        const codeAction = { title: 'Mock Action' };
-        codeActionHandler.registerCodeAction(key, codeAction);
+    it('should return an empty array if RHDA diagnostics are present but  no matching URI is found in codeActionsMap', () => {
+        const uri1 = 'mock/path/1';
+        codeActionHandler.registerCodeAction(mockUri, mockLoc, mockCodeAction);
         
         let globalConfig = {
             triggerFullStackAnalysis: 'mockTriggerFullStackAnalysis'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
-        const codeActions = codeActionHandler.getDiagnosticsCodeActions(mockDiagnostic1);
+        const codeActions = codeActionHandler.getDiagnosticsCodeActions(mockDiagnostic1, uri1);
 
         expect(codeActions).to.be.an('array').that.is.empty;
+        codeActionHandler.clearCodeActionsMap(mockUri);
+    });
+
+    it('should return an empty array if RHDA diagnostics are present but no matching code actions are found', () => {
+        codeActionHandler.registerCodeAction(mockUri, mockLoc, mockCodeAction);
+        
+        let globalConfig = {
+            triggerFullStackAnalysis: 'mockTriggerFullStackAnalysis'
+        };
+        sinon.stub(config, 'globalConfig').value(globalConfig);
+
+        const codeActions = codeActionHandler.getDiagnosticsCodeActions(mockDiagnostic1, mockUri);
+
+        expect(codeActions).to.be.an('array').that.is.empty;
+        codeActionHandler.clearCodeActionsMap(mockUri);
     });
 
     it('should generate code actions for RHDA diagnostics without full stack analysis action setting in globalConfig', async () => {
-        const key = `${mockDiagnostic0[0].range.start.line}|${mockDiagnostic0[0].range.start.character}`;
-        const codeAction = { title: 'Mock Action' };
-        codeActionHandler.clearCodeActionsMap();
-        codeActionHandler.registerCodeAction(key, codeAction);
+        const loc = `${mockDiagnostic0[0].range.start.line}|${mockDiagnostic0[0].range.start.character}`;
+        codeActionHandler.registerCodeAction(mockUri, loc, mockCodeAction);
         
         let globalConfig = {
             triggerFullStackAnalysis: ''
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
-        const codeActions: CodeAction[] = codeActionHandler.getDiagnosticsCodeActions(mockDiagnostic0);
+        const codeActions: CodeAction[] = codeActionHandler.getDiagnosticsCodeActions(mockDiagnostic0, mockUri);
 
-        expect(codeActions).to.deep.equal(
-            [
-                {
-                    title: 'Mock Action',
-                }
-            ]
-        );
+        expect(codeActions).to.deep.equal([mockCodeAction]);
+        codeActionHandler.clearCodeActionsMap(mockUri);
     });
 
     it('should generate code actions for RHDA diagnostics without RHDA Diagonostic source', async () => {
-        const key = `${mockDiagnostic1[0].range.start.line}|${mockDiagnostic1[0].range.start.character}`;
-        const codeAction = { title: 'Mock Action' };
-        codeActionHandler.clearCodeActionsMap();
-        codeActionHandler.registerCodeAction(key, codeAction);
+        const loc = `${mockDiagnostic1[0].range.start.line}|${mockDiagnostic1[0].range.start.character}`;
+        codeActionHandler.registerCodeAction(mockUri, loc, mockCodeAction);
         
         let globalConfig = {
             triggerFullStackAnalysis: 'mockTriggerFullStackAnalysis'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
-        const codeActions: CodeAction[] = codeActionHandler.getDiagnosticsCodeActions(mockDiagnostic1);
+        const codeActions: CodeAction[] = codeActionHandler.getDiagnosticsCodeActions(mockDiagnostic1, mockUri);
 
-        expect(codeActions).to.deep.equal(
-            [
-                {
-                    title: 'Mock Action',
-                }
-            ]
-        );
+        expect(codeActions).to.deep.equal([mockCodeAction]);
+        codeActionHandler.clearCodeActionsMap(mockUri);
     });
 
     it('should generate code actions for RHDA diagnostics with full stack analysis action', async () => {
-        const key = `${mockDiagnostic0[0].range.start.line}|${mockDiagnostic0[0].range.start.character}`;
-        const codeAction = { title: 'Mock Action' };
-        codeActionHandler.registerCodeAction(key, codeAction);
+        const loc = `${mockDiagnostic0[0].range.start.line}|${mockDiagnostic0[0].range.start.character}`;
+        codeActionHandler.registerCodeAction(mockUri, loc, mockCodeAction);
         
         let globalConfig = {
             triggerFullStackAnalysis: 'mockTriggerFullStackAnalysis'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
-        const codeActions: CodeAction[] = codeActionHandler.getDiagnosticsCodeActions(mockDiagnostic0);
+        const codeActions: CodeAction[] = codeActionHandler.getDiagnosticsCodeActions(mockDiagnostic0, mockUri);
 
         expect(codeActions).to.deep.equal(
             [
-                {
-                    title: 'Mock Action',
-                },
+                mockCodeAction,
                 {
                   title: 'Detailed Vulnerability Report',
                   kind: CodeActionKind.QuickFix,
@@ -192,6 +215,7 @@ describe('Code Action Handler tests', () => {
                 }
             ]
         );
+        codeActionHandler.clearCodeActionsMap(mockUri);
     });
 
     it('should return a switch to recommended version code action without RedHat repository recommendation', async () => {
