@@ -10,7 +10,7 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import { globalConfig } from './config';
 import { AnalysisLSPServer } from './fileHandler';
-import { getDiagnosticsCodeActions } from './codeActionHandler';
+import { getDiagnosticsCodeActions, clearCodeActionsMap } from './codeActionHandler';
 
 /**
  * Declares timeout identifier to track delays for server.handleFileEvent execution
@@ -88,8 +88,9 @@ connection.onDidChangeTextDocument((params) => {
 /**
  * On close document event handler
  */
-connection.onDidCloseTextDocument(() => {
+connection.onDidCloseTextDocument((params) => {
     clearTimeout(checkDelay);
+    clearCodeActionsMap(params.textDocument.uri);
 });
 
 /**
@@ -108,7 +109,7 @@ connection.onDidChangeConfiguration(() => {
  * Handles code action requests from client.
  */
 connection.onCodeAction((params): CodeAction[] => {
-    return getDiagnosticsCodeActions(params.context.diagnostics);
+    return getDiagnosticsCodeActions(params.context.diagnostics, params.textDocument.uri);
 });
 
 connection.listen();

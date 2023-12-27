@@ -10,30 +10,35 @@ import { CodeAction, CodeActionKind, Diagnostic } from 'vscode-languageserver/no
 import { globalConfig } from './config';
 import { RHDA_DIAGNOSTIC_SOURCE } from './constants';
 
-let codeActionsMap: Map<string, CodeAction[]> = new Map<string, CodeAction[]>();
+const codeActionsMap: Map<string, Map<string, CodeAction[]>> = new Map<string, Map<string, CodeAction[]>>();
 
 /**
  * Gets the code actions map.
  */
-function getCodeActionsMap(): Map<string, CodeAction[]> {
+function getCodeActionsMap(): Map<string, Map<string, CodeAction[]>> {
     return codeActionsMap;
 }
 
 /**
- * Clears the code actions map.
+ * Clears code actions related to a specific file URI from the code actions map.
+ * @param uri - The file URI key to remove from the code actions map.
  */
-function clearCodeActionsMap() {
-    codeActionsMap = new Map<string, CodeAction[]>();
+function clearCodeActionsMap(uri: string) {
+    codeActionsMap.delete(uri);
 }
 
 /**
  * Registers a code action.
- * @param key - The key to register the code action against.
+ * @param uri - The file uri to register the file code action map (inner map) against.
+ * @param loc - The location in file to register the file code action against.
  * @param codeAction - The code action to be registered.
  */
-function registerCodeAction(key: string, codeAction: CodeAction) {
-    codeActionsMap[key] = codeActionsMap[key] || [];
-    codeActionsMap[key].push(codeAction);
+function registerCodeAction(uri: string, loc: string, codeAction: CodeAction) {
+    codeActionsMap.set(uri, codeActionsMap.get(uri) || new Map<string, CodeAction[]>());
+    
+    const innerMap = codeActionsMap.get(uri);
+    innerMap.set(loc, innerMap.get(loc) || []);
+    innerMap.get(loc).push(codeAction);
 }
 
 /**
@@ -42,19 +47,20 @@ function registerCodeAction(key: string, codeAction: CodeAction) {
  * @param uri - The URI of the file being analyzed.
  * @returns An array of CodeAction objects to be made available to the user.
  */
-function getDiagnosticsCodeActions(diagnostics: Diagnostic[]): CodeAction[] {
+function getDiagnosticsCodeActions(diagnostics: Diagnostic[], uri: string): CodeAction[] {
     let hasRhdaDiagonostic: boolean = false; 
     const codeActions: CodeAction[] = [];
-
+    
     for (const diagnostic of diagnostics) {
 
-        const key = `${diagnostic.range.start.line}|${diagnostic.range.start.character}`;
-        const diagnosticCodeActions = codeActionsMap[key] || [];
+        const fileCodeActionsMap = codeActionsMap.get(uri) || new Map<string, CodeAction[]>();
+        const loc = `${diagnostic.range.start.line}|${diagnostic.range.start.character}`;
+        const diagnosticCodeActions = fileCodeActionsMap.get(loc) || [];
         codeActions.push(...diagnosticCodeActions);
 
         hasRhdaDiagonostic ||= diagnostic.source === RHDA_DIAGNOSTIC_SOURCE;
     }
-
+    
     if (globalConfig.triggerFullStackAnalysis && hasRhdaDiagonostic) {
         codeActions.push(generateFullStackAnalysisAction());
     }
