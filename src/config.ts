@@ -49,9 +49,7 @@ class Config
      * Updates the global configuration with provided data from extension workspace settings.
      * @param data - The data from extension workspace settings to update the global configuration with.
      */
-    updateConfig( data: any ) {
-        const rhdaData = data.redHatDependencyAnalytics;
-
+    updateConfig( rhdaData: any ) {
         this.exhortSnykToken = rhdaData.exhortSnykToken;
         this.matchManifestVersions = rhdaData.matchManifestVersions ? 'true' : 'false';
         this.vulnerabilityAlertSeverity = rhdaData.vulnerabilityAlertSeverity;

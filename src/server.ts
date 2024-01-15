@@ -5,7 +5,7 @@
 'use strict';
 
 import { TextDocumentSyncKind, Connection, DidChangeConfigurationNotification } from 'vscode-languageserver';
-import { createConnection, TextDocuments, InitializeResult, CodeAction, ProposedFeatures } from 'vscode-languageserver/node';
+import { createConnection, TextDocuments, InitializeParams, InitializeResult, CodeAction, ProposedFeatures } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import { globalConfig } from './config';
@@ -18,12 +18,17 @@ import { getDiagnosticsCodeActions, clearCodeActionsMap } from './codeActionHand
 let checkDelay: NodeJS.Timeout;
 
 /**
- * Represents the connection used for the server, using Node's IPC as a transport.
+ * Create a connection for the server, using Node's IPC as a transport.
  */
 const connection: Connection = createConnection(ProposedFeatures.all);
 
 /**
- * Represents the documents managed by the server.
+ * Declares servers configuration capability
+ */
+let hasConfigurationCapability: boolean = false;
+
+/**
+ * Create a text document manager.
  */
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 documents.listen(connection);
@@ -31,8 +36,8 @@ documents.listen(connection);
 /**
  * Sets up the connection's initialization event handler.
  */
-let hasConfigurationCapability: boolean = false;
-connection.onInitialize((params): InitializeResult => {
+connection.onInitialize((params: InitializeParams): InitializeResult => {
+
     const capabilities = params.capabilities;
     hasConfigurationCapability = !!(
         capabilities.workspace && !!capabilities.workspace.configuration
@@ -98,9 +103,9 @@ connection.onDidCloseTextDocument((params) => {
  */
 connection.onDidChangeConfiguration(() => {
     if (hasConfigurationCapability) {
-        server.conn.workspace.getConfiguration()
-        .then((data) => {
-            globalConfig.updateConfig(data);
+        server.conn.workspace.getConfiguration('redHatDependencyAnalytics')
+        .then((rhdaData) => {
+            globalConfig.updateConfig(rhdaData);
         });
     }
 });
