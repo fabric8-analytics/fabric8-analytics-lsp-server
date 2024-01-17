@@ -5,6 +5,7 @@
 'use strict';
 
 import * as path from 'path';
+import { URL } from 'url';
 import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
 
 import { connection } from './server';
@@ -177,7 +178,7 @@ async function executeComponentAnalysis (diagnosticFilePath: string, contents: s
         options['EXHORT_SNYK_TOKEN'] = globalConfig.exhortSnykToken;
     }
 
-    const componentAnalysisJson = await exhort.componentAnalysis(path.basename(diagnosticFilePath), contents, options); // Execute component analysis
+    const componentAnalysisJson = await exhort.componentAnalysis(path.basename(diagnosticFilePath), contents, options, (new URL(diagnosticFilePath)).pathname); // Execute component analysis
 
     return new AnalysisResponse(componentAnalysisJson, diagnosticFilePath);
 }
