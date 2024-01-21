@@ -83,7 +83,7 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
 
                 dependencyData.forEach(dd => {
     
-                    const actionRef = vulnerabilityDiagnostic.severity === 1 ? dd.remediationRef : dd.recommendationRef;
+                    const actionRef = vulnerabilityDiagnostic.severity < 3 ? dd.remediationRef : dd.recommendationRef;
 
                     if (actionRef) {
                         this.createCodeAction(loc, actionRef, dependency.context, dd.sourceId, vulnerabilityDiagnostic);
@@ -112,7 +112,7 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
         const versionReplacementString = context ? context.value.replace(VERSION_PLACEHOLDER, switchToVersion) : switchToVersion;
         const title = `Switch to version ${switchToVersion} for ${sourceId}`;
         const codeAction = generateSwitchToRecommendedVersionAction(title, versionReplacementString, vulnerabilityDiagnostic, this.diagnosticFilePath);
-        registerCodeAction(loc, codeAction);
+        registerCodeAction(this.diagnosticFilePath, loc, codeAction);
     }
 }
 
@@ -133,7 +133,7 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
 
         const response = await executeComponentAnalysis(diagnosticFilePath, contents);
 
-        clearCodeActionsMap();
+        clearCodeActionsMap(diagnosticFilePath);
 
         diagnosticsPipeline.runDiagnostics(response.dependencies);
 

@@ -8,59 +8,55 @@ describe('Config tests', () => {
 
     const mockConfig = new Config();
 
-    const data = {
-        redHatDependencyAnalytics: {
-            exhortSnykToken: 'mockToken',
-            matchManifestVersions: false,
-            mvn: {
-                executable: { path: 'mockPath' }
-            },
-            npm: {
-                executable: { path: 'mockPath' }
-            },
-            go: {
-                executable: { path: 'mockPath' }
-            },
-            python3: {
-                executable: { path: 'mockPath' }
-            },
-            pip3: {
-                executable: { path: 'mockPath' }
-            },
-            python: {
-                executable: { path: 'mockPath' }
-            },
-            pip: {
-                executable: { path: 'mockPath' }
-            },
+    const rhdaData = {
+        exhortSnykToken: 'mockToken',
+        matchManifestVersions: false,
+        mvn: {
+            executable: { path: 'mockPath' }
+        },
+        npm: {
+            executable: { path: 'mockPath' }
+        },
+        go: {
+            executable: { path: 'mockPath' }
+        },
+        python3: {
+            executable: { path: 'mockPath' }
+        },
+        pip3: {
+            executable: { path: 'mockPath' }
+        },
+        python: {
+            executable: { path: 'mockPath' }
+        },
+        pip: {
+            executable: { path: 'mockPath' }
         },
     };
 
-    const partialData = {
-        redHatDependencyAnalytics: {
-            exhortSnykToken: 'mockToken',
-            matchManifestVersions: true,
-            mvn: {
-            executable: { path: '' }
-            },
-            npm: {
-            executable: { path: '' }
-            },
-            go: {
-            executable: { path: '' }
-            },
-            python3: {
-            executable: { path: '' }
-            },
-            pip3: {
-            executable: { path: '' }
-            },
-            python: {
-            executable: { path: '' }
-            },
-            pip: {
-            executable: { path: '' }
-            },
+    const partialRhdaData = {
+        exhortSnykToken: 'mockToken',
+        matchManifestVersions: true,
+        mvn: {
+        executable: { path: '' }
+        },
+        npm: {
+        executable: { path: '' }
+        },
+        go: {
+        executable: { path: '' }
+        },
+        python3: {
+        executable: { path: '' }
+        },
+        pip3: {
+        executable: { path: '' }
+        },
+        python: {
+        executable: { path: '' }
+        },
+        pip: {
+        executable: { path: '' }
         },
     };
 
@@ -82,7 +78,7 @@ describe('Config tests', () => {
     
     it('should update configuration based on provided data', () => {
 
-        mockConfig.updateConfig(data);
+        mockConfig.updateConfig(rhdaData);
 
         expect(mockConfig.exhortSnykToken).to.eq('mockToken');
         expect(mockConfig.matchManifestVersions).to.eq('false');
@@ -97,7 +93,7 @@ describe('Config tests', () => {
 
     it('should update configuration based on provided partial data', () => {
 
-        mockConfig.updateConfig(partialData);
+        mockConfig.updateConfig(partialRhdaData);
 
         expect(mockConfig.exhortSnykToken).to.eq('mockToken');
         expect(mockConfig.matchManifestVersions).to.eq('true');

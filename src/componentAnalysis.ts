@@ -9,7 +9,7 @@ import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
 
 import { connection } from './server';
 import { globalConfig } from './config';
-import { isDefined } from './utils';
+import { isDefined, decodeUriPath } from './utils';
 
 /**
  * Represents a source object with an ID and dependencies array.
@@ -177,7 +177,7 @@ async function executeComponentAnalysis (diagnosticFilePath: string, contents: s
         options['EXHORT_SNYK_TOKEN'] = globalConfig.exhortSnykToken;
     }
 
-    const componentAnalysisJson = await exhort.componentAnalysis(path.basename(diagnosticFilePath), contents, options); // Execute component analysis
+    const componentAnalysisJson = await exhort.componentAnalysis(path.basename(diagnosticFilePath), contents, options, decodeUriPath(diagnosticFilePath)); // Execute component analysis
 
     return new AnalysisResponse(componentAnalysisJson, diagnosticFilePath);
 }

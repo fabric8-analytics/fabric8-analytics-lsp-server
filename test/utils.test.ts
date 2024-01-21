@@ -2,7 +2,7 @@
 
 import { expect } from 'chai';
 
-import { isDefined } from '../src/utils';
+import { isDefined, decodeUriPath } from '../src/utils';
 
 describe('Utils tests', () => {
 
@@ -60,5 +60,13 @@ describe('Utils tests', () => {
             },    
         };
         expect(isDefined(obj, 'a', 'b', 'c')).to.be.false;
+    });
+
+    it('should decode the URI path correctly', () => {
+        const uriString = 'file:///mock/path%20with%20spaces';
+
+        const decodedPath = decodeUriPath(uriString);
+
+        expect(decodedPath).to.equal('/mock/path with spaces');
     });
 });
