@@ -19,3 +19,14 @@ export function isDefined(obj: any, ...keys: string[]): boolean {
   }
   return true;
 }
+
+/**
+ * Decodes the URI path from a given URI string.
+ * @param uri - The URI string to process.
+ * @returns The decoded URI path.
+ */
+export function decodeUriPath(uri: string): string {
+  const url = new URL(uri);
+  const decodedUri = decodeURIComponent(url.pathname);
+  return decodedUri;
+}
