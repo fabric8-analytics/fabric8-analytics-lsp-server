@@ -11,7 +11,7 @@
 /**
  * Default source name for the Red Hat Dependency Analytics extension in diagnostics.
  */
-export const RHDA_DIAGNOSTIC_SOURCE = '\nRed Hat Dependency Analytics Plugin';
+export const RHDA_DIAGNOSTIC_SOURCE = 'Red Hat Dependency Analytics Plugin';
 /**
  * Placeholder used as a version for dependency templates.
  */
