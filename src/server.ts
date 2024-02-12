@@ -13,11 +13,6 @@ import { AnalysisLSPServer } from './fileHandler';
 import { getDiagnosticsCodeActions, clearCodeActionsMap } from './codeActionHandler';
 
 /**
- * Declares timeout identifier to track delays for server.handleFileEvent execution
- */
-let checkDelay: NodeJS.Timeout;
-
-/**
  * Create a connection for the server, using Node's IPC as a transport.
  */
 const connection: Connection = createConnection(ProposedFeatures.all);
@@ -65,36 +60,30 @@ connection.onInitialized(() => {
 const server = new AnalysisLSPServer(connection);
 
 /**
- * On open document event handler
+ * On open document trigger event handler
  */
 connection.onDidOpenTextDocument((params) => {
     server.handleFileEvent(params.textDocument.uri, params.textDocument.text);
 });
 
 /**
- * On save document event handler
+ * On changes applied, apply to server file data
+ */
+connection.onDidChangeTextDocument((params) => {
+    server.files.fileData[params.textDocument.uri] = params.contentChanges[0].text;
+});
+
+/**
+ * On save document trigger event handler
  */
 connection.onDidSaveTextDocument((params) => {
-    clearTimeout(checkDelay);
     server.handleFileEvent(params.textDocument.uri, server.files.fileData[params.textDocument.uri]);
 });
 
 /**
- * On changes applied to document event handler
- */
-connection.onDidChangeTextDocument((params) => {
-    server.files.fileData[params.textDocument.uri] = params.contentChanges[0].text;
-    clearTimeout(checkDelay);
-    checkDelay = setTimeout(() => {
-        server.handleFileEvent(params.textDocument.uri, server.files.fileData[params.textDocument.uri]);
-    }, 3000);
-});
-
-/**
- * On close document event handler
+ * On close document clear URI from codeActions Map
  */
 connection.onDidCloseTextDocument((params) => {
-    clearTimeout(checkDelay);
     clearCodeActionsMap(params.textDocument.uri);
 });
 

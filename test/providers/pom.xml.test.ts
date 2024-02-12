@@ -153,7 +153,7 @@ describe('Java Maven pom.xml parser tests', () => {
         ]);
     });
 
-    it('test duplicate dependencies where none specify a version', async () => {
+    it('tests duplicate dependencies where none specify a version', async () => {
         const pom = `
             <project>
                 <dependencies>
