@@ -2,12 +2,19 @@
 
 import { expect } from 'chai';
 
-import { Config } from '../src/config';
+import { globalConfig } from '../src/config';
 
 describe('Config tests', () => {
 
-    const mockConfig = new Config();
+    const mockConfig = globalConfig;
 
+    before(() => {
+      Object.keys(process.env).forEach(k => {
+        delete process.env[k];
+      });
+      mockConfig.load();
+    });
+    
     const rhdaData = {
         exhortSnykToken: 'mockToken',
         matchManifestVersions: false,
