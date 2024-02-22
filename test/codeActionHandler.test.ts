@@ -218,66 +218,23 @@ describe('Code Action Handler tests', () => {
         codeActionHandler.clearCodeActionsMap(mockUri);
     });
 
-    it('should return a switch to recommended version code action without RedHat repository recommendation', async () => {
-
-        const codeAction: CodeAction = codeActionHandler.generateSwitchToRecommendedVersionAction( 'mockTitle', 'mockVersionReplacementString', mockDiagnostic0[0], 'mock/path/noPom.xml');
-        expect(codeAction).to.deep.equal(
-            {
-                "diagnostics": [
-                    {
-                    "message": "mock message",
-                    "range": {
-                        "end": {
-                        "character": 456,
-                        "line": 456
-                        },
-                        "start": {
-                        "character": 123,
-                        "line": 123
-                        }
-                    },
-                    "severity": 1,
-                    "source": RHDA_DIAGNOSTIC_SOURCE
-                    }
-                ],
-                "edit": {
-                    "changes": {
-                    "mock/path/noPom.xml": [
-                        {
-                        "newText": "mockVersionReplacementString",
-                        "range": {
-                            "end": {
-                            "character": 456,
-                            "line": 456
-                            },
-                            "start": {
-                            "character": 123,
-                            "line": 123
-                            }
-                        }
-                        }
-                    ]
-                    }
-                },
-                "kind": "quickfix",
-                "title": "mockTitle"
-            }
-        );
-    });
-
-    it('should return a switch to recommended version code action with RedHat repository recommendation', async () => {
+    it('should return a switch to recommended version code action', async () => {
 
         let globalConfig = {
-            triggerRHRepositoryRecommendationNotification: 'mockTriggerRHRepositoryRecommendationNotification'
+            triggerTrackRecommendationAcceptance: 'mockTriggerTrackRecommendationAcceptance'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
-        const codeAction: CodeAction = codeActionHandler.generateSwitchToRecommendedVersionAction( 'mockTitle', 'mockVersionReplacementString', mockDiagnostic1[0], 'mock/path/pom.xml');
+        const codeAction: CodeAction = codeActionHandler.generateSwitchToRecommendedVersionAction( 'mockTitle', 'mockPackage@mockversion', 'mockVersionReplacementString', mockDiagnostic1[0], 'mock/path/pom.xml');
         expect(codeAction).to.deep.equal(
             {
                 "command": {
-                    "command": 'mockTriggerRHRepositoryRecommendationNotification',
-                    "title": "RedHat repository recommendation"
+                    "command": 'mockTriggerTrackRecommendationAcceptance',
+                    "title": "Track recommendation acceptance",
+                    "arguments": [
+                        "mockPackage@mockversion",
+                        "pom.xml"
+                    ]
                 },
                 "diagnostics": [
                     {

@@ -69,7 +69,7 @@ describe('Config tests', () => {
 
     it('should initialize with default values when environment variables are not set', () => {
         expect(mockConfig.triggerFullStackAnalysis).to.eq('');
-        expect(mockConfig.triggerRHRepositoryRecommendationNotification).to.eq('');
+        expect(mockConfig.triggerTrackRecommendationAcceptance).to.eq('');
         expect(mockConfig.telemetryId).to.eq('');
         expect(mockConfig.utmSource).to.eq('');
         expect(mockConfig.exhortSnykToken).to.eq('');

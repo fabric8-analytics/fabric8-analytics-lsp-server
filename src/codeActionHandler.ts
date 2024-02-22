@@ -91,7 +91,7 @@ function generateFullStackAnalysisAction(): CodeAction {
  * @param uri - The URI of the file.
  * @returns A CodeAction object for switching to the recommended version.
  */
-function generateSwitchToRecommendedVersionAction(title: string, versionReplacementString: string, diagnostic: Diagnostic, uri: string): CodeAction {
+function generateSwitchToRecommendedVersionAction(title: string, dependency: string, versionReplacementString: string, diagnostic: Diagnostic, uri: string): CodeAction {
     const codeAction: CodeAction = {
         title: title,
         diagnostics: [diagnostic], 
@@ -107,12 +107,11 @@ function generateSwitchToRecommendedVersionAction(title: string, versionReplacem
         newText: versionReplacementString
     }];
 
-    if (path.basename(uri) === 'pom.xml') {
-        codeAction.command = {
-            title: 'RedHat repository recommendation',
-            command: globalConfig.triggerRHRepositoryRecommendationNotification,
-        };
-    }
+    codeAction.command = {
+        title: 'Track recommendation acceptance',
+        command: globalConfig.triggerTrackRecommendationAcceptance,
+        arguments: [dependency, path.basename(uri)],
+    };
 
     return codeAction;
 }

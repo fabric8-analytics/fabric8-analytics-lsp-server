@@ -11,7 +11,7 @@
 class Config
 {
     triggerFullStackAnalysis:                       string;
-    triggerRHRepositoryRecommendationNotification:  string;
+    triggerTrackRecommendationAcceptance:           string;
     telemetryId:                                    string;
     utmSource:                                      string;
     exhortSnykToken:                                string;
@@ -34,7 +34,7 @@ class Config
 
     load() {
         this.triggerFullStackAnalysis = process.env.VSCEXT_TRIGGER_FULL_STACK_ANALYSIS || '';
-        this.triggerRHRepositoryRecommendationNotification = process.env.VSCEXT_TRIGGER_REDHAT_REPOSITORY_RECOMMENDATION_NOTIFICATION || '';
+        this.triggerTrackRecommendationAcceptance = process.env.VSCEXT_TRIGGER_TRACK_RECOMMENDATION_ACCEPTANCE || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
