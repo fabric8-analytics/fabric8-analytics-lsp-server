@@ -111,7 +111,7 @@ describe('Code Action Handler tests', () => {
     it('should return an empty array if no RHDA diagnostics are present and full stack analysis action is provided', () => {
         const diagnostics: Diagnostic[] = [];
         let globalConfig = {
-            triggerFullStackAnalysis: 'mockTriggerFullStackAnalysis'
+            stackAnalysisCommand: 'mockStackAnalysisCommand'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
@@ -123,7 +123,7 @@ describe('Code Action Handler tests', () => {
     it('should return an empty array if no RHDA diagnostics are present and full stack analysis action is not provided', () => {
         const diagnostics: Diagnostic[] = [];
         let globalConfig = {
-            triggerFullStackAnalysis: ''
+            stackAnalysisCommand: ''
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
@@ -137,7 +137,7 @@ describe('Code Action Handler tests', () => {
         codeActionHandler.registerCodeAction(mockUri, mockLoc, mockCodeAction);
         
         let globalConfig = {
-            triggerFullStackAnalysis: 'mockTriggerFullStackAnalysis'
+            stackAnalysisCommand: 'mockStackAnalysisCommand'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
@@ -151,7 +151,7 @@ describe('Code Action Handler tests', () => {
         codeActionHandler.registerCodeAction(mockUri, mockLoc, mockCodeAction);
         
         let globalConfig = {
-            triggerFullStackAnalysis: 'mockTriggerFullStackAnalysis'
+            stackAnalysisCommand: 'mockStackAnalysisCommand'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
@@ -166,7 +166,7 @@ describe('Code Action Handler tests', () => {
         codeActionHandler.registerCodeAction(mockUri, loc, mockCodeAction);
         
         let globalConfig = {
-            triggerFullStackAnalysis: ''
+            stackAnalysisCommand: ''
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
@@ -181,7 +181,7 @@ describe('Code Action Handler tests', () => {
         codeActionHandler.registerCodeAction(mockUri, loc, mockCodeAction);
         
         let globalConfig = {
-            triggerFullStackAnalysis: 'mockTriggerFullStackAnalysis'
+            stackAnalysisCommand: 'mockStackAnalysisCommand'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
@@ -196,7 +196,7 @@ describe('Code Action Handler tests', () => {
         codeActionHandler.registerCodeAction(mockUri, loc, mockCodeAction);
         
         let globalConfig = {
-            triggerFullStackAnalysis: 'mockTriggerFullStackAnalysis'
+            stackAnalysisCommand: 'mockStackAnalysisCommand'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
@@ -210,7 +210,7 @@ describe('Code Action Handler tests', () => {
                   kind: CodeActionKind.QuickFix,
                   command: { 
                     title: 'Analytics Report', 
-                    command: 'mockTriggerFullStackAnalysis' 
+                    command: 'mockStackAnalysisCommand' 
                 }
                 }
             ]
@@ -268,7 +268,7 @@ describe('Code Action Handler tests', () => {
     it('should return a switch to recommended version code action with RedHat repository recommendation', async () => {
 
         let globalConfig = {
-            triggerRHRepositoryRecommendationNotification: 'mockTriggerRHRepositoryRecommendationNotification'
+            rhRepositoryRecommendationNotificationCommand: 'mockRHRepositoryRecommendationNotificationCommand'
         };
         sinon.stub(config, 'globalConfig').value(globalConfig);
 
@@ -276,7 +276,7 @@ describe('Code Action Handler tests', () => {
         expect(codeAction).to.deep.equal(
             {
                 "command": {
-                    "command": 'mockTriggerRHRepositoryRecommendationNotification',
+                    "command": 'mockRHRepositoryRecommendationNotificationCommand',
                     "title": "RedHat repository recommendation"
                 },
                 "diagnostics": [

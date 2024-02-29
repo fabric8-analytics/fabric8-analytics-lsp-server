@@ -10,8 +10,8 @@
  */
 class Config
 {
-    triggerFullStackAnalysis:                       string;
-    triggerRHRepositoryRecommendationNotification:  string;
+    stackAnalysisCommand:                           string;
+    rhRepositoryRecommendationNotificationCommand:  string;
     telemetryId:                                    string;
     utmSource:                                      string;
     exhortSnykToken:                                string;
@@ -33,8 +33,8 @@ class Config
     }
 
     load() {
-        this.triggerFullStackAnalysis = process.env.VSCEXT_TRIGGER_FULL_STACK_ANALYSIS || '';
-        this.triggerRHRepositoryRecommendationNotification = process.env.VSCEXT_TRIGGER_REDHAT_REPOSITORY_RECOMMENDATION_NOTIFICATION || '';
+        this.stackAnalysisCommand = process.env.VSCEXT_STACK_ANALYSIS_COMMAND || '';
+        this.rhRepositoryRecommendationNotificationCommand = process.env.VSCEXT_REDHAT_REPOSITORY_RECOMMENDATION_NOTIFICATION_COMMAND || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
@@ -54,7 +54,6 @@ class Config
      * @param data - The data from extension workspace settings to update the global configuration with.
      */
     updateConfig( rhdaData: any ) {
-        this.exhortSnykToken = rhdaData.exhortSnykToken;
         this.matchManifestVersions = rhdaData.matchManifestVersions ? 'true' : 'false';
         this.vulnerabilityAlertSeverity = rhdaData.vulnerabilityAlertSeverity;
         this.exhortMvnPath = rhdaData.mvn.executable.path || 'mvn';
@@ -64,6 +63,14 @@ class Config
         this.exhortPip3Path = rhdaData.pip3.executable.path || 'pip3';
         this.exhortPythonPath = rhdaData.python.executable.path || 'python';
         this.exhortPipPath = rhdaData.pip.executable.path || 'pip';
+    }
+
+    /**
+     * Sets the Snyk token.
+     * @param token The Snyk token to be set.
+     */
+    setExhortSnykToken( token: string ) {
+        this.exhortSnykToken = token;
     }
 }
 

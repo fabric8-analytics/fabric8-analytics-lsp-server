@@ -61,7 +61,7 @@ function getDiagnosticsCodeActions(diagnostics: Diagnostic[], uri: string): Code
         hasRhdaDiagonostic ||= diagnostic.source === RHDA_DIAGNOSTIC_SOURCE;
     }
     
-    if (globalConfig.triggerFullStackAnalysis && hasRhdaDiagonostic) {
+    if (globalConfig.stackAnalysisCommand && hasRhdaDiagonostic) {
         codeActions.push(generateFullStackAnalysisAction());
     }
 
@@ -78,7 +78,7 @@ function generateFullStackAnalysisAction(): CodeAction {
         kind: CodeActionKind.QuickFix,
         command: {
             title: 'Analytics Report',
-            command: globalConfig.triggerFullStackAnalysis,
+            command: globalConfig.stackAnalysisCommand,
         }
     };
 }
@@ -110,7 +110,7 @@ function generateSwitchToRecommendedVersionAction(title: string, versionReplacem
     if (path.basename(uri) === 'pom.xml') {
         codeAction.command = {
             title: 'RedHat repository recommendation',
-            command: globalConfig.triggerRHRepositoryRecommendationNotification,
+            command: globalConfig.rhRepositoryRecommendationNotificationCommand,
         };
     }
 
