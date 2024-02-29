@@ -68,8 +68,8 @@ describe('Config tests', () => {
     };
 
     it('should initialize with default values when environment variables are not set', () => {
-        expect(mockConfig.triggerFullStackAnalysis).to.eq('');
-        expect(mockConfig.triggerRHRepositoryRecommendationNotification).to.eq('');
+        expect(mockConfig.stackAnalysisCommand).to.eq('');
+        expect(mockConfig.rhRepositoryRecommendationNotificationCommand).to.eq('');
         expect(mockConfig.telemetryId).to.eq('');
         expect(mockConfig.utmSource).to.eq('');
         expect(mockConfig.exhortSnykToken).to.eq('');
@@ -87,7 +87,6 @@ describe('Config tests', () => {
 
         mockConfig.updateConfig(rhdaData);
 
-        expect(mockConfig.exhortSnykToken).to.eq('mockToken');
         expect(mockConfig.matchManifestVersions).to.eq('false');
         expect(mockConfig.exhortMvnPath).to.eq('mockPath');
         expect(mockConfig.exhortNpmPath).to.eq('mockPath');
@@ -102,7 +101,6 @@ describe('Config tests', () => {
 
         mockConfig.updateConfig(partialRhdaData);
 
-        expect(mockConfig.exhortSnykToken).to.eq('mockToken');
         expect(mockConfig.matchManifestVersions).to.eq('true');
         expect(mockConfig.exhortMvnPath).to.eq('mvn');
         expect(mockConfig.exhortNpmPath).to.eq('npm');
@@ -111,5 +109,15 @@ describe('Config tests', () => {
         expect(mockConfig.exhortPip3Path).to.eq('pip3');
         expect(mockConfig.exhortPythonPath).to.eq('python');
         expect(mockConfig.exhortPipPath).to.eq('pip');        
+    });
+
+    it('should set Exhort Snyk Token', () => {
+        const mockToken = 'mockToken';
+
+        expect(mockConfig.exhortSnykToken).to.not.eq(mockToken);  
+
+        mockConfig.setExhortSnykToken(mockToken);
+
+        expect(mockConfig.exhortSnykToken).to.eq(mockToken);    
     });
 });

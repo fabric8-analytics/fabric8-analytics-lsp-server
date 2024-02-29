@@ -106,6 +106,17 @@ connection.onCodeAction((params): CodeAction[] => {
     return getDiagnosticsCodeActions(params.context.diagnostics, params.textDocument.uri);
 });
 
+/**
+ * Registers a callback for the 'snykTokenModified' notification.
+ * 
+ * @param notification The name of the notification.
+ * @param callback The callback function to be invoked when the notification is received.
+ * @param token The token received in the notification.
+ */
+connection.onNotification('snykTokenModified', token => {
+    globalConfig.setExhortSnykToken(token);
+});
+
 connection.listen();
 
 export { connection };
