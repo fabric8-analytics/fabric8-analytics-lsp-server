@@ -2,7 +2,7 @@
 
 import { expect } from 'chai';
 
-import { isDefined, decodeUriPath } from '../src/utils';
+import * as utils from '../src/utils';
 
 describe('Utils tests', () => {
 
@@ -14,7 +14,7 @@ describe('Utils tests', () => {
                 },
             },    
         };
-        expect(isDefined(obj, 'a', 'b', 'c')).to.be.true;
+        expect(utils.isDefined(obj, 'a', 'b', 'c')).to.be.true;
     });
 
     it('should return true when all keys are defined in the object (without key requests)', () => {
@@ -25,7 +25,7 @@ describe('Utils tests', () => {
                 },
             },    
         };
-        expect(isDefined(obj)).to.be.true;
+        expect(utils.isDefined(obj)).to.be.true;
     });
 
     it('should return false if any key is not defined in the object', () => {
@@ -36,12 +36,12 @@ describe('Utils tests', () => {
                 },
             },    
         };
-        expect(isDefined(obj, 'a', 'b', 'd')).to.be.false;
+        expect(utils.isDefined(obj, 'a', 'b', 'd')).to.be.false;
     });
 
     it('should return false if the object itself is not defined', () => {
         const obj = null;
-        expect(isDefined(obj, 'a', 'b', 'c')).to.be.false;
+        expect(utils.isDefined(obj, 'a', 'b', 'c')).to.be.false;
     });
 
     it('should return false if any intermediate key in the object chain is not defined', () => {
@@ -50,7 +50,7 @@ describe('Utils tests', () => {
                 b: null
             },    
         };
-        expect(isDefined(obj, 'a', 'b', 'c')).to.be.false;
+        expect(utils.isDefined(obj, 'a', 'b', 'c')).to.be.false;
     });
 
     it('should return false if any intermediate key in the object chain is undefined', () => {
@@ -59,14 +59,32 @@ describe('Utils tests', () => {
                 b: undefined
             },    
         };
-        expect(isDefined(obj, 'a', 'b', 'c')).to.be.false;
+        expect(utils.isDefined(obj, 'a', 'b', 'c')).to.be.false;
     });
 
-    it('should decode the URI path correctly', () => {
+    it('should decode the URI path correctly for non Windows OS', () => {
         const uriString = 'file:///mock/path%20with%20spaces';
 
-        const decodedPath = decodeUriPath(uriString);
+        const decodedPath = utils.decodeUriPath(uriString);
 
         expect(decodedPath).to.equal('/mock/path with spaces');
+    });
+
+    it('should decode the URI path correctly for Windows OS', () => {
+        const uriString = 'file:///mock/path%20with%20spaces';
+
+        const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+        
+        Object.defineProperty(process, 'platform', {
+            value: 'win32'
+        });
+
+        const decodedPath = utils.decodeUriPath(uriString);
+
+        expect(decodedPath).to.equal('mock/path with spaces');
+
+        if (originalPlatform) {
+            Object.defineProperty(process, 'platform', originalPlatform);
+        }
     });
 });

@@ -4,6 +4,8 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
+import * as os from 'os';
+
 /**
  * Checks if the specified keys are defined within the provided object.
  * @param obj - The object to check for key definitions.
@@ -28,5 +30,13 @@ export function isDefined(obj: any, ...keys: string[]): boolean {
 export function decodeUriPath(uri: string): string {
   const url = new URL(uri);
   const decodedUri = decodeURIComponent(url.pathname);
-  return decodedUri;
+
+  const osPlatform = os.platform();
+  const isWindows = osPlatform.toLowerCase().startsWith('win');
+  
+  if (isWindows && decodedUri.startsWith('/')) {
+    return decodedUri.substring(1);
+  } else {
+    return decodedUri;
+  }
 }
