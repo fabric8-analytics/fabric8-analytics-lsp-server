@@ -165,6 +165,7 @@ async function executeComponentAnalysis (diagnosticFilePath: string, contents: s
         'RHDA_TOKEN': globalConfig.telemetryId,
         'RHDA_SOURCE': globalConfig.utmSource,
         'MATCH_MANIFEST_VERSIONS': globalConfig.matchManifestVersions,
+        'EXHORT_PYTHON_VIRTUAL_ENV': globalConfig.setPythonVirtualEnvironment,
         'EXHORT_MVN_PATH': globalConfig.exhortMvnPath,
         'EXHORT_NPM_PATH': globalConfig.exhortNpmPath,
         'EXHORT_GO_PATH': globalConfig.exhortGoPath,

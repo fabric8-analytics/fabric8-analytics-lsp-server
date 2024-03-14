@@ -18,6 +18,7 @@ describe('Config tests', () => {
     const rhdaData = {
         exhortSnykToken: 'mockToken',
         matchManifestVersions: false,
+        setPythonVirtualEnvironment: true,
         mvn: {
             executable: { path: 'mockPath' }
         },
@@ -44,6 +45,7 @@ describe('Config tests', () => {
     const partialRhdaData = {
         exhortSnykToken: 'mockToken',
         matchManifestVersions: true,
+        setPythonVirtualEnvironment: false,
         mvn: {
         executable: { path: '' }
         },
@@ -74,6 +76,7 @@ describe('Config tests', () => {
         expect(mockConfig.utmSource).to.eq('');
         expect(mockConfig.exhortSnykToken).to.eq('');
         expect(mockConfig.matchManifestVersions).to.eq('true');
+        expect(mockConfig.setPythonVirtualEnvironment).to.eq('false');
         expect(mockConfig.exhortMvnPath).to.eq('mvn');
         expect(mockConfig.exhortNpmPath).to.eq('npm');
         expect(mockConfig.exhortGoPath).to.eq('go');
@@ -88,6 +91,7 @@ describe('Config tests', () => {
         mockConfig.updateConfig(rhdaData);
 
         expect(mockConfig.matchManifestVersions).to.eq('false');
+        expect(mockConfig.setPythonVirtualEnvironment).to.eq('true');
         expect(mockConfig.exhortMvnPath).to.eq('mockPath');
         expect(mockConfig.exhortNpmPath).to.eq('mockPath');
         expect(mockConfig.exhortGoPath).to.eq('mockPath');
@@ -102,6 +106,7 @@ describe('Config tests', () => {
         mockConfig.updateConfig(partialRhdaData);
 
         expect(mockConfig.matchManifestVersions).to.eq('true');
+        expect(mockConfig.setPythonVirtualEnvironment).to.eq('false');
         expect(mockConfig.exhortMvnPath).to.eq('mvn');
         expect(mockConfig.exhortNpmPath).to.eq('npm');
         expect(mockConfig.exhortGoPath).to.eq('go');
