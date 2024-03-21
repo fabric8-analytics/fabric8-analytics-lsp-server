@@ -16,7 +16,10 @@ class Config
     utmSource:                                      string;
     exhortSnykToken:                                string;
     matchManifestVersions:                          string;
-    setPythonVirtualEnvironment:                    string;
+    usePythonVirtualEnvironment:                    string;
+    useGoMVS:                                       string;
+    enablePythonBestEffortsInstallation:            string;
+    usePipDepTree:                                  string;
     vulnerabilityAlertSeverity:                     string;
     exhortMvnPath:                                  string;
     exhortNpmPath:                                  string;
@@ -40,7 +43,10 @@ class Config
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
         this.matchManifestVersions = process.env.VSCEXT_MATCH_MANIFEST_VERSIONS || 'true';
-        this.setPythonVirtualEnvironment = process.env.VSCEXT_SET_PYTHON_VIRTUAL_ENVIRONMENT || 'false';
+        this.usePythonVirtualEnvironment = process.env.VSCEXT_USE_PYTHON_VIRTUAL_ENVIRONMENT || 'false';
+        this.useGoMVS = process.env.VSCEXT_USE_GO_MVS || 'false';
+        this.enablePythonBestEffortsInstallation = process.env.VSCEXT_ENABLE_PYTHON_BEST_EFFORTS_INSTALLATION || 'false';
+        this.usePipDepTree = process.env.VSCEXT_USE_PIP_DEP_TREE || 'false';
         this.vulnerabilityAlertSeverity = process.env.VSCEXT_VULNERABILITY_ALERT_SEVERITY || 'Error';
         this.exhortMvnPath = process.env.VSCEXT_EXHORT_MVN_PATH || 'mvn';
         this.exhortNpmPath = process.env.VSCEXT_EXHORT_NPM_PATH || 'npm';
@@ -57,7 +63,10 @@ class Config
      */
     updateConfig( rhdaData: any ) {
         this.matchManifestVersions = rhdaData.matchManifestVersions ? 'true' : 'false';
-        this.setPythonVirtualEnvironment = rhdaData.setPythonVirtualEnvironment ? 'true' : 'false';
+        this.usePythonVirtualEnvironment = rhdaData.usePythonVirtualEnvironment ? 'true' : 'false';
+        this.useGoMVS = rhdaData.useGoMVS ? 'true' : 'false';
+        this.enablePythonBestEffortsInstallation = rhdaData.enablePythonBestEffortsInstallation ? 'true' : 'false';
+        this.usePipDepTree = rhdaData.usePipDepTree ? 'true' : 'false';
         this.vulnerabilityAlertSeverity = rhdaData.vulnerabilityAlertSeverity;
         this.exhortMvnPath = rhdaData.mvn.executable.path || 'mvn';
         this.exhortNpmPath = rhdaData.npm.executable.path || 'npm';
