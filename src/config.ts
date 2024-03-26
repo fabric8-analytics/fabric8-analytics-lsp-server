@@ -11,7 +11,7 @@
 class Config
 {
     stackAnalysisCommand:                           string;
-    rhRepositoryRecommendationNotificationCommand:  string;
+    trackRecommendationAcceptanceCommand:           string;
     telemetryId:                                    string;
     utmSource:                                      string;
     exhortSnykToken:                                string;
@@ -38,7 +38,7 @@ class Config
 
     load() {
         this.stackAnalysisCommand = process.env.VSCEXT_STACK_ANALYSIS_COMMAND || '';
-        this.rhRepositoryRecommendationNotificationCommand = process.env.VSCEXT_REDHAT_REPOSITORY_RECOMMENDATION_NOTIFICATION_COMMAND || '';
+        this.trackRecommendationAcceptanceCommand = process.env.VSCEXT_TRACK_RECOMMENDATION_ACCEPTANCE_COMMAND || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';

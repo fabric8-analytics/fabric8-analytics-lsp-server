@@ -86,12 +86,13 @@ function generateFullStackAnalysisAction(): CodeAction {
 /**
  * Generates a code action to switch to the recommended version.
  * @param title - The title of the code action.
+ * @param dependency - The dependency (package and version) provided by exhort.
  * @param versionReplacementString - The version replacement string.
  * @param diagnostic - The diagnostic information.
  * @param uri - The URI of the file.
  * @returns A CodeAction object for switching to the recommended version.
  */
-function generateSwitchToRecommendedVersionAction(title: string, versionReplacementString: string, diagnostic: Diagnostic, uri: string): CodeAction {
+function generateSwitchToRecommendedVersionAction(title: string, dependency: string, versionReplacementString: string, diagnostic: Diagnostic, uri: string): CodeAction {
     const codeAction: CodeAction = {
         title: title,
         diagnostics: [diagnostic], 
@@ -107,12 +108,11 @@ function generateSwitchToRecommendedVersionAction(title: string, versionReplacem
         newText: versionReplacementString
     }];
 
-    if (path.basename(uri) === 'pom.xml') {
-        codeAction.command = {
-            title: 'RedHat repository recommendation',
-            command: globalConfig.rhRepositoryRecommendationNotificationCommand,
-        };
-    }
+    codeAction.command = {
+        title: 'Track recommendation acceptance',
+        command: globalConfig.trackRecommendationAcceptanceCommand,
+        arguments: [dependency, path.basename(uri)],
+    };
 
     return codeAction;
 }
