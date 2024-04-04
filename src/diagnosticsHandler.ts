@@ -6,13 +6,13 @@
 
 import { Diagnostic } from 'vscode-languageserver';
 
-import { DependencyMap, IDependencyProvider, getRange } from './collector';
+import { DependencyMap, IDependencyProvider, getRange, IPositionedContext } from './collector';
 import { executeComponentAnalysis, DependencyData } from './componentAnalysis';
 import { Vulnerability } from './vulnerability';
 import { connection } from './server';
 import { VERSION_PLACEHOLDER } from './constants';
 import { clearCodeActionsMap, registerCodeAction, generateSwitchToRecommendedVersionAction } from './codeActionHandler';
-import { IPositionedContext } from './collector';
+import { decodeUriPath } from './utils';
 
 /**
  * Diagnostics Pipeline specification.
@@ -50,14 +50,14 @@ class DiagnosticsPipeline implements IDiagnosticsPipeline {
         connection.sendDiagnostics({ uri: this.diagnosticFilePath, diagnostics: [] });
         connection.sendNotification('caNotification', {
             done: false,
-            uri: this.diagnosticFilePath,
+            uri: decodeUriPath(this.diagnosticFilePath),
         });
     }
 
     reportDiagnostics() {
         connection.sendNotification('caNotification', {
             done: true,
-            uri: this.diagnosticFilePath,
+            uri: decodeUriPath(this.diagnosticFilePath),
             diagCount: this.diagnostics.length,
             vulnCount: this.vulnCount,
         });
@@ -143,7 +143,7 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
         connection.console.warn(`Component Analysis Error: ${error}`);
         connection.sendNotification('caError', {
             errorMessage: error.message,
-            uri: diagnosticFilePath,
+            uri: decodeUriPath(diagnosticFilePath),
         });
     }
 }
