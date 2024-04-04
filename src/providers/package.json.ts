@@ -5,7 +5,7 @@
 'use strict';
 
 import jsonAst from 'json-to-ast';
-import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../collector';
+import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../dependencyAnalysis/collector';
 
 /**
  * Process entries found in the package.json file.

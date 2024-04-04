@@ -117,4 +117,29 @@ function generateSwitchToRecommendedVersionAction(title: string, dependency: str
     return codeAction;
 }
 
-export { getCodeActionsMap, clearCodeActionsMap, registerCodeAction , generateSwitchToRecommendedVersionAction, getDiagnosticsCodeActions };
+/**
+ * Generates a code action to switch to the recommended version.
+ * @param title - The title of the code action.
+ * @param dependency - The dependency (package and version) provided by exhort.
+ * @param versionReplacementString - The version replacement string.
+ * @param diagnostic - The diagnostic information.
+ * @param uri - The URI of the file.
+ * @returns A CodeAction object for switching to the recommended version.
+ */
+function generateRedirectToRecommendedVersionAction(title: string, imageRef: string, diagnostic: Diagnostic, uri: string): CodeAction {
+    const codeAction: CodeAction = {
+        title: title,
+        diagnostics: [diagnostic], 
+        kind: CodeActionKind.QuickFix,
+    };
+
+    codeAction.command = {
+        title: 'Track recommendation acceptance',
+        command: globalConfig.trackRecommendationAcceptanceCommand,
+        arguments: [imageRef, path.basename(uri)],
+    };
+
+    return codeAction;
+}
+
+export { getCodeActionsMap, clearCodeActionsMap, registerCodeAction , generateSwitchToRecommendedVersionAction, generateRedirectToRecommendedVersionAction, getDiagnosticsCodeActions };
