@@ -89,7 +89,7 @@ class AnalysisResponse implements IAnalysisResponse {
                 connection.console.warn(`Component Analysis Error: ${errMsg}`);
                 connection.sendNotification('caError', {
                     errorMessage: errMsg,
-                    uri: diagnosticFilePath,
+                    uri: decodeUriPath(diagnosticFilePath),
                 });
             }
 
