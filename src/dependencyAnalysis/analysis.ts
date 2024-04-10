@@ -21,16 +21,6 @@ interface ISource {
 }
 
 /**
- * Implementation of ISource interface.
- */
-class Source implements ISource {
-    constructor(
-        public id: string, 
-        public dependencies: any[]
-    ) {}
-}
-
-/**
  * Represents data specification related to a dependency.
  */
 interface IDependencyData {
@@ -72,14 +62,14 @@ class AnalysisResponse implements IAnalysisResponse {
 
         this.provider = provider;
         const failedProviders: string[] = [];
-        const sources: Source[] = [];
+        const sources: ISource[] = [];
         
         if (isDefined(resData, 'providers')) {
             Object.entries(resData.providers).map(([providerName, providerData]) => {
                 if (isDefined(providerData, 'status', 'ok') && providerData.status.ok) {
                     if (isDefined(providerData, 'sources')) {
                         Object.entries(providerData.sources).map(([sourceName, sourceData]) => {
-                            sources.push(new Source(`${providerName}(${sourceName})`, this.getDependencies(sourceData)));
+                            sources.push({id:`${providerName}(${sourceName})`, dependencies: this.getDependencies(sourceData)});
                         });
                     }
                 } else {

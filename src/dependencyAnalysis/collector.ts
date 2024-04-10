@@ -6,7 +6,7 @@
 
 import { Range } from 'vscode-languageserver';
 
-import { IPositionedString, IPositionedContext, IPosition } from '../collector'
+import { IPositionedString, IPositionedContext, IPosition } from '../positionTypes';
 import { isDefined } from '../utils';
 
 /**

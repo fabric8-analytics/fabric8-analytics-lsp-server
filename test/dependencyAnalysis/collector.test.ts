@@ -2,10 +2,10 @@
 
 import { expect } from 'chai';
 
-import { Dependency, DependencyMap, getRange } from '../src/collector';
-import { DependencyProvider } from '../src/providers/pom.xml';
+import { Dependency, DependencyMap, getRange } from '../../src/dependencyAnalysis/collector';
+import { DependencyProvider } from '../../src/providers/pom.xml';
 
-describe('Collector tests', () => {
+describe('Dependency Analysis Collector tests', () => {
 
     // Mock manifest dependency collection
     const reqDeps: Dependency[] = [
@@ -23,7 +23,7 @@ describe('Collector tests', () => {
         });
     });
 
-    it('should create empty map', async () => {
+    it('should create empty dependency map', async () => {
 
         const depMap = new DependencyMap([]);
 

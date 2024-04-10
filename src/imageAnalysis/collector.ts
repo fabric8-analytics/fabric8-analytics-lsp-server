@@ -6,7 +6,7 @@
 
 import { Range } from 'vscode-languageserver';
 
-import { IPositionedString, IPosition } from '../collector'
+import { IPositionedString, IPosition } from '../positionTypes';
 
 /**
  * Represents a context with a string value and its associated range.
@@ -67,6 +67,7 @@ export class ImageMap {
    */
   public get(key: string): IImage[] {
     const images: IImage[] = [];
+    /* istanbul ignore else */
     if (this.mapper.has(key)) {
         images.push(...this.mapper.get(key));
     }
@@ -74,6 +75,7 @@ export class ImageMap {
     // Check if the key includes ":latest"
     if (key.includes(':latest')) {
         const keyWithoutLatest = key.replace(':latest', '');
+        /* istanbul ignore else */
         if (this.mapper.has(keyWithoutLatest)) {
             images.push(...this.mapper.get(keyWithoutLatest));
         }

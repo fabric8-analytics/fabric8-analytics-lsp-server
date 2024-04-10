@@ -7,7 +7,7 @@
 import { Diagnostic } from 'vscode-languageserver';
 
 import { DependencyMap, IDependencyProvider, getRange } from '../dependencyAnalysis/collector';
-import { IPositionedContext } from '../collector';
+import { IPositionedContext } from '../positionTypes';
 import { executeComponentAnalysis, DependencyData } from './analysis';
 import { Vulnerability } from '../vulnerability';
 import { connection } from '../server';
