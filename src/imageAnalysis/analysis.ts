@@ -11,28 +11,46 @@ import { globalConfig } from '../config';
 import { isDefined, decodeUriPath } from '../utils';
 import { IImage } from '../imageAnalysis/collector';
 
+/**
+ * Represents the Red Hat Dependency Analytics (RHDA) analysis report, with images mapped by string keys.
+ */
 interface IExhortAnalysisReport {
   [key: string]: IImageReport;
 }
 
+/**
+ * Represents the RHDA analysis report for a single image.
+ */
 interface IImageReport {
   providers: Map<string, IProvider>;
 }
 
+/**
+ * Represents a provider of dependencies for an image.
+ */
 interface IProvider {
   status: IStatus;
   sources: Map<string, ISource>;
 }
 
+/**
+ * Represents the status of a provider.
+ */
 interface IStatus {
   ok: boolean;
 }
 
+/**
+ * Represents a source of dependencies.
+ */
 interface ISource {
   summary: ISummary;
   dependencies: ISourceDependency[];
 }
 
+/**
+ * Represents the summary of vulnerabilities for a source.
+ */
 interface ISummary {
   total: number,
   critical: number,
@@ -41,10 +59,16 @@ interface ISummary {
   low: number,
 }
 
+/**
+ * Represents a dependency reported by a source.
+ */
 interface ISourceDependency {
   recommendation: string | null;
 }
 
+/**
+ * Represents data collected related to an image.
+ */
 interface IArtifact {
   id: string;
   summary: ISummary;
@@ -52,7 +76,7 @@ interface IArtifact {
 }
 
 /**
-* Represents data specification related to a dependency.
+* Represents data specification related to an image.
 */
 interface IImageData {
   sourceId: string;
@@ -62,8 +86,8 @@ interface IImageData {
 }
 
 /**
-* Implementation of IDependencyData interface.
-*/
+ * Implementation of IImageData interface.
+ */
 class ImageData implements IImageData {
   constructor(
       public sourceId: string,
@@ -74,7 +98,7 @@ class ImageData implements IImageData {
 }
 
 /**
-* Represents the parsed response of Red Hat Dependency Analysis, with dependencies mapped by string keys.
+* Represents the parsed response of Red Hat Dependency Analytics (RHDA) analysis report, with images mapped by string keys.
 */
 interface IAnalysisResponse {
   images: Map<string, ImageData[]>;
@@ -128,9 +152,9 @@ class AnalysisResponse implements IAnalysisResponse {
   }
 
   /**
-   * Retrieves the highest vulnerability severity value from a dependency.
-   * @param dependency The dependency object.
-   * @returns The highest severity level or NONE if none exists.
+   * Retrieves the total number of issues from a dependency summary.
+   * @param summary The dependency summary object.
+   * @returns The total number of issues.
    * @private
    */
     private getTotalIssues(summary: any): number {
@@ -138,9 +162,9 @@ class AnalysisResponse implements IAnalysisResponse {
   }
 
   /**
-   * Retrieves the highest vulnerability severity value from a dependency.
-   * @param dependency The dependency object.
-   * @returns The highest severity level or NONE if none exists.
+   * Retrieves the highest vulnerability severity from a source summary.
+   * @param summary The source summary object.
+   * @returns The highest severity level.
    * @private
    */
   private getHighestSeverity(summary: any): string {
@@ -158,11 +182,11 @@ class AnalysisResponse implements IAnalysisResponse {
 
       return highestSeverity;
   }
-  
+
   /**
-   * Retrieves the recommendation reference from a dependency.
-   * @param dependencies List of the dependency object.
-   * @returns The recommendation reference or empty string if none exists.
+   * Retrieves the recommendation reference from a list of dependency objects.
+   * @param dependencies The list of dependency objects.
+   * @returns The recommendation reference or an empty string.
    * @private
    */
   private getRecommendation(dependencies: ISourceDependency[]): string {
@@ -174,6 +198,9 @@ class AnalysisResponse implements IAnalysisResponse {
   }
 }
 
+/**
+ * Represents the options for running image analysis.
+ */
 interface IOptions {
     RHDA_TOKEN: string;
     RHDA_SOURCE: string;
@@ -191,6 +218,12 @@ interface IOptions {
     EXHORT_IMAGE_VARIANT: string;
 }
 
+/**
+ * Executes RHDA image analysis using the provided images and options.
+ * @param images - The images to analyze.
+ * @param options - The options for running image analysis.
+ * @returns A Promise resolving to the analysis response.
+ */
 function imageAnalysisService(images: IImage[], options: IOptions): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       const jarPath = '/home/Ilonas/Documents/SSSC/RHDA/fabric8-analytics-lsp-server/javaApiAdapter/exhort-java-api-adapter-1.0-SNAPSHOT-jar-with-dependencies.jar';
@@ -223,11 +256,10 @@ function imageAnalysisService(images: IImage[], options: IOptions): Promise<any>
     });
   }
   
-
 /**
- * Performs RHDA component analysis on provided manifest contents and fileType based on ecosystem.
- * @param fileType - The type of file (e.g., 'pom.xml', 'package.json', 'go.mod', 'requirements.txt', 'Dockerfile').
- * @param contents - The contents of the manifest file to analyze.
+ * Performs RHDA image analysis on provided images.
+ * @param diagnosticFilePath - The path to the image file to analyze.
+ * @param images - The images to analyze.
  * @returns A Promise resolving to an AnalysisResponse object.
  */
 async function executeImageAnalysis(diagnosticFilePath: string, images:  IImage[]): Promise<AnalysisResponse> {

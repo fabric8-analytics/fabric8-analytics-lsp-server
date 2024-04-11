@@ -16,9 +16,15 @@ import { Vulnerability } from '../vulnerability';
 
 /**
  * Implementation of DiagnosticsPipeline interface.
+ * @typeparam ImageData - The type of elements in the image data array.
  */
-class DiagnosticsPipeline extends AbstractDiagnosticsPipeline {
+class DiagnosticsPipeline extends AbstractDiagnosticsPipeline<ImageData> {
 
+    /**
+     * Creates an instance of DiagnosticsPipeline.
+     * @param imageMap - The image map containing information about image derived from the image file.
+     * @param diagnosticFilePath - The path to the image file to retrieve diagnostics from.
+     */
     constructor(
         private imageMap: ImageMap,
         diagnosticFilePath: string,
@@ -26,6 +32,10 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline {
         super(diagnosticFilePath);
     }
 
+    /**
+     * Runs diagnostics on images.
+     * @param images - A map containing image data by reference string.
+     */
     runDiagnostics(images: Map<string, ImageData[]>) {
         Object.entries(images).map(([ref, imageData]) => {
             const foundImageList = this.imageMap.get(ref);
@@ -61,8 +71,7 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline {
     /**
      * Creates a code action.
      * @param loc - Location of code action effect.
-     * @param ref - The reference name of the recommended package.
-     * @param context - Dependency context object.
+     * @param imageRef - The reference name of the image.
      * @param sourceId - Source ID.
      * @param vulnerabilityDiagnostic - Vulnerability diagnostic object.
      * @private
@@ -75,10 +84,10 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline {
 }
 
 /**
- * Performs diagnostics on the provided manifest file contents.
- * @param diagnosticFilePath - The path to the manifest file.
- * @param contents - The contents of the manifest file.
- * @param provider - The dependency provider of the corresponding ecosystem.
+ * Performs diagnostics on the provided image file contents.
+ * @param diagnosticFilePath - The path to the image file.
+ * @param contents - The contents of the image file.
+ * @param provider - The image provider of the corresponding ecosystem.
  * @returns A Promise that resolves when diagnostics are completed.
  */
 async function performDiagnostics(diagnosticFilePath: string, contents: string, provider: IImageProvider) {

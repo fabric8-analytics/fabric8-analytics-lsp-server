@@ -9,7 +9,7 @@ import { Range } from 'vscode-languageserver';
 import { IPositionedString, IPosition } from '../positionTypes';
 
 /**
- * Represents a context with a string value and its associated range.
+ * Represents an image specification.
  */
 export interface IImage {
   name: IPositionedString;
@@ -18,7 +18,7 @@ export interface IImage {
 }
 
 /**
- * Represents a dependency and implements the IDependency interface.
+ * Represents an image and implements the IImage interface.
  */
 export class Image implements IImage {
   public platform: string;
@@ -30,23 +30,28 @@ export class Image implements IImage {
 }
 
 /**
- * Represents an interface for providing ecosystem-specific dependencies.
+ * Represents an interface for providing ecosystem-specific images.
  */
 export interface IImageProvider {
 
   /**
-   * Collects dependencies from the provided manifest contents.
-   * @param contents - The manifest contents to collect dependencies from.
-   * @returns A Promise resolving to an array of dependencies.
+   * Collects images from the provided image file contents.
+   * @param contents - The image file contents to collect images from.
+   * @returns A Promise resolving to an array of images.
    */
   collect(contents: string): Promise<IImage[]>;
 }
 
 /**
- * Represents a map of dependencies using dependency name as key for easy retrieval of associated details.
+ * Represents a map of arrays of images using the shared image name as the key for easy retrieval of associated details.
  */
 export class ImageMap {
   mapper: Map<string, IImage[]>;
+
+  /**
+   * Creates an instance of ImageMap.
+   * @param images - The array of images to initialize the map with.
+   */
   constructor(images: IImage[]) {
     this.mapper = new Map();
 
@@ -61,9 +66,9 @@ export class ImageMap {
   }
 
   /**
-   * Retrieves a dependency by its unique name key.
-   * @param key - The unique name key for the desired dependency.
-   * @returns The dependency object linked to the specified unique name key.
+   * Retrieves an array of images by their unique name key.
+   * @param key - The unique name key for the desired images.
+   * @returns The array of images linked to the specified unique name key.
    */
   public get(key: string): IImage[] {
     const images: IImage[] = [];
@@ -86,9 +91,9 @@ export class ImageMap {
 }
 
 /**
- * Retrieves the range of a dependency version or context within a text document.
- * @param dep - The dependency object containing version and context information.
- * @returns The range within the text document that represents the dependency.
+ * Retrieves the range of an image within a image document.
+ * @param img - The image object image position information.
+ * @returns The range within the image document that represents the image.
  */
 export function getRange (img: IImage): Range {
   const pos: IPosition = img.name.position;

@@ -45,7 +45,7 @@ class DependencyData implements IDependencyData {
 }
 
 /**
- * Represents the parsed response of Red Hat Dependency Analysis, with dependencies mapped by string keys.
+ * Represents the parsed response of Red Hat Dependency Analytics (RHDA) analysis, with dependencies mapped by reference string.
  */
 interface IAnalysisResponse {
     dependencies: Map<string, DependencyData[]>;
@@ -147,9 +147,10 @@ class AnalysisResponse implements IAnalysisResponse {
 }
 
 /**
- * Performs RHDA component analysis on provided manifest contents and fileType based on ecosystem.
- * @param fileType - The type of file (e.g., 'pom.xml', 'package.json', 'go.mod', 'requirements.txt', 'Dockerfile').
+ * Performs RHDA component analysis on provided manifest contents/path and fileType based on ecosystem.
+ * @param diagnosticFilePath - The path to the manifest file to analyze.
  * @param contents - The contents of the manifest file to analyze.
+ * @param provider - The dependency provider of the corresponding ecosystem.
  * @returns A Promise resolving to an AnalysisResponse object.
  */
 async function executeComponentAnalysis (diagnosticFilePath: string, contents: string, provider: IDependencyProvider): Promise<AnalysisResponse> {

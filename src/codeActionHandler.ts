@@ -118,13 +118,12 @@ function generateSwitchToRecommendedVersionAction(title: string, dependency: str
 }
 
 /**
- * Generates a code action to switch to the recommended version.
+ * Generates a code action to redirect to the recommended version catalog.
  * @param title - The title of the code action.
- * @param dependency - The dependency (package and version) provided by exhort.
- * @param versionReplacementString - The version replacement string.
+ * @param imageRef - The image reference provided by exhort.
  * @param diagnostic - The diagnostic information.
  * @param uri - The URI of the file.
- * @returns A CodeAction object for switching to the recommended version.
+ * @returns A CodeAction object for redirecting to the recommended version catalog.
  */
 function generateRedirectToRecommendedVersionAction(title: string, imageRef: string, diagnostic: Diagnostic, uri: string): CodeAction {
     const codeAction: CodeAction = {

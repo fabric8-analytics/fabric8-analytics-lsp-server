@@ -18,9 +18,15 @@ import { AbstractDiagnosticsPipeline } from '../diagnosticsPipeline';
 
 /**
  * Implementation of DiagnosticsPipeline interface.
+ * @typeparam DependencyData - The type of elements in the dependency data array.
  */
-class DiagnosticsPipeline extends AbstractDiagnosticsPipeline {
+class DiagnosticsPipeline extends AbstractDiagnosticsPipeline<DependencyData> {
 
+    /**
+     * Creates an instance of DiagnosticsPipeline.
+     * @param dependencyMap - The dependency map containing information about dependencies derived from the dependency manifest.
+     * @param diagnosticFilePath - The path to the manifest file to retrieve diagnostics from.
+     */
     constructor(
         private dependencyMap: DependencyMap,
         diagnosticFilePath: string,
@@ -28,6 +34,10 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline {
         super(diagnosticFilePath);
     }
 
+    /**
+     * Runs diagnostics on dependencies.
+     * @param dependencies - A map containing dependency data by reference string.
+     */
     runDiagnostics(dependencies: Map<string, DependencyData[]>) {
         Object.entries(dependencies).map(([ref, dependencyData]) => {
             const dependencyRef = ref.split('@')[0];

@@ -27,6 +27,12 @@ export class ImageProvider implements IImageProvider {
         return contents.split('\n');
     }
 
+    /**
+     * Replaces placeholders in a string with values from a args map.
+     * @param imageData - The string containing placeholders.
+     * @returns The string with placeholders replaced by corresponding values from the args map.
+     * @private
+     */
     private replaceArgsInString(imageData: string): string {
         return imageData.replace(/\${([^{}]+)}/g, (match, key) => {
             const value = this.args.get(key) || '';
@@ -35,10 +41,10 @@ export class ImageProvider implements IImageProvider {
     }
 
     /**
-     * Parses a line from the file and extracts dependency information.
-     * @param line - The line to parse for dependency information.
+     * Parses a line from the file and extracts image information.
+     * @param line - The line to parse for image information.
      * @param index - The index of the line in the file.
-     * @returns An IDependency object representing the parsed dependency or null if no dependency is found.
+     * @returns An IImage object representing the parsed image or null if no image is found.
      */
     private parseLine(line: string, index: number): IImage | null {
         const argMatch = line.match(this.ARG_REGEX);
@@ -72,9 +78,9 @@ export class ImageProvider implements IImageProvider {
     }
 
     /**
-     * Extracts dependencies from lines parsed from the file.
+     * Extracts images from lines parsed from the file.
      * @param lines - An array of strings representing lines from the file.
-     * @returns An array of IDependency objects representing extracted dependencies.
+     * @returns An array of IImage objects representing extracted images.
      */
     private extractDependenciesFromLines(lines: string[]): IImage[] {
         return lines.reduce((images: IImage[], line: string, index: number) => {
@@ -87,9 +93,9 @@ export class ImageProvider implements IImageProvider {
     }
 
     /**
-     * Collects dependencies from the provided manifest contents.
-     * @param contents - The manifest content to collect dependencies from.
-     * @returns A Promise resolving to an array of IDependency objects representing collected dependencies.
+     * Collects images from the provided image file contents.
+     * @param contents - The image file content to collect images from.
+     * @returns A Promise resolving to an array of IImage objects representing collected images.
      */
     async collect(contents: string): Promise<IImage[]> {
         const lines: string[] = this.parseTxtDoc(contents);

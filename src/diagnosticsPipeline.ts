@@ -6,14 +6,14 @@
 
 import { Diagnostic } from 'vscode-languageserver';
 
-import { DependencyData } from './dependencyAnalysis/analysis';
 import { connection } from './server';
 import { decodeUriPath } from './utils';
 
 /**
  * Diagnostics Pipeline specification.
+ * @typeparam T - The type of elements in the artifact data array.
  */
-interface IDiagnosticsPipeline {
+interface IDiagnosticsPipeline<T> {
     /**
      * Clears diagnostics.
      */
@@ -24,16 +24,29 @@ interface IDiagnosticsPipeline {
     reportDiagnostics();
     /**
      * Runs diagnostics on dependencies.
-     * @param dependencies -  A map containing dependency data from exhort.
+     * @param artifact - A map containing artifact data.
      */
-    runDiagnostics(dependencies: Map<string, DependencyData[]>);
+    runDiagnostics(artifact: Map<string, T[]>);
 }
 
-abstract class AbstractDiagnosticsPipeline implements IDiagnosticsPipeline{
-
+/**
+ * Abstract class for implementing a diagnostics pipeline.
+ * @typeparam T - The type of elements in the artifact data array.
+ */
+abstract class AbstractDiagnosticsPipeline<T> implements IDiagnosticsPipeline<T>{
+     /**
+     * An array to hold diagnostic information.
+     */
     protected diagnostics: Diagnostic[] = [];
+    /**
+     * A map to hold vulnerability count information.
+     */
     protected vulnCount: Map<string, number> = new Map<string, number>();
     
+    /**
+     * Creates an instance of AbstractDiagnosticsPipeline.
+     * @param diagnosticFilePath - The path to the manifest file to retrieve diagnostics from.
+     */
     constructor(protected readonly diagnosticFilePath: string) {}
 
     clearDiagnostics() {
@@ -53,7 +66,7 @@ abstract class AbstractDiagnosticsPipeline implements IDiagnosticsPipeline{
         });
     }
 
-    abstract runDiagnostics(dependencies: Map<string, DependencyData[]>): void;
+    abstract runDiagnostics(artifact: Map<string, T[]>): void;
 }
 
 export { AbstractDiagnosticsPipeline };
