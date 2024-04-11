@@ -93,8 +93,8 @@ connection.onDidCloseTextDocument((params) => {
 connection.onDidChangeConfiguration(() => {
     if (hasConfigurationCapability) {
         server.conn.workspace.getConfiguration('redHatDependencyAnalytics')
-        .then((rhdaData) => {
-            globalConfig.updateConfig(rhdaData);
+        .then((rhdaConfig) => {
+            globalConfig.updateConfig(rhdaConfig);
         });
     }
 });

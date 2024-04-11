@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../collector';
+import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../dependencyAnalysis/collector';
 
 /**
  * Process entries found in the requirements.txt file.

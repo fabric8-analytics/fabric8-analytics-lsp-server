@@ -7,11 +7,13 @@
 import * as path from 'path';
 
 import { Connection } from 'vscode-languageserver';
-import { performDiagnostics } from './diagnosticsHandler';
+import * as imageDiagnostics from './imageAnalysis/diagnostics';
+import * as dependencyDiagnostics from './dependencyAnalysis/diagnostics';
 import { DependencyProvider as PackageJson } from './providers/package.json';
 import { DependencyProvider as PomXml } from './providers/pom.xml';
 import { DependencyProvider as GoMod } from './providers/go.mod';
 import { DependencyProvider as RequirementsTxt } from './providers/requirements.txt';
+import { ImageProvider as Dockerfile } from './providers/docker';
 
 /**
  * Describes the available event streams.
@@ -103,19 +105,23 @@ class AnalysisFiles implements IAnalysisFiles {
 const files = new AnalysisFiles();
 
 files.on(EventStream.Diagnostics, '^package\\.json$', (uri, contents) => {
-    performDiagnostics(uri, contents, new PackageJson());
+    dependencyDiagnostics.performDiagnostics(uri, contents, new PackageJson());
 });
 
 files.on(EventStream.Diagnostics, '^pom\\.xml$', (uri, contents) => {
-    performDiagnostics(uri, contents, new PomXml());
+    dependencyDiagnostics.performDiagnostics(uri, contents, new PomXml());
 });
 
 files.on(EventStream.Diagnostics, '^go\\.mod$', (uri, contents) => {
-    performDiagnostics(uri, contents, new GoMod());
+    dependencyDiagnostics.performDiagnostics(uri, contents, new GoMod());
 });
 
 files.on(EventStream.Diagnostics, '^requirements\\.txt$', (uri, contents) => {
-    performDiagnostics(uri, contents, new RequirementsTxt());
+    dependencyDiagnostics.performDiagnostics(uri, contents, new RequirementsTxt());
+});
+
+files.on(EventStream.Diagnostics, '^Dockerfile$', (uri, contents) => {
+    imageDiagnostics.performDiagnostics(uri, contents, new Dockerfile());
 });
 
 /**
