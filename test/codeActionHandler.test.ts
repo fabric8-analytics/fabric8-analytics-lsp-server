@@ -277,4 +277,45 @@ describe('Code Action Handler tests', () => {
             }
         );
     });
+
+    it('should return a redirect to recommended version code action', async () => {
+
+        let globalConfig = {
+            trackRecommendationAcceptanceCommand: 'mockTrackRecommendationAcceptanceCommand'
+        };
+        sinon.stub(config, 'globalConfig').value(globalConfig);
+
+        const codeAction: CodeAction = codeActionHandler.generateRedirectToRecommendedVersionAction( 'mockTitle', 'mockImage@mockTag', mockDiagnostic1[0], 'mock/path/Dockerfile');
+        expect(codeAction).to.deep.equal(
+            {
+                "command": {
+                    "command": 'mockTrackRecommendationAcceptanceCommand',
+                    "title": "Track recommendation acceptance",
+                    "arguments": [
+                        "mockImage@mockTag",
+                        "Dockerfile"
+                    ]
+                },
+                "diagnostics": [
+                    {
+                    "message": "another mock message",
+                    "range": {
+                        "end": {
+                        "character": 654,
+                        "line": 654
+                        },
+                        "start": {
+                        "character": 321,
+                        "line": 321
+                        }
+                    },
+                    "severity": 3,
+                    "source": 'mockSource'
+                    }
+                ],
+                "kind": "quickfix",
+                "title": "mockTitle"
+            }
+        );
+    });
 });

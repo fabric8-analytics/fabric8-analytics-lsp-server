@@ -15,7 +15,7 @@ describe('Config tests', () => {
       mockConfig.load();
     });
     
-    const rhdaData = {
+    const rhdaConfig = {
         exhortSnykToken: 'mockToken',
         matchManifestVersions: false,
         usePythonVirtualEnvironment: true,
@@ -43,9 +43,31 @@ describe('Config tests', () => {
         pip: {
             executable: { path: 'mockPath' }
         },
+        syft: {
+            executable: { path: 'mockPath' },
+            config: { path: 'mockPath' },
+            imageSource: 'mockSource'
+        },
+        skopeo: {
+            executable: { path: 'mockPath' },
+            config: { path: 'mockPath' }
+        },
+        image: {
+            serviceEndpoint: 'mockServiceEndpoint',
+            platform: 'mockPlatform',
+            OS: 'mockOS',
+            arch: 'mockArch',
+            variant: 'mockVariant'
+        }, 
+        docker: {
+            executable: { path: 'mockPath' }
+        },
+        podman: {
+            executable: { path: 'mockPath' }
+        },   
     };
 
-    const partialRhdaData = {
+    const partialRhdaConfig = {
         exhortSnykToken: 'mockToken',
         matchManifestVersions: true,
         usePythonVirtualEnvironment: false,
@@ -73,6 +95,28 @@ describe('Config tests', () => {
         pip: {
         executable: { path: '' }
         },
+        syft: {
+            executable: { path: '' },
+            config: { path: '' },
+            imageSource: ''
+        },
+        skopeo: {
+            executable: { path: '' },
+            config: { path: '' }
+        },
+        image: {
+            serviceEndpoint: '',
+            platform: '',
+            OS: '',
+            arch: '',
+            variant: ''
+        }, 
+        docker: {
+            executable: { path: '' }
+        },
+        podman: {
+            executable: { path: '' }
+        },
     };
 
     it('should initialize with default values when environment variables are not set', () => {
@@ -93,11 +137,23 @@ describe('Config tests', () => {
         expect(mockConfig.exhortPip3Path).to.eq('pip3');
         expect(mockConfig.exhortPythonPath).to.eq('python');
         expect(mockConfig.exhortPipPath).to.eq('pip');
+        expect(mockConfig.exhortSyftPath).to.eq('syft');
+        expect(mockConfig.exhortSyftConfigPath).to.eq('');
+        expect(mockConfig.exhortSyftImageSource).to.eq('');
+        expect(mockConfig.exhortSkopeoPath).to.eq('skopeo');
+        expect(mockConfig.exhortSkopeoConfigPath).to.eq('');
+        expect(mockConfig.exhortImageServiceEndpoint).to.eq('');
+        expect(mockConfig.exhortDockerPath).to.eq('docker');
+        expect(mockConfig.exhortPodmanPath).to.eq('podman');
+        expect(mockConfig.exhortImagePlatform).to.eq('');
+        expect(mockConfig.exhortImageOS).to.eq('');
+        expect(mockConfig.exhortImageArch).to.eq('');
+        expect(mockConfig.exhortImageVariant).to.eq('');
     });
     
     it('should update configuration based on provided data', () => {
 
-        mockConfig.updateConfig(rhdaData);
+        mockConfig.updateConfig(rhdaConfig);
 
         expect(mockConfig.matchManifestVersions).to.eq('false');
         expect(mockConfig.usePythonVirtualEnvironment).to.eq('true');
@@ -110,12 +166,24 @@ describe('Config tests', () => {
         expect(mockConfig.exhortPython3Path).to.eq('mockPath');
         expect(mockConfig.exhortPip3Path).to.eq('mockPath');
         expect(mockConfig.exhortPythonPath).to.eq('mockPath');
-        expect(mockConfig.exhortPipPath).to.eq('mockPath');        
+        expect(mockConfig.exhortPipPath).to.eq('mockPath');   
+        expect(mockConfig.exhortSyftPath).to.eq('mockPath');
+        expect(mockConfig.exhortSyftConfigPath).to.eq('mockPath');
+        expect(mockConfig.exhortSyftImageSource).to.eq('mockSource');
+        expect(mockConfig.exhortSkopeoPath).to.eq('mockPath');
+        expect(mockConfig.exhortSkopeoConfigPath).to.eq('mockPath');
+        expect(mockConfig.exhortImageServiceEndpoint).to.eq('mockServiceEndpoint');
+        expect(mockConfig.exhortDockerPath).to.eq('mockPath');
+        expect(mockConfig.exhortPodmanPath).to.eq('mockPath');
+        expect(mockConfig.exhortImagePlatform).to.eq('mockPlatform');
+        expect(mockConfig.exhortImageOS).to.eq('mockOS');
+        expect(mockConfig.exhortImageArch).to.eq('mockArch');
+        expect(mockConfig.exhortImageVariant).to.eq('mockVariant');     
     });
 
     it('should update configuration based on provided partial data', () => {
 
-        mockConfig.updateConfig(partialRhdaData);
+        mockConfig.updateConfig(partialRhdaConfig);
 
         expect(mockConfig.matchManifestVersions).to.eq('true');
         expect(mockConfig.usePythonVirtualEnvironment).to.eq('false');
@@ -128,7 +196,19 @@ describe('Config tests', () => {
         expect(mockConfig.exhortPython3Path).to.eq('python3');
         expect(mockConfig.exhortPip3Path).to.eq('pip3');
         expect(mockConfig.exhortPythonPath).to.eq('python');
-        expect(mockConfig.exhortPipPath).to.eq('pip');        
+        expect(mockConfig.exhortPipPath).to.eq('pip');    
+        expect(mockConfig.exhortSyftPath).to.eq('syft');
+        expect(mockConfig.exhortSyftConfigPath).to.eq('');
+        expect(mockConfig.exhortSyftImageSource).to.eq('');
+        expect(mockConfig.exhortSkopeoPath).to.eq('skopeo');
+        expect(mockConfig.exhortSkopeoConfigPath).to.eq('');
+        expect(mockConfig.exhortImageServiceEndpoint).to.eq('');
+        expect(mockConfig.exhortDockerPath).to.eq('docker');
+        expect(mockConfig.exhortPodmanPath).to.eq('podman');
+        expect(mockConfig.exhortImagePlatform).to.eq('');
+        expect(mockConfig.exhortImageOS).to.eq('');
+        expect(mockConfig.exhortImageArch).to.eq('');
+        expect(mockConfig.exhortImageVariant).to.eq('');     
     });
 
     it('should set Exhort Snyk Token', () => {
