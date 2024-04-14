@@ -226,7 +226,7 @@ interface IOptions {
  */
 function imageAnalysisService(images: IImage[], options: IOptions): Promise<any> {
     return new Promise<any>((resolve, reject) => {
-      const jarPath = '/home/Ilonas/Documents/SSSC/RHDA/fabric8-analytics-lsp-server/javaApiAdapter/exhort-java-api-adapter-1.0-SNAPSHOT-jar-with-dependencies.jar';
+      const jarPath = `${__dirname}/../javaApiAdapter/exhort-java-api-adapter-1.0-SNAPSHOT-jar-with-dependencies.jar`;
       const reportType = 'json';
       let parameters = '';
       let properties = '';
