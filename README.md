@@ -5,7 +5,7 @@
 ![CI](https://github.com/fabric8-analytics/fabric8-analytics-lsp-server/workflows/CI/badge.svg?branch=master)
 [![Codecov](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server/branch/master/graph/badge.svg?token=aVThXjheDf)](https://codecov.io/gh/fabric8-analytics/fabric8-analytics-lsp-server)
 
-Language Server(LSP) that can analyze your dependencies specified in `package.json`, `pom.xml`, `go.mod` and `requirements.txt`.
+The Red Hat Dependency Analytics (RHDA) Language Server (LSP) offers inline analysis for dependencies listed in `package.json`, `pom.xml`, `go.mod`, and `requirements.txt`, as well as container images defined in `Dockerfile` and `Containerfile`.
 
 ## Build
 

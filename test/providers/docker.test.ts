@@ -3,21 +3,20 @@
 import { expect } from 'chai';
 
 import { ImageProvider } from '../../src/providers/docker';
-import { platform } from 'os';
 
-describe('Dockerfile image parser tests', () => {
+describe('Docker Image parser tests', () => {
     let dependencyProvider: ImageProvider;
 
     beforeEach(() => {
         dependencyProvider = new ImageProvider();
     });
 
-    it('tests empty Dockerfile', async () => {
+    it('tests empty file', async () => {
         const deps = await dependencyProvider.collect(``);
         expect(deps).is.eql([]);
     });
 
-    it('tests valid Dockerfile', async () => {
+    it('tests valid file', async () => {
         const deps = await dependencyProvider.collect(`
 FROM alpine
 FROM alpine:latest
@@ -44,7 +43,7 @@ FROM alpine@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1a
         ]);
     });
 
-    it('tests Dockerfile with comments', async () => {
+    it('tests file with comments', async () => {
         const deps = await dependencyProvider.collect(`
 # hello world
 FROM alpine
@@ -74,7 +73,7 @@ FROM alpine@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1a
         ]);
     });
 
-    it('tests Dockerfile with empty lines', async () => {
+    it('tests file with empty lines', async () => {
         const deps = await dependencyProvider.collect(`
 
 FROM alpine
@@ -109,7 +108,7 @@ FROM alpine@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1a
         ]);
     });
 
-    it('tests Dockerfile with platform', async () => {
+    it('tests file with platform', async () => {
         const deps = await dependencyProvider.collect(`
 FROM --platform=linux/amd64 alpine
 FROM --platform=linux/amd64 alpine:latest
@@ -140,7 +139,7 @@ FROM --platform=linux/amd64 alpine@sha256:c5b1261d6d3e43071626931fc004f70149baeb
         ]);
     });
 
-    it('tests Dockerfile with multi-stage builds', async () => {
+    it('tests file with multi-stage builds', async () => {
         const deps = await dependencyProvider.collect(`
 FROM alpine as stage1
 FROM alpine:latest As stage2
@@ -162,7 +161,7 @@ FROM alpine@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1a
         ]);
     });
 
-    it('tests Dockerfile with platform and multi-stage builds', async () => {
+    it('tests file with platform and multi-stage builds', async () => {
         const deps = await dependencyProvider.collect(`
 FROM --platform=linux/amd64 alpine as stage1
 FROM --platform=linux/amd64 alpine:latest As stage2
@@ -187,7 +186,7 @@ FROM --platform=linux/amd64 alpine@sha256:c5b1261d6d3e43071626931fc004f70149baeb
         ]);
     });
 
-    it('tests Dockerfile with arguments', async () => {
+    it('tests file with arguments', async () => {
         const deps = await dependencyProvider.collect(`
 ARG ARG_IMAGE=python
 ARG ARG_TAG=3.9.5
@@ -202,7 +201,7 @@ FROM --platform=linux/amd64 \${ARG_IMAGE}:\${ARG_TAG} as stage1\${ARG_FAKE}
         ]);
     });
 
-    it('tests Dockerfile with image registries', async () => {
+    it('tests file with image registries', async () => {
         const deps = await dependencyProvider.collect(`
 FROM docker.io/library/nginx:1.2.3
 FROM registry.access.redhat.com/ubi9/nodejs-20-minimal
@@ -219,7 +218,7 @@ FROM registry.access.redhat.com/ubi9/nodejs-20-minimal
         ]);
     });
 
-    it('tests Dockerfile with scratch images', async () => {
+    it('tests file with scratch images', async () => {
         const deps = await dependencyProvider.collect(`
 FROM scratch
 FROM alpine
@@ -232,7 +231,7 @@ FROM alpine
         ]);
     });
 
-    it('tests Dockerfile with spaces before and after image and line', async () => {
+    it('tests file with spaces before and after image and line', async () => {
         const deps = await dependencyProvider.collect(`      
             FROM    alpine:latest      as stage1
         `);
@@ -244,7 +243,7 @@ FROM alpine
         ]);
     });
 
-    it('tests Dockerfile with multiple Dockerfile components', async () => {
+    it('tests file with various Dockerfile/Containerfile components', async () => {
         const deps = await dependencyProvider.collect(`
 # Use an official Node.js runtime as a parent image
 FROM node:14

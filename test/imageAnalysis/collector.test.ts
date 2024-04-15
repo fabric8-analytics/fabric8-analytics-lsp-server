@@ -6,7 +6,7 @@ import { Image, ImageMap, getRange } from '../../src/imageAnalysis/collector';
 
 describe('Image Analysis Collector tests', () => {
 
-    // Mock dockerfile image collection
+    // Mock image collection
     let reqImages: Image[] = [
         new Image ({ value: 'alpine', position: { line: 1, column: 0 } }, 'FROM --platform=linux/amd64 alpine as a'),
         new Image ({ value: 'alpine:latest', position: { line: 2, column: 0 } }, 'FROM --platform=linux/amd64 alpine:latest AS a'),
