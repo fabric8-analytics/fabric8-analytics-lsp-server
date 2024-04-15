@@ -13,7 +13,7 @@ import { DependencyProvider as PackageJson } from './providers/package.json';
 import { DependencyProvider as PomXml } from './providers/pom.xml';
 import { DependencyProvider as GoMod } from './providers/go.mod';
 import { DependencyProvider as RequirementsTxt } from './providers/requirements.txt';
-import { ImageProvider as Dockerfile } from './providers/docker';
+import { ImageProvider as Docker } from './providers/docker';
 
 /**
  * Describes the available event streams.
@@ -120,8 +120,8 @@ files.on(EventStream.Diagnostics, '^requirements\\.txt$', (uri, contents) => {
     dependencyDiagnostics.performDiagnostics(uri, contents, new RequirementsTxt());
 });
 
-files.on(EventStream.Diagnostics, '^Dockerfile$', (uri, contents) => {
-    imageDiagnostics.performDiagnostics(uri, contents, new Dockerfile());
+files.on(EventStream.Diagnostics, '^(Dockerfile|Containerfile)$', (uri, contents) => {
+    imageDiagnostics.performDiagnostics(uri, contents, new Docker());
 });
 
 /**

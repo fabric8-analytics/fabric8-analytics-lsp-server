@@ -7,21 +7,37 @@
 import { IImageProvider, IImage, Image } from '../imageAnalysis/collector';
 
 /**
- * Process entries found in the Dockerfile file.
+ * Process entries found in Dockerfile or Containerfile files.
  */
 export class ImageProvider implements IImageProvider {
 
     args: Map<string, string> = new Map<string, string>();
 
+    /**
+     * Regular expression for matching 'FROM' statements.
+     */
     FROM_REGEX: RegExp = /^\s*FROM\s+(.*)/;
+
+    /**
+     * Regular expression for matching 'ARG' statements.
+     */
     ARG_REGEX: RegExp = /^\s*ARG\s+(.*)/;
+    
+    /**
+     * Regular expression for matching platform information in 'FROM' statements.
+     */
     PLATFORM_REGEX: RegExp = /--platform=([^\s]+)/g;
+    
+    /**
+     * Regular expression for matching 'AS' statements in 'FROM' statements.
+     */
     AS_REGEX: RegExp = /\s+AS\s+\S+/gi;
 
     /**
      * Parses the provided string as an array of lines.
      * @param contents - The string content to parse into lines.
      * @returns An array of strings representing lines from the provided content.
+     * @private
      */
     private parseTxtDoc(contents: string): string[] {
         return contents.split('\n');
@@ -45,6 +61,7 @@ export class ImageProvider implements IImageProvider {
      * @param line - The line to parse for image information.
      * @param index - The index of the line in the file.
      * @returns An IImage object representing the parsed image or null if no image is found.
+     * @private
      */
     private parseLine(line: string, index: number): IImage | null {
         const argMatch = line.match(this.ARG_REGEX);
@@ -81,8 +98,9 @@ export class ImageProvider implements IImageProvider {
      * Extracts images from lines parsed from the file.
      * @param lines - An array of strings representing lines from the file.
      * @returns An array of IImage objects representing extracted images.
+     * @private
      */
-    private extractDependenciesFromLines(lines: string[]): IImage[] {
+    private extractImagesFromLines(lines: string[]): IImage[] {
         return lines.reduce((images: IImage[], line: string, index: number) => {
             const parsedImage = this.parseLine(line, index);
             if (parsedImage) {
@@ -99,6 +117,6 @@ export class ImageProvider implements IImageProvider {
      */
     async collect(contents: string): Promise<IImage[]> {
         const lines: string[] = this.parseTxtDoc(contents);
-        return this.extractDependenciesFromLines(lines);
+        return this.extractImagesFromLines(lines);
     }
 }
