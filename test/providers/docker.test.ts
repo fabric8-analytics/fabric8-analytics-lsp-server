@@ -190,13 +190,18 @@ FROM --platform=linux/amd64 alpine@sha256:c5b1261d6d3e43071626931fc004f70149baeb
         const deps = await dependencyProvider.collect(`
 ARG ARG_IMAGE=python
 ARG ARG_TAG=3.9.5
-FROM --platform=linux/amd64 \${ARG_IMAGE}:\${ARG_TAG} as stage1\${ARG_FAKE}
+FROM --platform=linux/amd64 \${ARG_IMAGE}:\${ARG_TAG} as stage1\$ARG_FAKE
+FROM \$ARG_IMAGE
         `);
         expect(deps).is.eql([
             {
                 name: {value: 'python:3.9.5', position: {line: 4, column: 0}},
-                line: 'FROM --platform=linux/amd64 ${ARG_IMAGE}:${ARG_TAG} as stage1${ARG_FAKE}',
+                line: 'FROM --platform=linux/amd64 ${ARG_IMAGE}:${ARG_TAG} as stage1$ARG_FAKE',
                 platform: 'linux/amd64'
+            },
+            {
+                name: {value: 'python', position: {line: 5, column: 0}},
+                line: 'FROM $ARG_IMAGE',
             }
         ]);
     });
