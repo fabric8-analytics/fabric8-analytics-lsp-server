@@ -24,7 +24,7 @@
     "dist"
   ],
   "dependencies": {
-    "@RHEcosystemAppEng/exhort-javascript-api": "^0.1.1-ea.29",
+    "@RHEcosystemAppEng/exhort-javascript-api": "^0.1.1-ea.31",
     "@xml-tools/ast": "^5.0.5",
     "@xml-tools/parser": "^1.0.11",
     "json-to-ast": "^2.1.0",
