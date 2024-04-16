@@ -15,14 +15,14 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ssh-key: ${{ secrets.DEPLOY_KEY }}
 
-    - name: Install node 18
-      uses: actions/setup-node@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        node-version: 18
+        node-version: 20
         cache: npm
         registry-url: 'https://npm.pkg.github.com'
       env:
@@ -42,6 +42,6 @@ jobs:
       run: npm test -- --coverage
 
     - name: Upload coverage to codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
