@@ -46,19 +46,12 @@ describe('Config tests', () => {
         syft: {
             executable: { path: 'mockPath' },
             config: { path: 'mockPath' },
-            imageSource: 'mockSource'
         },
         skopeo: {
             executable: { path: 'mockPath' },
             config: { path: 'mockPath' }
         },
-        image: {
-            serviceEndpoint: 'mockServiceEndpoint',
-            platform: 'mockPlatform',
-            OS: 'mockOS',
-            arch: 'mockArch',
-            variant: 'mockVariant'
-        }, 
+        imagePlatform: 'mockPlatform',
         docker: {
             executable: { path: 'mockPath' }
         },
@@ -98,19 +91,12 @@ describe('Config tests', () => {
         syft: {
             executable: { path: '' },
             config: { path: '' },
-            imageSource: ''
         },
         skopeo: {
             executable: { path: '' },
             config: { path: '' }
         },
-        image: {
-            serviceEndpoint: '',
-            platform: '',
-            OS: '',
-            arch: '',
-            variant: ''
-        }, 
+        imagePlatform: '',
         docker: {
             executable: { path: '' }
         },
@@ -139,16 +125,11 @@ describe('Config tests', () => {
         expect(mockConfig.exhortPipPath).to.eq('pip');
         expect(mockConfig.exhortSyftPath).to.eq('syft');
         expect(mockConfig.exhortSyftConfigPath).to.eq('');
-        expect(mockConfig.exhortSyftImageSource).to.eq('');
         expect(mockConfig.exhortSkopeoPath).to.eq('skopeo');
         expect(mockConfig.exhortSkopeoConfigPath).to.eq('');
-        expect(mockConfig.exhortImageServiceEndpoint).to.eq('');
         expect(mockConfig.exhortDockerPath).to.eq('docker');
         expect(mockConfig.exhortPodmanPath).to.eq('podman');
         expect(mockConfig.exhortImagePlatform).to.eq('');
-        expect(mockConfig.exhortImageOS).to.eq('');
-        expect(mockConfig.exhortImageArch).to.eq('');
-        expect(mockConfig.exhortImageVariant).to.eq('');
     });
     
     it('should update configuration based on provided data', () => {
@@ -169,16 +150,11 @@ describe('Config tests', () => {
         expect(mockConfig.exhortPipPath).to.eq('mockPath');   
         expect(mockConfig.exhortSyftPath).to.eq('mockPath');
         expect(mockConfig.exhortSyftConfigPath).to.eq('mockPath');
-        expect(mockConfig.exhortSyftImageSource).to.eq('mockSource');
         expect(mockConfig.exhortSkopeoPath).to.eq('mockPath');
         expect(mockConfig.exhortSkopeoConfigPath).to.eq('mockPath');
-        expect(mockConfig.exhortImageServiceEndpoint).to.eq('mockServiceEndpoint');
         expect(mockConfig.exhortDockerPath).to.eq('mockPath');
         expect(mockConfig.exhortPodmanPath).to.eq('mockPath');
         expect(mockConfig.exhortImagePlatform).to.eq('mockPlatform');
-        expect(mockConfig.exhortImageOS).to.eq('mockOS');
-        expect(mockConfig.exhortImageArch).to.eq('mockArch');
-        expect(mockConfig.exhortImageVariant).to.eq('mockVariant');     
     });
 
     it('should update configuration based on provided partial data', () => {
@@ -199,16 +175,11 @@ describe('Config tests', () => {
         expect(mockConfig.exhortPipPath).to.eq('pip');    
         expect(mockConfig.exhortSyftPath).to.eq('syft');
         expect(mockConfig.exhortSyftConfigPath).to.eq('');
-        expect(mockConfig.exhortSyftImageSource).to.eq('');
         expect(mockConfig.exhortSkopeoPath).to.eq('skopeo');
         expect(mockConfig.exhortSkopeoConfigPath).to.eq('');
-        expect(mockConfig.exhortImageServiceEndpoint).to.eq('');
         expect(mockConfig.exhortDockerPath).to.eq('docker');
         expect(mockConfig.exhortPodmanPath).to.eq('podman');
         expect(mockConfig.exhortImagePlatform).to.eq('');
-        expect(mockConfig.exhortImageOS).to.eq('');
-        expect(mockConfig.exhortImageArch).to.eq('');
-        expect(mockConfig.exhortImageVariant).to.eq('');     
     });
 
     it('should set Exhort Snyk Token', () => {

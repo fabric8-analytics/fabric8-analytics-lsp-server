@@ -30,16 +30,11 @@ class Config
     exhortPipPath:                                  string;
     exhortSyftPath:                                 string;
     exhortSyftConfigPath:                           string;
-    exhortSyftImageSource:                          string;
     exhortSkopeoPath:                               string;
     exhortSkopeoConfigPath:                         string;
-    exhortImageServiceEndpoint:                     string;
     exhortDockerPath:                               string;
     exhortPodmanPath:                               string;
     exhortImagePlatform:                            string;
-    exhortImageOS:                                  string;
-    exhortImageArch:                                string;
-    exhortImageVariant:                             string;
 
     private readonly DEFAULT_VULNERABILITY_ALERT_SEVERITY = 'Error';
     private readonly DEFAULT_MVN_EXECUTABLE = 'mvn';
@@ -82,16 +77,11 @@ class Config
         this.exhortPipPath = process.env.VSCEXT_EXHORT_PIP_PATH || this.DEFAULT_PIP_EXECUTABLE;
         this.exhortSyftPath = process.env.VSCEXT_EXHORT_SYFT_PATH || this.DEFAULT_SYFT_EXECUTABLE;
         this.exhortSyftConfigPath = process.env.VSCEXT_EXHORT_SYFT_CONFIG_PATH || '';
-        this.exhortSyftImageSource = process.env.VSCEXT_EXHORT_SYFT_IMAGE_SOURCE || '';
         this.exhortSkopeoPath = process.env.VSCEXT_EXHORT_SKOPEO_PATH || this.DEFAULT_SKOPEO_EXECUTABLE;
         this.exhortSkopeoConfigPath = process.env.VSCEXT_EXHORT_SKOPEO_CONFIG_PATH || '';
-        this.exhortImageServiceEndpoint = process.env.VSCEXT_EXHORT_IMAGE_SERVICE_ENDPOINT || '';
         this.exhortDockerPath = process.env.VSCEXT_EXHORT_DOCKER_PATH || this.DEFAULT_DOCKER_EXECUTABLE;
         this.exhortPodmanPath = process.env.VSCEXT_EXHORT_PODMAN_PATH || this.DEFAULT_PODMAN_EXECUTABLE;
         this.exhortImagePlatform = process.env.VSCEXT_EXHORT_IMAGE_PLATFORM || '';
-        this.exhortImageOS = process.env.VSCEXT_EXHORT_IMAGE_OS || '';
-        this.exhortImageArch = process.env.VSCEXT_EXHORT_IMAGE_ARCH || '';
-        this.exhortImageVariant = process.env.VSCEXT_EXHORT_IMAGE_VARIANT || '';
     }
 
     /**
@@ -114,16 +104,11 @@ class Config
         this.exhortPipPath = rhdaConfig.pip.executable.path || this.DEFAULT_PIP_EXECUTABLE;
         this.exhortSyftPath = rhdaConfig.syft.executable.path || this.DEFAULT_SYFT_EXECUTABLE;
         this.exhortSyftConfigPath = rhdaConfig.syft.config.path;
-        this.exhortSyftImageSource = rhdaConfig.syft.imageSource;
         this.exhortSkopeoPath = rhdaConfig.skopeo.executable.path || this.DEFAULT_SKOPEO_EXECUTABLE;
         this.exhortSkopeoConfigPath = rhdaConfig.skopeo.config.path;
-        this.exhortImageServiceEndpoint = rhdaConfig.image.serviceEndpoint;
         this.exhortDockerPath = rhdaConfig.docker.executable.path || this.DEFAULT_DOCKER_EXECUTABLE;
         this.exhortPodmanPath = rhdaConfig.podman.executable.path || this.DEFAULT_PODMAN_EXECUTABLE;
-        this.exhortImagePlatform = rhdaConfig.image.platform;
-        this.exhortImageOS = rhdaConfig.image.OS;
-        this.exhortImageArch = rhdaConfig.image.arch;
-        this.exhortImageVariant = rhdaConfig.image.variant;
+        this.exhortImagePlatform = rhdaConfig.imagePlatform;
     }
 
     /**
