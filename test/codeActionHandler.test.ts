@@ -210,7 +210,8 @@ describe('Code Action Handler tests', () => {
                   kind: CodeActionKind.QuickFix,
                   command: { 
                     title: 'Analytics Report', 
-                    command: 'mockStackAnalysisCommand' 
+                    command: 'mockStackAnalysisCommand',
+                    arguments: ['', true]
                 }
                 }
             ]
