@@ -8,35 +8,54 @@ import { VERSION_PLACEHOLDER } from '../constants';
 import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../dependencyAnalysis/collector';
 
 /**
- * Process entries found in the requirements.txt file.
+ * Process entries found in the build.gradle file.
  */
 export class DependencyProvider extends EcosystemDependencyResolver implements IDependencyProvider {
     
     args: Map<string, string> = new Map<string, string>();
 
     /**
-     * Regular expression for matching 'FROM' statements.
+     * Regular expression for matching inline comments.
      */
     COMMENT_REGEX: RegExp = /\/\*[\s\S]*?\*\//g;
 
     /**
-     * Regular expression for matching 'FROM' statements.
+     * Regular expression for locating key value pairs in a string.
      */
     FIND_KEY_VALUE_PAIRS_REGEX: RegExp = /\b(\w+)\s*:\s*(['"])(.*?)\2/g;
 
     /**
-     * Regular expression for matching 'FROM' statements.
+     * Regular expression for matching key value pairs.
      */
     SPLIT_KEY_VALUE_PAIRS_REGEX: RegExp = /\s*:\s*/;
 
     /**
-     * Regular expression for matching 'FROM' statements.
+     * Regular expression for matching strings enclosed in double or single quotes.
      */
     BETWEEN_QUOTES_REGEX: RegExp = /(['"])(.*?)\1/;
 
-    
+    /**
+     * Regular expression for matching open brackets in string.
+     */
+    OPEN_BRACKETS_REGEX: RegExp = /{/g;
+
+    /**
+     * Regular expression for matching close brackets in string.
+     */
+    CLOSE_BRACKETS_REGEX: RegExp = /}/g;
+
+    /**
+     * Name of scope holding manifest dependencies.
+     */
+    DEPENDENCIES_SCOPE: string = 'dependencies';
+
+    /**
+     * Name of scope holding manifest arguments.
+     */
+    ARGS_SCOPE: string = 'ext';
+
     constructor() {
-        super('maven'); // set ecosystem to 'maven'
+        super('maven'); // set gradle ecosystem to 'maven'
     }
 
     /**
@@ -49,21 +68,22 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
     }
 
     /**
-     * Replaces placeholders in a string with values from a args map.
-     * @param imageData - The string containing placeholders.
+     * Replaces placeholders in a string with values from an args map.
+     * @param str - The string containing placeholders.
      * @returns The string with placeholders replaced by corresponding values from the args map.
      * @private
      */
-    private replaceArgsInString(imageData: string): string {
+    private replaceArgsInString(str: string): string {
         this.args.forEach((value, key) => {
-            imageData = imageData.replace(`$\{${key}}`, value).replace(`$${key}`, value);
+            str = str.replace(`$\{${key}}`, value).replace(`$${key}`, value);
         });        
-        return imageData;
+        return str;
     }
 
     /**
      * Parses a line from the file and extracts dependency information.
      * @param line - The line to parse for dependency information.
+     * @param cleanLine - The line to parse for dependency information cleaned of comments.
      * @param index - The index of the line in the file.
      * @returns An IDependency object representing the parsed dependency or null if no dependency is found.
      */
@@ -74,6 +94,7 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
 
         const keyValuePairs = cleanLine.match(this.FIND_KEY_VALUE_PAIRS_REGEX);
         if (keyValuePairs) {
+            // extract data from dependency in Map format
             keyValuePairs.forEach(pair => {
                 const [key, value] = pair.split(this.SPLIT_KEY_VALUE_PAIRS_REGEX);
                 const match = value.match(this.BETWEEN_QUOTES_REGEX);
@@ -92,6 +113,7 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
                 }
             });
         } else {
+            // extract data from dependency in String format
             const match = cleanLine.match(this.BETWEEN_QUOTES_REGEX);
             quoteUsed = match[1];
             depData = match[2];
@@ -101,23 +123,27 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
             myClassObj.version = depDataList[2] || '';
         }
 
+        // ignore dependencies missing minimal requirements
         if (myClassObj.group === '' || myClassObj.name === '') {return null; }
 
+        // determine dependency name
         let depName: string = `${myClassObj.group}/${myClassObj.name}`;
         if (depName.includes('$')) {
            depName = this.replaceArgsInString(depName);
         }
-
         const dep = new Dependency ({ value: depName, position: { line: 0, column: 0 } });
 
+        // determine dependency version
         const depVersion: string = myClassObj.version;
         if (depVersion) {
          dep.version = { value: depVersion, position: { line: index + 1, column: line.indexOf(depVersion) + 1 } };
         } else {
+            // if version is not specified, generate placeholder template
             if (keyValuePairs) {
-                dep.context = { value: `name: ${quoteUsed}${myClassObj.name}${quoteUsed}, version: ${quoteUsed}${VERSION_PLACEHOLDER}${quoteUsed}`, range: {
-                    start: { line: index, character: line.indexOf(`name: ${quoteUsed}${myClassObj.name}${quoteUsed}`)},
-                    end: { line: index, character: line.indexOf(`name: ${quoteUsed}${myClassObj.name}${quoteUsed}`) + `name: ${quoteUsed}${myClassObj.name}${quoteUsed}`.length}
+                const quotedName = `${quoteUsed}${myClassObj.name}${quoteUsed}`;
+                dep.context = { value: `name: ${quotedName}, version: ${quoteUsed}${VERSION_PLACEHOLDER}${quoteUsed}`, range: {
+                    start: { line: index, character: line.indexOf(`name: ${quotedName}`)},
+                    end: { line: index, character: line.indexOf(`name: ${quotedName}`) + `name: ${quotedName}`.length}
                     },
                 };    
             } else {
@@ -141,45 +167,46 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
         let isDependencyBlock: boolean = false;
         let isSingleArgument: boolean = false;
         let isArgumentBlock: boolean = false;
-        let innerDepScopeBrackets: number = 0;
+        let innerDepScopeBracketsCount: number = 0;
         return lines.reduce((dependencies: IDependency[], line: string, index: number) => {
 
             const cleanLine = line.split('//')[0].replace(this.COMMENT_REGEX, '').trim(); // Remove comments
             if (!cleanLine) { return dependencies; } // Skip empty lines
             const parsedLine = cleanLine.includes('$') ? this.replaceArgsInString(cleanLine) : cleanLine;
-            const countOpenBrackets = (parsedLine.match(/{/g) || []).length; 
-            const countCloseBrackets = (parsedLine.match(/}/g) || []).length; 
+            const countOpenBrackets = (parsedLine.match(this.OPEN_BRACKETS_REGEX) || []).length; 
+            const countCloseBrackets = (parsedLine.match(this.CLOSE_BRACKETS_REGEX) || []).length;
+            const updateInnerDepScopeBracketsCounter = () => {
+                innerDepScopeBracketsCount+=countOpenBrackets;
+                innerDepScopeBracketsCount-=countCloseBrackets;
+            };
 
             if (isDependencyBlock) {
-                innerDepScopeBrackets+=countOpenBrackets;
-                innerDepScopeBrackets-=countCloseBrackets;
+                updateInnerDepScopeBracketsCounter();
             }
 
             if (isSingleDependency) {
                 if (parsedLine.startsWith('{')) {
-                    innerDepScopeBrackets+=countOpenBrackets;
-                    innerDepScopeBrackets-=countCloseBrackets;
+                    updateInnerDepScopeBracketsCounter();
                     isDependencyBlock = true;
                 }
                 isSingleDependency = false;
             }
 
-            if (parsedLine.includes('dependencies')) {  
-                innerDepScopeBrackets+=countOpenBrackets;
-                innerDepScopeBrackets-=countCloseBrackets;
+            if (parsedLine.includes(this.DEPENDENCIES_SCOPE)) {  
+                updateInnerDepScopeBracketsCounter();
 
-                if (innerDepScopeBrackets > 0) {
+                if (innerDepScopeBracketsCount > 0) {
                     isDependencyBlock = true;
                 }
                 
-                if (innerDepScopeBrackets === 0) {
+                if (innerDepScopeBracketsCount === 0) {
                     isSingleDependency = true;
                 }
             }
 
             if (isSingleDependency || isDependencyBlock) {
 
-                if (innerDepScopeBrackets === 0) {
+                if (innerDepScopeBracketsCount === 0) {
                     isDependencyBlock = false;
                 }
 
@@ -201,7 +228,7 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
                 isSingleArgument = false;
             }
 
-            if (parsedLine.includes('ext')) {               
+            if (parsedLine.includes(this.ARGS_SCOPE)) {               
                 if (parsedLine.includes('{')) {
                     isArgumentBlock = true;
                 } else {
