@@ -13,6 +13,7 @@ import { DependencyProvider as PackageJson } from './providers/package.json';
 import { DependencyProvider as PomXml } from './providers/pom.xml';
 import { DependencyProvider as GoMod } from './providers/go.mod';
 import { DependencyProvider as RequirementsTxt } from './providers/requirements.txt';
+import { DependencyProvider as BuildGradle } from './providers/build.gradle';
 import { ImageProvider as Docker } from './providers/docker';
 
 /**
@@ -118,6 +119,10 @@ files.on(EventStream.Diagnostics, '^go\\.mod$', (uri, contents) => {
 
 files.on(EventStream.Diagnostics, '^requirements\\.txt$', (uri, contents) => {
     dependencyDiagnostics.performDiagnostics(uri, contents, new RequirementsTxt());
+});
+
+files.on(EventStream.Diagnostics, '^build\\.gradle$', (uri, contents) => {
+    dependencyDiagnostics.performDiagnostics(uri, contents, new BuildGradle());
 });
 
 files.on(EventStream.Diagnostics, '^(Dockerfile|Containerfile)$', (uri, contents) => {

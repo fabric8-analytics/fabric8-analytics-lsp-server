@@ -4,6 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
+import { PYPI } from '../constants';
 import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../dependencyAnalysis/collector';
 
 /**
@@ -12,7 +13,7 @@ import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependen
 export class DependencyProvider extends EcosystemDependencyResolver implements IDependencyProvider {
     
     constructor() {
-        super('pypi'); // set ecosystem to 'pypi'
+        super(PYPI); // set ecosystem to 'pypi'
     }
 
     /**

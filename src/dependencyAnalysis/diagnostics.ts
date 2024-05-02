@@ -11,7 +11,7 @@ import { IPositionedContext } from '../positionTypes';
 import { executeComponentAnalysis, DependencyData } from './analysis';
 import { Vulnerability } from '../vulnerability';
 import { connection } from '../server';
-import { VERSION_PLACEHOLDER } from '../constants';
+import { VERSION_PLACEHOLDER, GRADLE } from '../constants';
 import { clearCodeActionsMap, registerCodeAction, generateSwitchToRecommendedVersionAction } from '../codeActionHandler';
 import { decodeUriPath } from '../utils';
 import { AbstractDiagnosticsPipeline } from '../diagnosticsPipeline';
@@ -37,10 +37,11 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline<DependencyData> {
     /**
      * Runs diagnostics on dependencies.
      * @param dependencies - A map containing dependency data by reference string.
+     * @param ecosystem - The name of the ecosystem in which dependencies are being analyzed.
      */
-    runDiagnostics(dependencies: Map<string, DependencyData[]>) {
+    runDiagnostics(dependencies: Map<string, DependencyData[]>, ecosystem: string) {
         Object.entries(dependencies).map(([ref, dependencyData]) => {
-            const dependencyRef = ref.split('@')[0];
+            const dependencyRef = ecosystem === GRADLE ? ref : ref.split('@')[0];
             const dependency = this.dependencyMap.get(dependencyRef);
 
             if (dependency) {
@@ -101,7 +102,8 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline<DependencyData> {
 async function performDiagnostics(diagnosticFilePath: string, contents: string, provider: IDependencyProvider) {
     try {        
         const dependencies = await provider.collect(contents);
-        const dependencyMap = new DependencyMap(dependencies);
+        const ecosystem = provider.getEcosystem();
+        const dependencyMap = new DependencyMap(dependencies, ecosystem);
 
         const diagnosticsPipeline = new DiagnosticsPipeline(dependencyMap, diagnosticFilePath);
         diagnosticsPipeline.clearDiagnostics();
@@ -110,7 +112,7 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
 
         clearCodeActionsMap(diagnosticFilePath);
 
-        diagnosticsPipeline.runDiagnostics(response.dependencies);
+        diagnosticsPipeline.runDiagnostics(response.dependencies, ecosystem);
 
         diagnosticsPipeline.reportDiagnostics();
     } catch (error) {

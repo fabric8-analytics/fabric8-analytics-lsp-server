@@ -5,6 +5,7 @@
 'use strict';
 
 import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../dependencyAnalysis/collector';
+import { GOLANG } from '../constants';
 
 /* Please note :: There is an issue with the usage of semverRegex Node.js package in this code.
  * Often times it fails to recognize versions that contain an added suffix, usually including extra details such as a timestamp and a commit hash.
@@ -27,7 +28,7 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
     replacementMap: Map<string, IDependency> = new Map<string, IDependency>();
     
     constructor() {
-        super('golang'); // set ecosystem to 'golang'
+        super(GOLANG); // set ecosystem to 'golang'
     }
 
     /**

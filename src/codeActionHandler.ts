@@ -79,6 +79,7 @@ function generateFullStackAnalysisAction(): CodeAction {
         command: {
             title: 'Analytics Report',
             command: globalConfig.stackAnalysisCommand,
+            arguments: ['', true],
         }
     };
 }
