@@ -25,6 +25,9 @@ describe('Config tests', () => {
         mvn: {
             executable: { path: 'mockPath' }
         },
+        gradle: {
+            executable: { path: 'mockPath' }
+        },
         npm: {
             executable: { path: 'mockPath' }
         },
@@ -68,25 +71,28 @@ describe('Config tests', () => {
         enablePythonBestEffortsInstallation: false,
         usePipDepTree: false,
         mvn: {
-        executable: { path: '' }
+            executable: { path: '' }
+        },
+        gradle: {
+            executable: { path: '' }
         },
         npm: {
-        executable: { path: '' }
+            executable: { path: '' }
         },
         go: {
-        executable: { path: '' }
+            executable: { path: '' }
         },
         python3: {
-        executable: { path: '' }
+            executable: { path: '' }
         },
         pip3: {
-        executable: { path: '' }
+            executable: { path: '' }
         },
         python: {
-        executable: { path: '' }
+            executable: { path: '' }
         },
         pip: {
-        executable: { path: '' }
+            executable: { path: '' }
         },
         syft: {
             executable: { path: '' },
@@ -117,6 +123,7 @@ describe('Config tests', () => {
         expect(mockConfig.enablePythonBestEffortsInstallation).to.eq('false');
         expect(mockConfig.usePipDepTree).to.eq('false');
         expect(mockConfig.exhortMvnPath).to.eq('mvn');
+        expect(mockConfig.exhortGradlePath).to.eq('gradle');
         expect(mockConfig.exhortNpmPath).to.eq('npm');
         expect(mockConfig.exhortGoPath).to.eq('go');
         expect(mockConfig.exhortPython3Path).to.eq('python3');
@@ -142,6 +149,7 @@ describe('Config tests', () => {
         expect(mockConfig.enablePythonBestEffortsInstallation).to.eq('true');
         expect(mockConfig.usePipDepTree).to.eq('true');
         expect(mockConfig.exhortMvnPath).to.eq('mockPath');
+        expect(mockConfig.exhortGradlePath).to.eq('mockPath');
         expect(mockConfig.exhortNpmPath).to.eq('mockPath');
         expect(mockConfig.exhortGoPath).to.eq('mockPath');
         expect(mockConfig.exhortPython3Path).to.eq('mockPath');
@@ -167,6 +175,7 @@ describe('Config tests', () => {
         expect(mockConfig.enablePythonBestEffortsInstallation).to.eq('false');
         expect(mockConfig.usePipDepTree).to.eq('false');
         expect(mockConfig.exhortMvnPath).to.eq('mvn');
+        expect(mockConfig.exhortGradlePath).to.eq('gradle');
         expect(mockConfig.exhortNpmPath).to.eq('npm');
         expect(mockConfig.exhortGoPath).to.eq('go');
         expect(mockConfig.exhortPython3Path).to.eq('python3');
