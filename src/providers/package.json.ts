@@ -6,6 +6,7 @@
 
 import jsonAst from 'json-to-ast';
 import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../dependencyAnalysis/collector';
+import { NPM } from '../constants';
 
 /**
  * Process entries found in the package.json file.
@@ -14,7 +15,7 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
     classes: string[] = ['dependencies'];
 
     constructor() {
-        super('npm'); // set ecosystem to 'npm'
+        super(NPM); // set ecosystem to 'npm'
     }
 
     /**

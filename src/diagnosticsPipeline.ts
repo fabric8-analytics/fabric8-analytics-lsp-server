@@ -25,8 +25,9 @@ interface IDiagnosticsPipeline<T> {
     /**
      * Runs diagnostics on dependencies.
      * @param artifact - A map containing artifact data.
+     * @param ecosystem - The name of the ecosystem to analyze dependencies in.
      */
-    runDiagnostics(artifact: Map<string, T[]>);
+    runDiagnostics(artifact: Map<string, T[]>, ecosystem: string);
 }
 
 /**
@@ -66,7 +67,7 @@ abstract class AbstractDiagnosticsPipeline<T> implements IDiagnosticsPipeline<T>
         });
     }
 
-    abstract runDiagnostics(artifact: Map<string, T[]>): void;
+    abstract runDiagnostics(artifact: Map<string, T[]>, ecosystem: string): void;
 }
 
 export { AbstractDiagnosticsPipeline };

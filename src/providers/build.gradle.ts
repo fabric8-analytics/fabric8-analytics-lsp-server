@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-import { VERSION_PLACEHOLDER } from '../constants';
+import { VERSION_PLACEHOLDER, GRADLE } from '../constants';
 import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../dependencyAnalysis/collector';
 
 /**
@@ -20,14 +20,19 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
     COMMENT_REGEX: RegExp = /\/\*[\s\S]*?\*\//g;
 
     /**
-     * Regular expression for locating key value pairs in a string.
+     * Regular expression for locating key-value pairs in a string with colons as separators.
      */
-    FIND_KEY_VALUE_PAIRS_REGEX: RegExp = /\b(\w+)\s*:\s*(['"])(.*?)\2/g;
+    FIND_KEY_VALUE_PAIRS_WITH_COLON_REGEX: RegExp = /\b(\w+)\s*:\s*(['"])(.*?)\2/g;
+
+    /**
+     * Regular expression for locating key-value pairs in a string with equals signs as separators.
+     */
+    FIND_KEY_VALUE_PAIRS_WITH_EQUALS_REGEX: RegExp = /\b(\w+)\s*=\s*(['"])(.*?)\2/;
 
     /**
      * Regular expression for matching key value pairs.
      */
-    SPLIT_KEY_VALUE_PAIRS_REGEX: RegExp = /\s*:\s*/;
+    SPLIT_KEY_VALUE_PAIRS_WITH_COLON_REGEX: RegExp = /\s*:\s*/;
 
     /**
      * Regular expression for matching strings enclosed in double or single quotes.
@@ -55,7 +60,7 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
     ARGS_SCOPE: string = 'ext';
 
     constructor() {
-        super('maven'); // set gradle ecosystem to 'maven'
+        super(GRADLE); // set ecosystem to 'gradle'
     }
 
     /**
@@ -92,11 +97,11 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
         let depData: string;
         let quoteUsed: string;
 
-        const keyValuePairs = cleanLine.match(this.FIND_KEY_VALUE_PAIRS_REGEX);
+        const keyValuePairs = cleanLine.match(this.FIND_KEY_VALUE_PAIRS_WITH_COLON_REGEX);
         if (keyValuePairs) {
             // extract data from dependency in Map format
             keyValuePairs.forEach(pair => {
-                const [key, value] = pair.split(this.SPLIT_KEY_VALUE_PAIRS_REGEX);
+                const [key, value] = pair.split(this.SPLIT_KEY_VALUE_PAIRS_WITH_COLON_REGEX);
                 const match = value.match(this.BETWEEN_QUOTES_REGEX);
                 quoteUsed = match[1];
                 const valueData = match[2];
@@ -222,7 +227,7 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
             }
 
             if (isSingleArgument) {
-                if (parsedLine.includes('{')) {
+                if (parsedLine.startsWith('{')) {
                     isArgumentBlock = true;
                 }
                 isSingleArgument = false;
@@ -240,14 +245,10 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
                 if (parsedLine.includes('}')) {
                     isArgumentBlock = false;
                 }
-                
-                if (!this.BETWEEN_QUOTES_REGEX.test(parsedLine)) {
-                    return dependencies;
-                }
 
-                if (parsedLine.includes('=')) {
-                    const argData = parsedLine.split('=');
-                    this.args.set(argData[0].trim(), argData[1].trim().replace(this.BETWEEN_QUOTES_REGEX, '$2'));
+                const argDataMatch = parsedLine.match(this.FIND_KEY_VALUE_PAIRS_WITH_EQUALS_REGEX);
+                if (argDataMatch) {
+                    this.args.set(argDataMatch[1].trim(), argDataMatch[3].trim());
                 }
             }
 

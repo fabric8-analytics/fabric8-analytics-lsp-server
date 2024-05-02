@@ -7,7 +7,7 @@
 import { IDependencyProvider, EcosystemDependencyResolver, IDependency, Dependency } from '../dependencyAnalysis/collector';
 import { parse, DocumentCstNode } from '@xml-tools/parser';
 import { buildAst, accept, XMLElement, XMLDocument } from '@xml-tools/ast';
-import { VERSION_PLACEHOLDER } from '../constants';
+import { VERSION_PLACEHOLDER, MAVEN } from '../constants';
 
 /**
  * Process entries found in the pom.xml file.
@@ -15,7 +15,7 @@ import { VERSION_PLACEHOLDER } from '../constants';
 export class DependencyProvider extends EcosystemDependencyResolver implements IDependencyProvider {
 
     constructor() {
-        super('maven'); // set ecosystem to 'maven'
+        super(MAVEN); // set ecosystem to 'maven'
     }
 
     /**
