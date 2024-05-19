@@ -141,7 +141,7 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
         // determine dependency version
         const depVersion: string = myClassObj.version;
         if (depVersion) {
-         dep.version = { value: depVersion, position: { line: index + 1, column: line.indexOf(depVersion) + 1 } };
+         dep.version = { value: depVersion.includes('$') ? this.replaceArgsInString(depVersion) : depVersion, position: { line: index + 1, column: line.indexOf(depVersion) + 1 } };
         } else {
             // if version is not specified, generate placeholder template
             if (keyValuePairs) {

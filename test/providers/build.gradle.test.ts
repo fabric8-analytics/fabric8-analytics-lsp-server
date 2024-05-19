@@ -186,11 +186,11 @@ dependencies {
         expect(deps).is.eql([
             {
                 name: {value: 'log4j/log4j', position: {line: 0, column: 0}},
-                version: {value: '${versionArg}', position: {line: 30, column: 44}}
+                version: {value: '1.2.3', position: {line: 30, column: 44}}
             },
             {
                 name: {value: 'log4j/log4j', position: {line: 0, column: 0}},
-                version: {value: '${versionArg}', position: {line: 31, column: 66}}
+                version: {value: '1.2.3', position: {line: 31, column: 66}}
             }
         ]);
     });
