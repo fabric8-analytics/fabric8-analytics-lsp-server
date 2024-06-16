@@ -80,8 +80,13 @@ export class DependencyProvider extends EcosystemDependencyResolver implements I
      */
     private replaceArgsInString(str: string): string {
         this.args.forEach((value, key) => {
-            str = str.replace(`$\{${key}}`, value).replace(`$${key}`, value);
-        });        
+            const regexWithBraces = new RegExp(`\\$\\{${key}\\}`, 'g');
+            const regexWithoutBraces = new RegExp(`\\$${key}\\b`, 'g');
+
+            str = str
+                .replace(regexWithBraces, value)
+                .replace(regexWithoutBraces, value);
+        });
         return str;
     }
 
