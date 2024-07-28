@@ -8,7 +8,7 @@ import { Range } from 'vscode-languageserver';
 
 import { IPositionedString, IPositionedContext, IPosition } from '../positionTypes';
 import { isDefined } from '../utils';
-import { ecosystemNameMappings, GRADLE } from '../constants';
+import { ecosystemNameMappings } from '../constants';
 
 /**
  * Represents a dependency specification.
@@ -36,9 +36,9 @@ export class Dependency implements IDependency {
  */
 export class DependencyMap {
   mapper: Map<string, IDependency>;
-  constructor(deps: IDependency[], ecosystem: string) {
+  constructor(deps: IDependency[]) {
     this.mapper = new Map(deps.map(d => {
-      const key = ecosystem === GRADLE && d.version ? `${d.name.value}@${d.version.value}` : d.name.value;
+      const key = d.name.value;
       return [key, d];
     }));
   }
@@ -71,12 +71,6 @@ export interface IDependencyProvider {
    * @returns The resolved name of the dependency.
    */
   resolveDependencyFromReference(ref: string): string;
-
-  /**
-   * Gets the name of the providers ecosystem.
-   * @returns The name of the providers ecosystem.
-   */
-  getEcosystem(): string;
 }
 
 /**
@@ -96,14 +90,6 @@ export class EcosystemDependencyResolver {
    */
   resolveDependencyFromReference(ref: string): string {
     return ref.replace(`pkg:${ecosystemNameMappings[this.ecosystem]}/`, '');
-  }
-
-  /**
-   * Gets the name of the ecosystem this provider is configured for.
-   * @returns The name of the ecosystem.
-   */
-  getEcosystem(): string {
-    return this.ecosystem;
   }
 }
 
