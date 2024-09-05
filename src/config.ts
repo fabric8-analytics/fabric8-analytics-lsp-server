@@ -10,6 +10,8 @@
  */
 class Config
 {
+    analyzeOnOpenDocument:                          string;
+    analyzeOnSaveDocument:                          string;
     stackAnalysisCommand:                           string;
     trackRecommendationAcceptanceCommand:           string;
     telemetryId:                                    string;
@@ -59,6 +61,8 @@ class Config
     }
 
     load() {
+        this.analyzeOnOpenDocument = process.env.VSCEXT_ANALYZE_ON_OPEN_DOCUMENT || 'false';
+        this.analyzeOnSaveDocument = process.env.VSCEXT_ANALYZE_ON_SAVE_DOCUMENT || 'false';
         this.stackAnalysisCommand = process.env.VSCEXT_STACK_ANALYSIS_COMMAND || '';
         this.trackRecommendationAcceptanceCommand = process.env.VSCEXT_TRACK_RECOMMENDATION_ACCEPTANCE_COMMAND || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
@@ -92,6 +96,8 @@ class Config
      * @param data - The data from extension workspace settings to update the global configuration with.
      */
     updateConfig( rhdaConfig: any ) {
+        this.analyzeOnOpenDocument = rhdaConfig.analyzeOnOpenDocument ? 'true' : 'false';
+        this.analyzeOnSaveDocument = rhdaConfig.analyzeOnSaveDocument ? 'true' : 'false';
         this.matchManifestVersions = rhdaConfig.matchManifestVersions ? 'true' : 'false';
         this.usePythonVirtualEnvironment = rhdaConfig.usePythonVirtualEnvironment ? 'true' : 'false';
         this.useGoMVS = rhdaConfig.useGoMVS ? 'true' : 'false';

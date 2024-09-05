@@ -63,6 +63,9 @@ const server = new AnalysisLSPServer(connection);
  * On open document trigger event handler
  */
 connection.onDidOpenTextDocument((params) => {
+    if (!globalConfig.analyzeOnOpenDocument) {
+        return;
+    }
     server.handleFileEvent(params.textDocument.uri, params.textDocument.text);
 });
 
@@ -77,6 +80,9 @@ connection.onDidChangeTextDocument((params) => {
  * On save document trigger event handler
  */
 connection.onDidSaveTextDocument((params) => {
+    if (!globalConfig.analyzeOnSaveDocument) {
+        return;
+    }
     server.handleFileEvent(params.textDocument.uri, server.files.fileData[params.textDocument.uri]);
 });
 
