@@ -163,6 +163,7 @@ async function executeComponentAnalysis(diagnosticFilePath: string, provider: ID
         'EXHORT_PYTHON_INSTALL_BEST_EFFORTS': globalConfig.enablePythonBestEffortsInstallation,
         'EXHORT_PIP_USE_DEP_TREE': globalConfig.usePipDepTree,
         'EXHORT_MVN_PATH': globalConfig.exhortMvnPath,
+        'EXHORT_PREFER_MVNW': globalConfig.exhortPreferMvnw,
         'EXHORT_GRADLE_PATH': globalConfig.exhortGradlePath,
         'EXHORT_NPM_PATH': globalConfig.exhortNpmPath,
         'EXHORT_GO_PATH': globalConfig.exhortGoPath,
