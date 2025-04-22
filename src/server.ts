@@ -92,9 +92,14 @@ connection.onDidCloseTextDocument((params) => {
  */
 connection.onDidChangeConfiguration(() => {
     if (hasConfigurationCapability) {
-        server.conn.workspace.getConfiguration('redHatDependencyAnalytics')
-        .then((rhdaConfig) => {
-            globalConfig.updateConfig(rhdaConfig);
+        server.conn.workspace.getConfiguration([{
+            section: 'redHatDependencyAnalytics'
+        }, {
+            section: 'maven.executable'
+        }]).then(([rhdaConfig, mvn]) => {
+            globalConfig.updateConfig({...rhdaConfig, fallbacks: {
+                useMavenWrapper: mvn !== undefined ? mvn.preferMavenWrapper : true
+            }});
         });
     }
 });
