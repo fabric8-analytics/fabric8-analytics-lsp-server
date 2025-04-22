@@ -23,7 +23,8 @@ describe('Config tests', () => {
         enablePythonBestEffortsInstallation: true,
         usePipDepTree: true,
         mvn: {
-            executable: { path: 'mockPath' }
+            executable: { path: 'mockPath' },
+            preferWrapper: 'fallback'
         },
         gradle: {
             executable: { path: 'mockPath' }
@@ -60,7 +61,10 @@ describe('Config tests', () => {
         },
         podman: {
             executable: { path: 'mockPath' }
-        },   
+        },
+        fallbacks: {
+            useMavenWrapper: 'false'
+        }
     };
 
     const partialRhdaConfig = {
@@ -71,7 +75,8 @@ describe('Config tests', () => {
         enablePythonBestEffortsInstallation: false,
         usePipDepTree: false,
         mvn: {
-            executable: { path: '' }
+            executable: { path: '' },
+            preferWrapper: ''
         },
         gradle: {
             executable: { path: '' }
@@ -109,6 +114,9 @@ describe('Config tests', () => {
         podman: {
             executable: { path: '' }
         },
+        fallbacks: {
+            useMavenWrapper: ''
+        }
     };
 
     it('should initialize with default values when environment variables are not set', () => {
@@ -137,6 +145,7 @@ describe('Config tests', () => {
         expect(mockConfig.exhortDockerPath).to.eq('docker');
         expect(mockConfig.exhortPodmanPath).to.eq('podman');
         expect(mockConfig.exhortImagePlatform).to.eq('');
+        expect(mockConfig.exhortPreferMvnw).to.eq('true')
     });
     
     it('should update configuration based on provided data', () => {
@@ -163,6 +172,7 @@ describe('Config tests', () => {
         expect(mockConfig.exhortDockerPath).to.eq('mockPath');
         expect(mockConfig.exhortPodmanPath).to.eq('mockPath');
         expect(mockConfig.exhortImagePlatform).to.eq('mockPlatform');
+        expect(mockConfig.exhortPreferMvnw).to.eq('false')
     });
 
     it('should update configuration based on provided partial data', () => {
@@ -189,6 +199,7 @@ describe('Config tests', () => {
         expect(mockConfig.exhortDockerPath).to.eq('docker');
         expect(mockConfig.exhortPodmanPath).to.eq('podman');
         expect(mockConfig.exhortImagePlatform).to.eq('');
+        expect(mockConfig.exhortPreferMvnw).to.eq('true')
     });
 
     it('should set Exhort Snyk Token', () => {

@@ -39,6 +39,7 @@ class Config {
 
     private readonly DEFAULT_VULNERABILITY_ALERT_SEVERITY = 'Error';
     private readonly DEFAULT_MVN_EXECUTABLE = 'mvn';
+    private readonly DEFAULT_PREFER_MVNW = 'fallback';
     private readonly DEFAULT_GRADLE_EXECUTABLE = 'gradle';
     private readonly DEFAULT_NPM_EXECUTABLE = 'npm';
     private readonly DEFAULT_GO_EXECUTABLE = 'go';
@@ -100,8 +101,8 @@ class Config {
         this.usePipDepTree = rhdaConfig.usePipDepTree ? 'true' : 'false';
         this.vulnerabilityAlertSeverity = rhdaConfig.vulnerabilityAlertSeverity;
         this.exhortMvnPath = rhdaConfig.mvn.executable.path || this.DEFAULT_MVN_EXECUTABLE;
-        this.exhortPreferMvnw = rhdaConfig.redHatDependencyAnalytics.mvn.preferWrapper === 'fallback' ? 
-            rhdaConfig.fallbacks.useMavenWrapper : (rhdaConfig.redHatDependencyAnalytics.mvn.preferWrapper === 'true');
+        this.exhortPreferMvnw = (rhdaConfig.mvn.preferWrapper || this.DEFAULT_PREFER_MVNW) === 'fallback' ? 
+            (rhdaConfig.fallbacks.useMavenWrapper || 'true') : (rhdaConfig.mvn.preferWrapper === 'true');
         this.exhortGradlePath = rhdaConfig.gradle.executable.path || this.DEFAULT_GRADLE_EXECUTABLE;
         this.exhortNpmPath = rhdaConfig.npm.executable.path || this.DEFAULT_NPM_EXECUTABLE;
         this.exhortGoPath = rhdaConfig.go.executable.path || this.DEFAULT_GO_EXECUTABLE;
