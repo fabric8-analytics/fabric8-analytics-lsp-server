@@ -8,8 +8,7 @@
 /**
  * Represents the global configuration settings.
  */
-class Config
-{
+class Config {
     stackAnalysisCommand:                           string;
     trackRecommendationAcceptanceCommand:           string;
     telemetryId:                                    string;
@@ -22,6 +21,7 @@ class Config
     usePipDepTree:                                  string;
     vulnerabilityAlertSeverity:                     string;
     exhortMvnPath:                                  string;
+    exhortPreferMvnw:                               string;
     exhortGradlePath:                               string;
     exhortNpmPath:                                  string;
     exhortGoPath:                                   string;
@@ -39,6 +39,7 @@ class Config
 
     private readonly DEFAULT_VULNERABILITY_ALERT_SEVERITY = 'Error';
     private readonly DEFAULT_MVN_EXECUTABLE = 'mvn';
+    private readonly DEFAULT_PREFER_MVNW = 'fallback';
     private readonly DEFAULT_GRADLE_EXECUTABLE = 'gradle';
     private readonly DEFAULT_NPM_EXECUTABLE = 'npm';
     private readonly DEFAULT_GO_EXECUTABLE = 'go';
@@ -71,6 +72,7 @@ class Config
         this.usePipDepTree = process.env.VSCEXT_USE_PIP_DEP_TREE || 'false';
         this.vulnerabilityAlertSeverity = process.env.VSCEXT_VULNERABILITY_ALERT_SEVERITY || this.DEFAULT_VULNERABILITY_ALERT_SEVERITY;
         this.exhortMvnPath = process.env.VSCEXT_EXHORT_MVN_PATH || this.DEFAULT_MVN_EXECUTABLE;
+        this.exhortPreferMvnw = process.env.VSCEXT_EXHORT_PREFER_MVNW || 'true';
         this.exhortGradlePath = process.env.VSCEXT_EXHORT_GRADLE_PATH || this.DEFAULT_GRADLE_EXECUTABLE;
         this.exhortNpmPath = process.env.VSCEXT_EXHORT_NPM_PATH || this.DEFAULT_NPM_EXECUTABLE;
         this.exhortGoPath = process.env.VSCEXT_EXHORT_GO_PATH || this.DEFAULT_GO_EXECUTABLE;
@@ -91,7 +93,7 @@ class Config
      * Updates the global configuration with provided data from extension workspace settings.
      * @param data - The data from extension workspace settings to update the global configuration with.
      */
-    updateConfig( rhdaConfig: any ) {
+    updateConfig(rhdaConfig: any) {
         this.matchManifestVersions = rhdaConfig.matchManifestVersions ? 'true' : 'false';
         this.usePythonVirtualEnvironment = rhdaConfig.usePythonVirtualEnvironment ? 'true' : 'false';
         this.useGoMVS = rhdaConfig.useGoMVS ? 'true' : 'false';
@@ -99,6 +101,8 @@ class Config
         this.usePipDepTree = rhdaConfig.usePipDepTree ? 'true' : 'false';
         this.vulnerabilityAlertSeverity = rhdaConfig.vulnerabilityAlertSeverity;
         this.exhortMvnPath = rhdaConfig.mvn.executable.path || this.DEFAULT_MVN_EXECUTABLE;
+        this.exhortPreferMvnw = (rhdaConfig.mvn.preferWrapper || this.DEFAULT_PREFER_MVNW) === 'fallback' ? 
+            (rhdaConfig.fallbacks.useMavenWrapper || 'true') : (rhdaConfig.mvn.preferWrapper === 'true');
         this.exhortGradlePath = rhdaConfig.gradle.executable.path || this.DEFAULT_GRADLE_EXECUTABLE;
         this.exhortNpmPath = rhdaConfig.npm.executable.path || this.DEFAULT_NPM_EXECUTABLE;
         this.exhortGoPath = rhdaConfig.go.executable.path || this.DEFAULT_GO_EXECUTABLE;
@@ -119,7 +123,7 @@ class Config
      * Sets the Snyk token.
      * @param token The Snyk token to be set.
      */
-    setExhortSnykToken( token: string ) {
+    setExhortSnykToken(token: string) {
         this.exhortSnykToken = token;
     }
 }

@@ -50,24 +50,24 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline<DependencyData> {
                     ref,
                     dependencyData,
                 );
-                
+
                 const vulnerabilityDiagnostic = vulnerability.getDiagnostic();
                 this.diagnostics.push(vulnerabilityDiagnostic);
 
                 const loc = vulnerabilityDiagnostic.range.start.line + '|' + vulnerabilityDiagnostic.range.start.character;
 
                 dependencyData.forEach(dd => {
-    
+
                     const actionRef = vulnerabilityDiagnostic.severity < 3 ? dd.remediationRef : dd.recommendationRef;
 
                     if (actionRef) {
                         this.createCodeAction(loc, actionRef, dependency.context, dd.sourceId, vulnerabilityDiagnostic);
                     }
-    
+
                     const vulnProvider = dd.sourceId.split('(')[0];
                     const issuesCount = dd.issuesCount;
                     this.vulnCount[vulnProvider] = (this.vulnCount[vulnProvider] || 0) + issuesCount;
-                });      
+                });
             }
             connection.sendDiagnostics({ uri: this.diagnosticFilePath, diagnostics: this.diagnostics });
         });
@@ -100,7 +100,7 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline<DependencyData> {
  * @returns A Promise that resolves when diagnostics are completed.
  */
 async function performDiagnostics(diagnosticFilePath: string, contents: string, provider: IDependencyProvider) {
-    try {        
+    try {
         const dependencies = await provider.collect(contents);
         const ecosystem = provider.getEcosystem();
         const dependencyMap = new DependencyMap(dependencies, ecosystem);
@@ -108,7 +108,7 @@ async function performDiagnostics(diagnosticFilePath: string, contents: string, 
         const diagnosticsPipeline = new DiagnosticsPipeline(dependencyMap, diagnosticFilePath);
         diagnosticsPipeline.clearDiagnostics();
 
-        const response = await executeComponentAnalysis(diagnosticFilePath, contents, provider);
+        const response = await executeComponentAnalysis(diagnosticFilePath, provider);
 
         clearCodeActionsMap(diagnosticFilePath);
 

@@ -4,8 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-import * as path from 'path';
-import exhort from '@RHEcosystemAppEng/exhort-javascript-api';
+import exhort from '@trustification/exhort-javascript-api';
 
 import { connection } from '../server';
 import { globalConfig } from '../config';
@@ -149,11 +148,10 @@ class AnalysisResponse implements IAnalysisResponse {
 /**
  * Performs RHDA component analysis on provided manifest contents/path and fileType based on ecosystem.
  * @param diagnosticFilePath - The path to the manifest file to analyze.
- * @param contents - The contents of the manifest file to analyze.
  * @param provider - The dependency provider of the corresponding ecosystem.
  * @returns A Promise resolving to an AnalysisResponse object.
  */
-async function executeComponentAnalysis (diagnosticFilePath: string, contents: string, provider: IDependencyProvider): Promise<AnalysisResponse> {
+async function executeComponentAnalysis(diagnosticFilePath: string, provider: IDependencyProvider): Promise<AnalysisResponse> {
     
     // Define configuration options for the component analysis request
     const options = {
@@ -165,6 +163,7 @@ async function executeComponentAnalysis (diagnosticFilePath: string, contents: s
         'EXHORT_PYTHON_INSTALL_BEST_EFFORTS': globalConfig.enablePythonBestEffortsInstallation,
         'EXHORT_PIP_USE_DEP_TREE': globalConfig.usePipDepTree,
         'EXHORT_MVN_PATH': globalConfig.exhortMvnPath,
+        'EXHORT_PREFER_MVNW': globalConfig.exhortPreferMvnw,
         'EXHORT_GRADLE_PATH': globalConfig.exhortGradlePath,
         'EXHORT_NPM_PATH': globalConfig.exhortNpmPath,
         'EXHORT_GO_PATH': globalConfig.exhortGoPath,
@@ -177,7 +176,8 @@ async function executeComponentAnalysis (diagnosticFilePath: string, contents: s
         options['EXHORT_SNYK_TOKEN'] = globalConfig.exhortSnykToken;
     }
 
-    const componentAnalysisJson = await exhort.componentAnalysis(path.basename(diagnosticFilePath), contents, options, decodeUriPath(diagnosticFilePath)); // Execute component analysis
+    // Execute component analysis
+    const componentAnalysisJson = await exhort.componentAnalysis(decodeUriPath(diagnosticFilePath), options);
 
     return new AnalysisResponse(componentAnalysisJson, diagnosticFilePath, provider);
 }
