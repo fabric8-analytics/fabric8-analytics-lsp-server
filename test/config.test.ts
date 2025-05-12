@@ -32,6 +32,9 @@ describe('Config tests', () => {
         npm: {
             executable: { path: 'mockPath' }
         },
+        yarn: {
+            executable: { path: 'mockPath' }
+        },
         go: {
             executable: { path: 'mockPath' }
         },
@@ -84,6 +87,9 @@ describe('Config tests', () => {
         npm: {
             executable: { path: '' }
         },
+        yarn: {
+            executable: { path: '' }
+        },
         go: {
             executable: { path: '' }
         },
@@ -133,6 +139,7 @@ describe('Config tests', () => {
         expect(mockConfig.exhortMvnPath).to.eq('mvn');
         expect(mockConfig.exhortGradlePath).to.eq('gradle');
         expect(mockConfig.exhortNpmPath).to.eq('npm');
+        expect(mockConfig.exhortYarnPath).to.eq('yarn');
         expect(mockConfig.exhortGoPath).to.eq('go');
         expect(mockConfig.exhortPython3Path).to.eq('python3');
         expect(mockConfig.exhortPip3Path).to.eq('pip3');
@@ -160,6 +167,7 @@ describe('Config tests', () => {
         expect(mockConfig.exhortMvnPath).to.eq('mockPath');
         expect(mockConfig.exhortGradlePath).to.eq('mockPath');
         expect(mockConfig.exhortNpmPath).to.eq('mockPath');
+        expect(mockConfig.exhortYarnPath).to.eq('mockPath');
         expect(mockConfig.exhortGoPath).to.eq('mockPath');
         expect(mockConfig.exhortPython3Path).to.eq('mockPath');
         expect(mockConfig.exhortPip3Path).to.eq('mockPath');
@@ -187,6 +195,7 @@ describe('Config tests', () => {
         expect(mockConfig.exhortMvnPath).to.eq('mvn');
         expect(mockConfig.exhortGradlePath).to.eq('gradle');
         expect(mockConfig.exhortNpmPath).to.eq('npm');
+        expect(mockConfig.exhortYarnPath).to.eq('yarn');
         expect(mockConfig.exhortGoPath).to.eq('go');
         expect(mockConfig.exhortPython3Path).to.eq('python3');
         expect(mockConfig.exhortPip3Path).to.eq('pip3');

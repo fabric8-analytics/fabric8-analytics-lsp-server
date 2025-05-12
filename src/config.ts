@@ -24,6 +24,7 @@ class Config {
     exhortPreferMvnw:                               string;
     exhortGradlePath:                               string;
     exhortNpmPath:                                  string;
+    exhortYarnPath:                                 string;
     exhortGoPath:                                   string;
     exhortPython3Path:                              string;
     exhortPip3Path:                                 string;
@@ -42,6 +43,7 @@ class Config {
     private readonly DEFAULT_PREFER_MVNW = 'fallback';
     private readonly DEFAULT_GRADLE_EXECUTABLE = 'gradle';
     private readonly DEFAULT_NPM_EXECUTABLE = 'npm';
+    private readonly DEFAULT_YARN_EXECUTABLE = 'yarn';
     private readonly DEFAULT_GO_EXECUTABLE = 'go';
     private readonly DEFAULT_PYTHON3_EXECUTABLE = 'python3';
     private readonly DEFAULT_PIP3_EXECUTABLE = 'pip3';
@@ -75,6 +77,7 @@ class Config {
         this.exhortPreferMvnw = process.env.VSCEXT_EXHORT_PREFER_MVNW || 'true';
         this.exhortGradlePath = process.env.VSCEXT_EXHORT_GRADLE_PATH || this.DEFAULT_GRADLE_EXECUTABLE;
         this.exhortNpmPath = process.env.VSCEXT_EXHORT_NPM_PATH || this.DEFAULT_NPM_EXECUTABLE;
+        this.exhortYarnPath = process.env.VSCEXT_EXHORT_YARN_PATH || this.DEFAULT_YARN_EXECUTABLE;
         this.exhortGoPath = process.env.VSCEXT_EXHORT_GO_PATH || this.DEFAULT_GO_EXECUTABLE;
         this.exhortPython3Path = process.env.VSCEXT_EXHORT_PYTHON3_PATH || this.DEFAULT_PYTHON3_EXECUTABLE;
         this.exhortPip3Path = process.env.VSCEXT_EXHORT_PIP3_PATH || this.DEFAULT_PIP3_EXECUTABLE;
@@ -105,6 +108,7 @@ class Config {
             (rhdaConfig.fallbacks.useMavenWrapper || 'true') : (rhdaConfig.mvn.preferWrapper === 'true');
         this.exhortGradlePath = rhdaConfig.gradle.executable.path || this.DEFAULT_GRADLE_EXECUTABLE;
         this.exhortNpmPath = rhdaConfig.npm.executable.path || this.DEFAULT_NPM_EXECUTABLE;
+        this.exhortYarnPath = rhdaConfig.yarn.executable.path || this.DEFAULT_YARN_EXECUTABLE;
         this.exhortGoPath = rhdaConfig.go.executable.path || this.DEFAULT_GO_EXECUTABLE;
         this.exhortPython3Path = rhdaConfig.python3.executable.path || this.DEFAULT_PYTHON3_EXECUTABLE;
         this.exhortPip3Path = rhdaConfig.pip3.executable.path || this.DEFAULT_PIP3_EXECUTABLE;
