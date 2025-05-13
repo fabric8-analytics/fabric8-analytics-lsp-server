@@ -102,7 +102,7 @@ class Config {
      * @param data - The data from extension workspace settings to update the global configuration with.
      */
     updateConfig(rhdaConfig: any) {
-        this.exhortProxyUrl = rhdaConfig.proxyUrl || '';
+        this.exhortProxyUrl = rhdaConfig.exhortProxyUrl || '';
         this.matchManifestVersions = rhdaConfig.matchManifestVersions ? 'true' : 'false';
         this.usePythonVirtualEnvironment = rhdaConfig.usePythonVirtualEnvironment ? 'true' : 'false';
         this.useGoMVS = rhdaConfig.useGoMVS ? 'true' : 'false';
