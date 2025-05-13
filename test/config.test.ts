@@ -17,6 +17,7 @@ describe('Config tests', () => {
     
     const rhdaConfig = {
         exhortSnykToken: 'mockToken',
+        proxyUrl: 'mockProxyUrl',
         matchManifestVersions: false,
         usePythonVirtualEnvironment: true,
         useGoMVS: true,
@@ -136,6 +137,7 @@ describe('Config tests', () => {
         expect(mockConfig.trackRecommendationAcceptanceCommand).to.eq('');
         expect(mockConfig.telemetryId).to.eq('');
         expect(mockConfig.utmSource).to.eq('');
+        expect(mockConfig.exhortProxyUrl).to.eq('');
         expect(mockConfig.exhortSnykToken).to.eq('');
         expect(mockConfig.matchManifestVersions).to.eq('true');
         expect(mockConfig.usePythonVirtualEnvironment).to.eq('false');
@@ -169,6 +171,7 @@ describe('Config tests', () => {
         expect(mockConfig.matchManifestVersions).to.eq('false');
         expect(mockConfig.usePythonVirtualEnvironment).to.eq('true');
         expect(mockConfig.useGoMVS).to.eq('true');
+        expect(mockConfig.exhortProxyUrl).to.eq('mockProxyUrl');
         expect(mockConfig.enablePythonBestEffortsInstallation).to.eq('true');
         expect(mockConfig.usePipDepTree).to.eq('true');
         expect(mockConfig.exhortMvnPath).to.eq('mockPath');
@@ -195,6 +198,7 @@ describe('Config tests', () => {
 
         mockConfig.updateConfig(partialRhdaConfig);
 
+        expect(mockConfig.exhortProxyUrl).to.eq('');
         expect(mockConfig.matchManifestVersions).to.eq('true');
         expect(mockConfig.usePythonVirtualEnvironment).to.eq('false');
         expect(mockConfig.useGoMVS).to.eq('false');
