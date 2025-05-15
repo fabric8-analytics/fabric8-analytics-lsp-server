@@ -13,6 +13,7 @@ class Config {
     trackRecommendationAcceptanceCommand:           string;
     telemetryId:                                    string;
     utmSource:                                      string;
+    exhortProxyUrl:                                 string;
     exhortSnykToken:                                string;
     matchManifestVersions:                          string;
     usePythonVirtualEnvironment:                    string;
@@ -68,6 +69,7 @@ class Config {
         this.trackRecommendationAcceptanceCommand = process.env.VSCEXT_TRACK_RECOMMENDATION_ACCEPTANCE_COMMAND || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
+        this.exhortProxyUrl = process.env.VSCEXT_EXHORT_PROXY_URL || '';
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
         this.matchManifestVersions = process.env.VSCEXT_MATCH_MANIFEST_VERSIONS || 'true';
         this.usePythonVirtualEnvironment = process.env.VSCEXT_USE_PYTHON_VIRTUAL_ENVIRONMENT || 'false';
@@ -100,6 +102,7 @@ class Config {
      * @param data - The data from extension workspace settings to update the global configuration with.
      */
     updateConfig(rhdaConfig: any) {
+        this.exhortProxyUrl = rhdaConfig.exhortProxyUrl || '';
         this.matchManifestVersions = rhdaConfig.matchManifestVersions ? 'true' : 'false';
         this.usePythonVirtualEnvironment = rhdaConfig.usePythonVirtualEnvironment ? 'true' : 'false';
         this.useGoMVS = rhdaConfig.useGoMVS ? 'true' : 'false';

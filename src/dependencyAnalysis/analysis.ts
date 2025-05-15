@@ -157,6 +157,7 @@ async function executeComponentAnalysis(diagnosticFilePath: string, provider: ID
     const options = {
         'RHDA_TOKEN': globalConfig.telemetryId,
         'RHDA_SOURCE': globalConfig.utmSource,
+        'RHDA_PROXY_URL': globalConfig.exhortProxyUrl,
         'MATCH_MANIFEST_VERSIONS': globalConfig.matchManifestVersions,
         'EXHORT_PYTHON_VIRTUAL_ENV': globalConfig.usePythonVirtualEnvironment,
         'EXHORT_GO_MVS_LOGIC_ENABLED': globalConfig.useGoMVS,
