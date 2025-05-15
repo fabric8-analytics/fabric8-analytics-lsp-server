@@ -91,17 +91,39 @@ connection.onDidCloseTextDocument((params) => {
  * Registers a callback when the configuration changes.
  */
 connection.onDidChangeConfiguration(() => {
-    if (hasConfigurationCapability) {
-        server.conn.workspace.getConfiguration([{
-            section: 'redHatDependencyAnalytics'
-        }, {
-            section: 'maven.executable'
-        }]).then(([rhdaConfig, mvn]) => {
-            globalConfig.updateConfig({...rhdaConfig, fallbacks: {
-                useMavenWrapper: mvn !== undefined ? mvn.preferMavenWrapper : true
-            }});
-        });
-    }
+  if (hasConfigurationCapability) {
+    server.conn.workspace.getConfiguration([
+      { section: 'redHatDependencyAnalytics' },
+      { section: 'maven.executable' },
+      { section: 'http.proxy' },
+      { section: 'http.proxySupport' }
+    ]).then(([rhdaConfig, mvn, httpProxy, proxySupport]) => {
+      // If proxySupport is 'off', do not use any proxy
+      let effectiveProxyUrl = '';
+      if (proxySupport !== 'off') {
+        if (rhdaConfig.exhortProxyUrl && rhdaConfig.exhortProxyUrl.trim() !== '') {
+          effectiveProxyUrl = rhdaConfig.exhortProxyUrl.trim();
+        } else if (httpProxy && httpProxy.trim() !== '') {
+          effectiveProxyUrl = httpProxy.trim();
+        } else {
+          effectiveProxyUrl =
+            process.env.HTTPS_PROXY ||
+            process.env.https_proxy ||
+            process.env.HTTP_PROXY ||
+            process.env.http_proxy ||
+            '';
+          effectiveProxyUrl = effectiveProxyUrl.trim();
+        }
+      }
+      globalConfig.updateConfig({
+        ...rhdaConfig,
+        exhortProxyUrl: effectiveProxyUrl,
+        fallbacks: {
+          useMavenWrapper: mvn !== undefined ? mvn.preferMavenWrapper : true
+        }
+      });
+    });
+  }
 });
 
 /**

@@ -17,7 +17,7 @@ describe('Config tests', () => {
     
     const rhdaConfig = {
         exhortSnykToken: 'mockToken',
-        proxyUrl: 'mockProxyUrl',
+        exhortProxyUrl: 'mockProxyUrl',
         matchManifestVersions: false,
         usePythonVirtualEnvironment: true,
         useGoMVS: true,
