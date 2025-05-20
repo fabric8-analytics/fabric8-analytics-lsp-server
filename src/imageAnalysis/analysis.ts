@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-import { execSync } from 'child_process';
+import exhort from '@trustification/exhort-javascript-api';
 
 import { connection } from '../server';
 import { globalConfig } from '../config';
@@ -219,36 +219,13 @@ interface IOptions {
  * @param options - The options for running image analysis.
  * @returns A Promise resolving to the analysis response.
  */
-function imageAnalysisService(images: IImage[], options: IOptions): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
-      const jarPath = `${__dirname}/../javaApiAdapter/exhort-java-api-adapter-1.0-SNAPSHOT-jar-with-dependencies.jar`;
-      const reportType = 'json';
-      let parameters = '';
-      let properties = '';
-  
-      images.forEach(image => {
-        if (image.platform) {
-          parameters += ` ${image.name.value}^^${image.platform}`;
-        } else {
-          parameters += ` ${image.name.value}`;
-        }
-      });
-  
-      for (const setting in options) {
-        if (options[setting]) {
-          properties += ` -D${setting}=${options[setting]}`;
-        }
+async function imageAnalysisService(images: IImage[], options: IOptions): Promise<any> {
+    return await exhort.imageAnalysis(images.map(img => {
+      if (img.platform) {
+        return `${img.name.value}^^${img.platform}`;
       }
-  
-      try {
-        const result = execSync(`java${properties} -jar ${jarPath} ${reportType}${parameters}`, {
-          maxBuffer: 1000 * 1000 * 10, // 10 MB
-        });
-        resolve(JSON.parse(result.toString()));
-      } catch (error) {
-        reject(error);
-      }
-    });
+      return img.name.value;
+    }), true, options);
   }
   
 /**
