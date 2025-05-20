@@ -29,14 +29,46 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 documents.listen(connection);
 
 /**
+ * Updates the configuration with the effective proxy URL and other settings.
+ */
+function updateConfiguration(rhdaConfig: any, mvn: any, httpConfig: any) {
+    let effectiveProxyUrl = '';
+    if (httpConfig && httpConfig.proxySupport !== 'off') {
+        if (rhdaConfig.exhortProxyUrl && rhdaConfig.exhortProxyUrl.trim() !== '') {
+            effectiveProxyUrl = rhdaConfig.exhortProxyUrl.trim();
+        } else if (httpConfig.proxy) {
+            effectiveProxyUrl = httpConfig.proxy.trim();
+        } else {
+            effectiveProxyUrl =
+                process.env.HTTPS_PROXY ||
+                process.env.https_proxy ||
+                process.env.HTTP_PROXY ||
+                process.env.http_proxy ||
+                '';
+            effectiveProxyUrl = effectiveProxyUrl.trim();
+        }
+    }
+    const updatedConfig = {
+        ...rhdaConfig,
+        exhortProxyUrl: effectiveProxyUrl,
+        fallbacks: {
+            useMavenWrapper: mvn?.preferMavenWrapper ?? true
+        }
+    };
+
+    // Update the global config with the new values
+    globalConfig.updateConfig(updatedConfig);
+}
+
+/**
  * Sets up the connection's initialization event handler.
  */
 connection.onInitialize((params: InitializeParams): InitializeResult => {
-
     const capabilities = params.capabilities;
     hasConfigurationCapability = !!(
         capabilities.workspace && !!capabilities.workspace.configuration
     );
+
     return {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Full,
@@ -51,6 +83,13 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
 connection.onInitialized(() => {
     if (hasConfigurationCapability) {
         connection.client.register(DidChangeConfigurationNotification.type, undefined);
+        connection.workspace.getConfiguration([
+            { section: 'redHatDependencyAnalytics' },
+            { section: 'maven.executable' },
+            { section: 'http' }
+        ]).then(([rhdaConfig, mvn, httpConfig]) => {
+            updateConfiguration(rhdaConfig, mvn, httpConfig);
+        });
     }
 });
 
@@ -91,39 +130,15 @@ connection.onDidCloseTextDocument((params) => {
  * Registers a callback when the configuration changes.
  */
 connection.onDidChangeConfiguration(() => {
-  if (hasConfigurationCapability) {
-    server.conn.workspace.getConfiguration([
-      { section: 'redHatDependencyAnalytics' },
-      { section: 'maven.executable' },
-      { section: 'http.proxy' },
-      { section: 'http.proxySupport' }
-    ]).then(([rhdaConfig, mvn, httpProxy, proxySupport]) => {
-      // If proxySupport is 'off', do not use any proxy
-      let effectiveProxyUrl = '';
-      if (proxySupport !== 'off') {
-        if (rhdaConfig.exhortProxyUrl && rhdaConfig.exhortProxyUrl.trim() !== '') {
-          effectiveProxyUrl = rhdaConfig.exhortProxyUrl.trim();
-        } else if (httpProxy && httpProxy.trim() !== '') {
-          effectiveProxyUrl = httpProxy.trim();
-        } else {
-          effectiveProxyUrl =
-            process.env.HTTPS_PROXY ||
-            process.env.https_proxy ||
-            process.env.HTTP_PROXY ||
-            process.env.http_proxy ||
-            '';
-          effectiveProxyUrl = effectiveProxyUrl.trim();
-        }
-      }
-      globalConfig.updateConfig({
-        ...rhdaConfig,
-        exhortProxyUrl: effectiveProxyUrl,
-        fallbacks: {
-          useMavenWrapper: mvn !== undefined ? mvn.preferMavenWrapper : true
-        }
-      });
-    });
-  }
+    if (hasConfigurationCapability) {
+        server.conn.workspace.getConfiguration([
+            { section: 'redHatDependencyAnalytics' },
+            { section: 'maven.executable' },
+            { section: 'http' }
+        ]).then(([rhdaConfig, mvn, httpConfig]) => {
+            updateConfiguration(rhdaConfig, mvn, httpConfig);
+        });
+    }
 });
 
 /**

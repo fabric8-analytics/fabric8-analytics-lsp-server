@@ -5,6 +5,7 @@
 'use strict';
 
 import exhort from '@trustification/exhort-javascript-api';
+import { AnalysisReport } from '@trustification/exhort-api-spec/model/v4/AnalysisReport';
 
 import { connection } from '../server';
 import { globalConfig } from '../config';
@@ -57,7 +58,7 @@ class AnalysisResponse implements IAnalysisResponse {
     dependencies: Map<string, DependencyData[]> = new Map<string, DependencyData[]>();
     provider: IDependencyProvider;
 
-    constructor(resData: exhort.AnalysisReport, diagnosticFilePath: string, provider: IDependencyProvider) {
+    constructor(resData: AnalysisReport, diagnosticFilePath: string, provider: IDependencyProvider) {
 
         this.provider = provider;
         const failedProviders: string[] = [];
@@ -157,8 +158,8 @@ async function executeComponentAnalysis(diagnosticFilePath: string, provider: ID
     const options = {
         'RHDA_TOKEN': globalConfig.telemetryId,
         'RHDA_SOURCE': globalConfig.utmSource,
-        'RHDA_PROXY_URL': globalConfig.exhortProxyUrl,
         'MATCH_MANIFEST_VERSIONS': globalConfig.matchManifestVersions,
+        'EXHORT_PROXY_URL': globalConfig.exhortProxyUrl,
         'EXHORT_PYTHON_VIRTUAL_ENV': globalConfig.usePythonVirtualEnvironment,
         'EXHORT_GO_MVS_LOGIC_ENABLED': globalConfig.useGoMVS,
         'EXHORT_PYTHON_INSTALL_BEST_EFFORTS': globalConfig.enablePythonBestEffortsInstallation,

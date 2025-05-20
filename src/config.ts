@@ -69,7 +69,16 @@ class Config {
         this.trackRecommendationAcceptanceCommand = process.env.VSCEXT_TRACK_RECOMMENDATION_ACCEPTANCE_COMMAND || '';
         this.telemetryId = process.env.VSCEXT_TELEMETRY_ID || '';
         this.utmSource = process.env.VSCEXT_UTM_SOURCE || '';
-        this.exhortProxyUrl = process.env.VSCEXT_EXHORT_PROXY_URL || '';
+
+        let proxyUrl = process.env.VSCEXT_EXHORT_PROXY_URL || '';
+        if (!proxyUrl) {
+            const httpConfig = process.env.VSCEXT_HTTP_CONFIG ? JSON.parse(process.env.VSCEXT_HTTP_CONFIG) : null;
+            if (httpConfig && httpConfig.proxy && httpConfig.proxySupport !== 'off') {
+                proxyUrl = httpConfig.proxy;
+            }
+        }
+
+        this.exhortProxyUrl = proxyUrl;
         this.exhortSnykToken = process.env.VSCEXT_EXHORT_SNYK_TOKEN || '';
         this.matchManifestVersions = process.env.VSCEXT_MATCH_MANIFEST_VERSIONS || 'true';
         this.usePythonVirtualEnvironment = process.env.VSCEXT_USE_PYTHON_VIRTUAL_ENVIRONMENT || 'false';
