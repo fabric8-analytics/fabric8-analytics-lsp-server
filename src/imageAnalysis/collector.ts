@@ -7,6 +7,8 @@
 import { Range } from 'vscode-languageserver';
 
 import { IPositionedString, IPosition } from '../positionTypes';
+import { parseImageRef } from '@trustification/exhort-javascript-api/dist/src/oci_image/utils';
+import type { ImageRef } from '@trustification/exhort-javascript-api/dist/src/oci_image/images';
 
 /**
  * Represents an image specification.
@@ -53,14 +55,20 @@ export class ImageMap {
    * @param images - The array of images to initialize the map with.
    */
   constructor(images: IImage[]) {
+    // exhort API gives us the analysis results as a map of purl to data, so we need
+    // to store the keys as purl's here too.
     this.mapper = new Map();
-
     images.forEach(image => {
-      const nameValue = image.name.value;
-      if (this.mapper.has(nameValue)) {
-          this.mapper.get(nameValue).push(image);
+      let parsedImageRef: ImageRef;
+      if (image.platform) {
+        parsedImageRef = parseImageRef(`${image.name.value}^^${image.platform}`);
       } else {
-          this.mapper.set(nameValue, [image]);
+        parsedImageRef = parseImageRef(image.name.value);
+      }
+      if (this.mapper.has(parsedImageRef.getPackageURL().toString())) {
+          this.mapper.get(parsedImageRef.getPackageURL().toString()).push(image);
+      } else {
+          this.mapper.set(parsedImageRef.getPackageURL().toString(), [image]);
       }
     });
   }

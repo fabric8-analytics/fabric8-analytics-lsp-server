@@ -25,10 +25,7 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline<ImageData> {
      * @param imageMap - The image map containing information about image derived from the image file.
      * @param diagnosticFilePath - The path to the image file to retrieve diagnostics from.
      */
-    constructor(
-        private imageMap: ImageMap,
-        diagnosticFilePath: string,
-    ) {
+    constructor(private imageMap: ImageMap, diagnosticFilePath: string) {
         super(diagnosticFilePath);
     }
 
@@ -37,14 +34,14 @@ class DiagnosticsPipeline extends AbstractDiagnosticsPipeline<ImageData> {
      * @param images - A map containing image data by reference string.
      */
     runDiagnostics(images: Map<string, ImageData[]>) {
-        Object.entries(images).map(([ref, imageData]) => {
+        Object.entries(images).map(([ref, imageData]: [string, ImageData[]]) => {
             const foundImageList = this.imageMap.get(ref);
 
             foundImageList.forEach(image => {
 
                 const vulnerability = new Vulnerability(
                     getRange(image),
-                    ref,
+                    image.name.value,
                     imageData,
                 );
                 
