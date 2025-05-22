@@ -21,20 +21,9 @@ interface ISource {
 }
 
 /**
- * Represents data specification related to a dependency.
- */
-interface IDependencyData {
-    sourceId: string;
-    issuesCount: number;
-    recommendationRef: string;
-    remediationRef: string
-    highestVulnerabilitySeverity: string;
-}
-
-/**
  * Implementation of IDependencyData interface.
  */
-class DependencyData implements IDependencyData {
+class DependencyData {
     constructor(
         public sourceId: string,
         public issuesCount: number,
