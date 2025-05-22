@@ -3,6 +3,17 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type (patch, minor, major, early-access)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - early-access
   push:
     branches:
       - master
@@ -43,7 +54,18 @@ jobs:
       - name: Update package with new version
         id: bump
         run: |
-          echo "version=$(npm version ${{ vars.VERSION_BUMPING_TYPE }} --no-git-tag-version --preid ea)" >> "$GITHUB_OUTPUT"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ github.event.inputs.version_bump }}" == "early-access" ]]; then
+              # For manual early-access, use patch and add ea
+              echo "version=$(npm version patch --no-git-tag-version --preid ea)" >> "$GITHUB_OUTPUT"
+            else
+              # For manual final releases, create version without ea
+              echo "version=$(npm version ${{ github.event.inputs.version_bump }} --no-git-tag-version)" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            # For push to master, always use patch and add ea
+            echo "version=$(npm version patch --no-git-tag-version --preid ea)" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Install project modules
         run: npm ci
