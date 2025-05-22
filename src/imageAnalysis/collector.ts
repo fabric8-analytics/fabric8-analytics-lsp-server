@@ -24,11 +24,11 @@ export interface IImage {
  */
 export class Image implements IImage {
   public platform: string;
-  
+
   constructor(
     public name: IPositionedString,
     public line: string
-  ) {}
+  ) { }
 }
 
 /**
@@ -66,9 +66,9 @@ export class ImageMap {
         parsedImageRef = parseImageRef(image.name.value);
       }
       if (this.mapper.has(parsedImageRef.getPackageURL().toString())) {
-          this.mapper.get(parsedImageRef.getPackageURL().toString()).push(image);
+        this.mapper.get(parsedImageRef.getPackageURL().toString()).push(image);
       } else {
-          this.mapper.set(parsedImageRef.getPackageURL().toString(), [image]);
+        this.mapper.set(parsedImageRef.getPackageURL().toString(), [image]);
       }
     });
   }
@@ -80,18 +80,16 @@ export class ImageMap {
    */
   public get(key: string): IImage[] {
     const images: IImage[] = [];
-    /* istanbul ignore else */
     if (this.mapper.has(key)) {
-        images.push(...this.mapper.get(key));
+      images.push(...this.mapper.get(key));
     }
 
     // Check if the key includes ":latest"
     if (key.includes(':latest')) {
-        const keyWithoutLatest = key.replace(':latest', '');
-        /* istanbul ignore else */
-        if (this.mapper.has(keyWithoutLatest)) {
-            images.push(...this.mapper.get(keyWithoutLatest));
-        }
+      const keyWithoutLatest = key.replace(':latest', '');
+      if (this.mapper.has(keyWithoutLatest)) {
+        images.push(...this.mapper.get(keyWithoutLatest));
+      }
     }
 
     return images;
@@ -103,13 +101,13 @@ export class ImageMap {
  * @param img - The image object image position information.
  * @returns The range within the image document that represents the image.
  */
-export function getRange (img: IImage): Range {
+export function getRange(img: IImage): Range {
   const pos: IPosition = img.name.position;
   const length = img.line.length;
 
   return {
     start: {
-      line: pos.line - 1, 
+      line: pos.line - 1,
       character: pos.column
     },
     end: {
