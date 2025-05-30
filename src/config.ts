@@ -120,7 +120,7 @@ class Config {
         this.vulnerabilityAlertSeverity = rhdaConfig.vulnerabilityAlertSeverity;
         this.exhortMvnPath = rhdaConfig.mvn.executable.path || this.DEFAULT_MVN_EXECUTABLE;
         this.exhortPreferMvnw = (rhdaConfig.mvn.preferWrapper || this.DEFAULT_PREFER_MVNW) === 'fallback' ? 
-            (rhdaConfig.fallbacks.useMavenWrapper || 'true') : (rhdaConfig.mvn.preferWrapper === 'true');
+            (rhdaConfig.fallbacks.useMavenWrapper || 'true') : (rhdaConfig.mvn.preferWrapper === 'true').toString();
         this.exhortGradlePath = rhdaConfig.gradle.executable.path || this.DEFAULT_GRADLE_EXECUTABLE;
         this.exhortNpmPath = rhdaConfig.npm.executable.path || this.DEFAULT_NPM_EXECUTABLE;
         this.exhortYarnPath = rhdaConfig.yarn.executable.path || this.DEFAULT_YARN_EXECUTABLE;
