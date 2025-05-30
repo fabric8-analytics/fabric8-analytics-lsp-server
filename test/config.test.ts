@@ -25,7 +25,7 @@ describe('Config tests', () => {
         usePipDepTree: true,
         mvn: {
             executable: { path: 'mockPath' },
-            preferWrapper: 'fallback'
+            preferWrapper: 'true'
         },
         gradle: {
             executable: { path: 'mockPath' }
@@ -161,7 +161,7 @@ describe('Config tests', () => {
         expect(mockConfig.exhortDockerPath).to.eq('docker');
         expect(mockConfig.exhortPodmanPath).to.eq('podman');
         expect(mockConfig.exhortImagePlatform).to.eq('');
-        expect(mockConfig.exhortPreferMvnw).to.eq('true')
+        expect(mockConfig.exhortPreferMvnw).to.eq('true');
     });
     
     it('should update configuration based on provided data', () => {
@@ -191,7 +191,8 @@ describe('Config tests', () => {
         expect(mockConfig.exhortDockerPath).to.eq('mockPath');
         expect(mockConfig.exhortPodmanPath).to.eq('mockPath');
         expect(mockConfig.exhortImagePlatform).to.eq('mockPlatform');
-        expect(mockConfig.exhortPreferMvnw).to.eq('false')
+        console.error(typeof mockConfig.exhortPreferMvnw);
+        expect(mockConfig.exhortPreferMvnw).to.equals('true');
     });
 
     it('should update configuration based on provided partial data', () => {
@@ -221,7 +222,7 @@ describe('Config tests', () => {
         expect(mockConfig.exhortDockerPath).to.eq('docker');
         expect(mockConfig.exhortPodmanPath).to.eq('podman');
         expect(mockConfig.exhortImagePlatform).to.eq('');
-        expect(mockConfig.exhortPreferMvnw).to.eq('true')
+        expect(mockConfig.exhortPreferMvnw).to.eq('true');
     });
 
     it('should set Exhort Snyk Token', () => {
