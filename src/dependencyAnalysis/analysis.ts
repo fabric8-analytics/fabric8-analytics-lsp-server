@@ -156,6 +156,7 @@ async function executeComponentAnalysis(diagnosticFilePath: string, provider: ID
         'EXHORT_MVN_PATH': globalConfig.exhortMvnPath,
         'EXHORT_PREFER_MVNW': globalConfig.exhortPreferMvnw,
         'EXHORT_GRADLE_PATH': globalConfig.exhortGradlePath,
+        'EXHORT_PREFER_GRADLEW': globalConfig.exhortPreferGradlew,
         'EXHORT_NPM_PATH': globalConfig.exhortNpmPath,
         'EXHORT_YARN_PATH': globalConfig.exhortYarnPath,
         'EXHORT_PNPM_PATH': globalConfig.exhortPnpmPath,

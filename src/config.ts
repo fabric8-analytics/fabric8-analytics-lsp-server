@@ -24,6 +24,7 @@ class Config {
     exhortMvnPath:                                  string;
     exhortPreferMvnw:                               string;
     exhortGradlePath:                               string;
+    exhortPreferGradlew:                            string;
     exhortNpmPath:                                  string;
     exhortYarnPath:                                 string;
     exhortPnpmPath:                                 string;
@@ -44,6 +45,7 @@ class Config {
     private readonly DEFAULT_MVN_EXECUTABLE = 'mvn';
     private readonly DEFAULT_PREFER_MVNW = 'fallback';
     private readonly DEFAULT_GRADLE_EXECUTABLE = 'gradle';
+    private readonly DEFAULT_PREFER_GRADLEW = 'fallback';
     private readonly DEFAULT_NPM_EXECUTABLE = 'npm';
     private readonly DEFAULT_YARN_EXECUTABLE = 'yarn';
     private readonly DEFAULT_PNPM_EXECUTABLE = 'pnpm';
@@ -89,6 +91,7 @@ class Config {
         this.exhortMvnPath = process.env.VSCEXT_EXHORT_MVN_PATH || this.DEFAULT_MVN_EXECUTABLE;
         this.exhortPreferMvnw = process.env.VSCEXT_EXHORT_PREFER_MVNW || 'true';
         this.exhortGradlePath = process.env.VSCEXT_EXHORT_GRADLE_PATH || this.DEFAULT_GRADLE_EXECUTABLE;
+        this.exhortPreferGradlew = process.env.VSCEXT_EXHORT_PREFER_GRADLEW || 'true';
         this.exhortNpmPath = process.env.VSCEXT_EXHORT_NPM_PATH || this.DEFAULT_NPM_EXECUTABLE;
         this.exhortYarnPath = process.env.VSCEXT_EXHORT_YARN_PATH || this.DEFAULT_YARN_EXECUTABLE;
         this.exhortPnpmPath = process.env.VSCEXT_EXHORT_PNPM_PATH || this.DEFAULT_PNPM_EXECUTABLE;
@@ -122,6 +125,8 @@ class Config {
         this.exhortPreferMvnw = (rhdaConfig.mvn.preferWrapper || this.DEFAULT_PREFER_MVNW) === 'fallback' ? 
             (rhdaConfig.fallbacks.useMavenWrapper || 'true') : (rhdaConfig.mvn.preferWrapper === 'true').toString();
         this.exhortGradlePath = rhdaConfig.gradle.executable.path || this.DEFAULT_GRADLE_EXECUTABLE;
+        this.exhortPreferGradlew = (rhdaConfig.gradle.preferWrapper || this.DEFAULT_PREFER_GRADLEW) === 'fallback' ? 
+            (rhdaConfig.fallbacks.useGradleWrapper || 'true') : (rhdaConfig.gradle.preferWrapper === 'true').toString();
         this.exhortNpmPath = rhdaConfig.npm.executable.path || this.DEFAULT_NPM_EXECUTABLE;
         this.exhortYarnPath = rhdaConfig.yarn.executable.path || this.DEFAULT_YARN_EXECUTABLE;
         this.exhortPnpmPath = rhdaConfig.pnpm.executable.path || this.DEFAULT_PNPM_EXECUTABLE;

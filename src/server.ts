@@ -31,7 +31,7 @@ documents.listen(connection);
 /**
  * Updates the configuration with the effective proxy URL and other settings.
  */
-function updateConfiguration(rhdaConfig: any, mvn: any, httpConfig: any) {
+function updateConfiguration(rhdaConfig: any, mvn: any, gradlewEnabled: any, httpConfig: any) {
     let effectiveProxyUrl = '';
     if (httpConfig && httpConfig.proxySupport !== 'off') {
         if (rhdaConfig.exhortProxyUrl && rhdaConfig.exhortProxyUrl.trim() !== '') {
@@ -52,7 +52,8 @@ function updateConfiguration(rhdaConfig: any, mvn: any, httpConfig: any) {
         ...rhdaConfig,
         exhortProxyUrl: effectiveProxyUrl,
         fallbacks: {
-            useMavenWrapper: mvn?.preferMavenWrapper ?? true
+            useMavenWrapper: mvn?.preferMavenWrapper ?? true,
+            useGradleWrapper: gradlewEnabled ?? true,
         }
     };
 
@@ -86,9 +87,10 @@ connection.onInitialized(() => {
         connection.workspace.getConfiguration([
             { section: 'redHatDependencyAnalytics' },
             { section: 'maven.executable' },
+            { section: 'java.import.gradle.wrapper.enabled' },
             { section: 'http' }
-        ]).then(([rhdaConfig, mvn, httpConfig]) => {
-            updateConfiguration(rhdaConfig, mvn, httpConfig);
+        ]).then(([rhdaConfig, mvn, gradlewEnabled, httpConfig]) => {
+            updateConfiguration(rhdaConfig, mvn, gradlewEnabled, httpConfig);
         });
     }
 });
@@ -134,9 +136,10 @@ connection.onDidChangeConfiguration(() => {
         server.conn.workspace.getConfiguration([
             { section: 'redHatDependencyAnalytics' },
             { section: 'maven.executable' },
+            { section: 'java.import.gradle.wrapper.enabled' },
             { section: 'http' }
-        ]).then(([rhdaConfig, mvn, httpConfig]) => {
-            updateConfiguration(rhdaConfig, mvn, httpConfig);
+        ]).then(([rhdaConfig, mvn, gradlewEnabled, httpConfig]) => {
+            updateConfiguration(rhdaConfig, mvn, gradlewEnabled, httpConfig);
         });
     }
 });
