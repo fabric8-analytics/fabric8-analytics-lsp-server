@@ -1,5 +1,9 @@
 # Red Hat Dependency Analytics LSP Server
 
+> **⚠️ ARCHIVED NOTICE**
+> 
+> This project has been archived. The LSP server dependency was removed in [PR #794](https://github.com/fabric8-analytics/fabric8-analytics-vscode-extension/pull/794) and all features have been integrated directly into the [VSCode Extension](https://github.com/fabric8-analytics/fabric8-analytics-vscode-extension).
+
 ![Release](https://github.com/fabric8-analytics/fabric8-analytics-lsp-server/workflows/Release/badge.svg?branch=master)
 ![GitHub Package Version](https://img.shields.io/github/package-json/v/fabric8-analytics/fabric8-analytics-lsp-server/master?logo=github&label=GitHub%20Package)
 ![CI](https://github.com/fabric8-analytics/fabric8-analytics-lsp-server/workflows/CI/badge.svg?branch=master)
